@@ -137,6 +137,11 @@ var InstaBasketDrop = (() => {
     }, true);
   }
 
+  // Download progress, relayed by the background script.
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === 'dl-progress') InstaBasketPanel.downloads.progress(msg.job, msg.index, msg.loaded, msg.total, msg.done);
+  });
+
   // The popup's "Add this page" button.
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type !== 'add') return;
@@ -147,26 +152,33 @@ var InstaBasketDrop = (() => {
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
   // Downloads every photo / video of a post in the highest quality, named
-  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>.
+  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>. Albums arrive as one ZIP
+  // (one "Save as" window at most). Progress is shown as balloons on the right.
   async function download(code) {
-    InstaBasketPanel.showBusy('Preparing download…', 'Finding the best quality');
+    const job = Math.random().toString(36).slice(2);
+    const ui = InstaBasketPanel.downloads;
+    ui.start(job);
     try {
       const post = await InstaApi.mediaFiles(code);
       if (!post.files.length) throw new Error('no files');
       const stamp = compactTime(post.takenAt ? post.takenAt * 1000 : Date.now());
       const base = `${post.username || 'instagram'}_${stamp}`;
+      const many = post.files.length > 1;
       const files = post.files.map((f, i) => ({
-        url: f.url,
-        filename: `${base}${post.files.length > 1 ? `_${i + 1}` : ''}.${extension(f)}`,
+        url: f.url, kind: f.kind, thumb: f.thumb,
+        filename: `${base}${many ? `_${i + 1}` : ''}.${extension(f)}`,
       }));
-      const started = await chrome.runtime.sendMessage({ type: 'download', files });
-      if (!started) throw new Error('not started');
-      const what = post.files.length === 1 ? (post.files[0].kind === 'video' ? 'video' : 'photo') : `${started} files`;
-      InstaBasketPanel.showInfo(`Downloading ${what}`, `${files[0].filename}${files.length > 1 ? ' …' : ''}`, post.thumbUrl);
-      return started;
+      ui.items(job, { username: post.username, files });
+      const res = await chrome.runtime.sendMessage({
+        type: 'download', job, zipName: `${base}.zip`, mtime: post.takenAt ? post.takenAt * 1000 : Date.now(),
+        files: files.map(({ url, filename }) => ({ url, filename })),
+      });
+      if (!res?.ok) throw new Error(res?.error || 'failed');
+      ui.finish(job, res.filename);
+      return true;
     } catch {
-      InstaBasketPanel.showError("Couldn't download this post");
-      return 0;
+      ui.fail(job, "Couldn't download this post");
+      return false;
     }
   }
 

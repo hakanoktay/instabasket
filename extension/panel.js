@@ -396,5 +396,168 @@ var InstaBasketPanel = (() => {
     startTimer(5000);
   }
 
-  return { isDarkPage, showDrop, isDropping, showBusy, showInfo, showError, showResult, showRemoved, hide };
+  // ---- Download balloons ----
+  // A stack on the right: one balloon with the overall progress, then one per
+  // photo / video with its thumbnail and progress. They leave on their own.
+
+  const DL_STYLE = `
+    :host { all: initial; }
+    * { box-sizing: border-box; }
+    .stack {
+      --bg: #fff; --text: #000; --muted: #737373; --secondary: #efefef; --blue: #0095f6; --green: #58c322; --red: #ed4956;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      position: fixed; top: 16px; right: 16px; z-index: 2147483646; width: 320px; max-height: calc(100vh - 32px);
+      display: flex; flex-direction: column; gap: 8px; overflow-y: auto; scrollbar-width: none; pointer-events: none;
+      font: 400 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text);
+    }
+    .stack.dark { --bg: #262626; --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
+    .bubble {
+      position: relative; flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; overflow: hidden;
+      background: var(--bg); border-radius: 12px; box-shadow: var(--shadow); pointer-events: auto;
+      animation: slide-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .bubble.item { margin-left: 24px; padding: 8px 10px; }
+    .bubble.leaving { animation: slide-out 0.3s ease-in both; }
+    @keyframes slide-in { from { opacity: 0; transform: translateX(40px); } }
+    @keyframes slide-out { to { opacity: 0; transform: translateX(40px); } }
+    .thumb { flex: none; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--secondary); display: grid; place-items: center; color: var(--muted); }
+    .item .thumb { width: 36px; height: 36px; }
+    .thumb svg { width: 20px; height: 20px; }
+    .text { flex: 1; min-width: 0; }
+    .name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 1px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bad .name { color: var(--red); }
+    .state { flex: none; width: 22px; height: 22px; display: grid; place-items: center; }
+    .spin { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid var(--secondary); border-top-color: var(--muted); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .done-mark { width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; padding: 4px; animation: pop 0.25s ease-out; }
+    @keyframes pop { from { transform: scale(0.4); opacity: 0; } }
+    .pct { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--blue); transition: width 0.2s; }
+    .done .bar { background: var(--green); }
+    svg { display: block; width: 100%; height: 100%; }
+  `;
+  const DL_ICONS = {
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v12M7 10.5l5 5 5-5"/><path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg>',
+    video: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 15l5-5 9 9"/></svg>',
+  };
+  let dlHost, dlStack;
+  const dlJobs = new Map(); // job → { header, items: [{ el, loaded, total, done }] }
+
+  const el = (tag, cls, html) => Object.assign(document.createElement(tag), { className: cls || '', innerHTML: html || '' });
+  const size = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+  function dlMount() {
+    if (!dlHost) {
+      dlHost = document.createElement('div');
+      dlHost.id = 'instabasket-downloads';
+      const root = dlHost.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>${DL_STYLE}</style><div class="stack"></div>`;
+      dlStack = root.querySelector('.stack');
+    }
+    if (!dlHost.isConnected) document.documentElement.appendChild(dlHost);
+    dlStack.classList.toggle('dark', isDarkPage());
+  }
+
+  function bubble(cls, thumb, name, sub, delay = 0) {
+    const b = el('div', `bubble ${cls}`);
+    b.style.animationDelay = `${delay}ms`;
+    const t = thumb ? Object.assign(el('img', 'thumb'), { src: thumb }) : el('div', 'thumb', DL_ICONS.download);
+    if (thumb) t.onerror = () => t.replaceWith(el('div', 'thumb', DL_ICONS.download));
+    b.append(t, el('div', 'text'), el('div', 'state', '<div class="spin"></div>'), el('div', 'bar'));
+    b.querySelector('.text').append(Object.assign(el('div', 'name'), { textContent: name }), Object.assign(el('div', 'sub'), { textContent: sub }));
+    return b;
+  }
+
+  const setText = (b, name, sub) => {
+    if (name != null) b.querySelector('.name').textContent = name;
+    if (sub != null) b.querySelector('.sub').textContent = sub;
+  };
+  const markDone = (b) => {
+    b.classList.add('done');
+    b.querySelector('.state').innerHTML = `<div class="done-mark">${ICONS.check}</div>`;
+    b.querySelector('.bar').style.width = '100%';
+  };
+
+  const downloads = {
+    start(job) {
+      dlMount();
+      hide(); // the corner card would sit under the balloons
+      const header = bubble('header', null, 'Preparing download…', 'Finding the best quality');
+      dlStack.append(header);
+      dlJobs.set(job, { header, items: [] });
+    },
+
+    items(job, { username, files }) {
+      const j = dlJobs.get(job);
+      if (!j) return;
+      const n = files.length;
+      setText(j.header, `Downloading ${n === 1 ? (files[0].kind === 'video' ? 'video' : 'photo') : `${n} files`}`,
+        `${username ? '@' + username : ''}${n > 1 ? ' · saved as one ZIP' : ''}`);
+      files.forEach((f, i) => {
+        const b = bubble('item', f.thumb, f.filename, 'Waiting…', 60 * (i + 1));
+        if (!f.thumb) b.querySelector('.thumb').innerHTML = DL_ICONS[f.kind] || DL_ICONS.image;
+        b.querySelector('.state').innerHTML = '<span class="pct"></span>';
+        (j.items.at(-1)?.el || j.header).after(b);
+        j.items.push({ el: b, loaded: 0, total: 0, done: false });
+      });
+    },
+
+    progress(job, index, loaded, total, done) {
+      const j = dlJobs.get(job);
+      const it = j?.items[index];
+      if (!it || it.done) return;
+      Object.assign(it, { loaded, total: total || it.total });
+      const f = it.total ? loaded / it.total : 0;
+      it.el.querySelector('.bar').style.width = `${Math.round(f * 100)}%`;
+      if (done) {
+        it.done = true;
+        setText(it.el, null, size(loaded));
+        markDone(it.el);
+      } else {
+        setText(it.el, null, it.total ? `${size(loaded)} of ${size(it.total)}` : size(loaded));
+        it.el.querySelector('.pct').textContent = it.total ? `${Math.round(f * 100)}%` : '';
+      }
+      // Overall progress on the header balloon.
+      const all = j.items.reduce((s, x) => s + (x.done ? 1 : x.total ? x.loaded / x.total : 0), 0) / j.items.length;
+      j.header.querySelector('.bar').style.width = `${Math.round(all * 100)}%`;
+    },
+
+    finish(job, filename) {
+      const j = dlJobs.get(job);
+      if (!j) return;
+      j.items.forEach((it) => it.done || markDone(it.el));
+      setText(j.header, 'Saved', `Downloads/InstaBasket/${filename}`);
+      markDone(j.header);
+      dismiss(job, 4000);
+    },
+
+    fail(job, text) {
+      const j = dlJobs.get(job);
+      if (!j) return;
+      j.items.forEach((it) => it.el.remove());
+      j.items = [];
+      j.header.classList.add('bad');
+      j.header.querySelector('.state').innerHTML = '';
+      setText(j.header, text, 'Try again in a moment');
+      dismiss(job, 3500);
+    },
+  };
+
+  function dismiss(job, after) {
+    setTimeout(() => {
+      const j = dlJobs.get(job);
+      if (!j) return;
+      dlJobs.delete(job);
+      const all = [...j.items.map((it) => it.el).reverse(), j.header];
+      all.forEach((b, i) => {
+        b.style.animationDelay = `${i * 50}ms`;
+        b.classList.add('leaving');
+        setTimeout(() => b.remove(), 300 + i * 50);
+      });
+    }, after);
+  }
+
+  return { isDarkPage, showDrop, isDropping, showBusy, showInfo, showError, showResult, showRemoved, hide, downloads };
 })();

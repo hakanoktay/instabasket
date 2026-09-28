@@ -19,7 +19,12 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 ### Downloading
 
-**Download** saves every photo and video of a post (all items of an album) in the highest resolution Instagram offers, into `Downloads/InstaBasket/`. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
+**Download** saves every photo and video of a post in the highest resolution Instagram offers, into `Downloads/InstaBasket/`:
+
+- a single photo or video is saved as is, e.g. `telma_2507271432.jpg` (owner + publish time as YYMMDDHHmm);
+- an album is saved as **one ZIP** (`telma_2507271432.zip`) containing `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`, … — so there's one download, and at most one "Save as" window if Chrome is set to ask where to save each file.
+
+While downloading, balloons on the right show the overall progress and each photo / video with its thumbnail, size and progress; they disappear a few seconds after it's saved.
 
 ### Video controls
 

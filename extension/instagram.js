@@ -100,8 +100,9 @@ var InstaApi = (() => {
     const parts = item.carousel_media?.length ? item.carousel_media : [item];
     const largest = (list) => list.reduce((a, b) => ((b.width || 0) * (b.height || 0) > (a.width || 0) * (a.height || 0) ? b : a));
     const files = parts.map((m) => {
-      if (m.video_versions?.length) return { url: largest(m.video_versions).url, kind: 'video' };
-      if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image' };
+      const thumb = pick(m.image_versions2?.candidates, 150); // small preview (a video's cover)
+      if (m.video_versions?.length) return { url: largest(m.video_versions).url, kind: 'video', thumb };
+      if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image', thumb };
       return null;
     }).filter(Boolean);
     const cover = item.image_versions2 || item.carousel_media?.[0]?.image_versions2;

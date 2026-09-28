@@ -8,9 +8,9 @@ Nothing yet — add ideas here.
 
 ## Done
 
-### Download (0.6.0)
+### Download (0.6.x)
 
-Download button next to Profile / Media on posts and reels: every item of the post in the highest resolution, saved as `<username>_<YYMMDDHHmm>[_<n>].<ext>` in `Downloads/InstaBasket/`.
+Download button next to Profile / Media on posts and reels: every item of the post in the highest resolution, saved as `<username>_<YYMMDDHHmm>[_<n>].<ext>` in `Downloads/InstaBasket/`; albums as a single ZIP, with per-item progress balloons.
 
 ### Video controls (0.5.0)
 
