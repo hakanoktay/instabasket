@@ -17,6 +17,10 @@ There are also **🧺 Add to basket** buttons on Instagram itself:
 
 Once an item is saved its button shows **✓ In basket**. Hovering it turns it into a red **Remove** (like "Following" → "Unfollow" on Instagram); clicking removes the item, and the corner card offers **Undo** for a few seconds.
 
+### Video controls
+
+Move the mouse over a video (feed, post page, post popup or Reels) to get a control bar at its bottom: a scrubber to click or drag to any point, play / pause, 5 seconds back / forward and playback speed (0.5×–2×). While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
+
 ### After adding
 
 Everything you add is saved right away. The corner card then shows what was added and, below it, your lists as large boxes that slide open. Click boxes (or press **1–9**) to put the item into those lists, or create a new list from the **+ New list** box. With many lists a search field appears and the boxes scroll. The card closes on its own after a few seconds; a bar at the bottom shows the time left, and it pauses while your mouse is over the card.
