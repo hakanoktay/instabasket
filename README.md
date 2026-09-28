@@ -8,6 +8,14 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 - A **🧺 Drop into basket** box appears in the top-right corner; drop the link there.
 - Instead of dragging, you can also click the extension icon and use **+ Add this page**.
 
+There are also **🧺 Add to basket** buttons on Instagram itself:
+
+- next to the date under every post (home feed, post page and post popup),
+- in the corner of post thumbnails when you hover them (profile grid, explore),
+- next to the Follow button on profile pages.
+
+Buttons turn into **✓ In basket** once the item is saved.
+
 The basket has two sections:
 
 - **Profiles:** Dropping a profile link adds the profile with its picture and name.

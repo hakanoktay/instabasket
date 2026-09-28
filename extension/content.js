@@ -1,7 +1,7 @@
 // When a drag carrying a URL enters an Instagram page (from the address bar or
 // from a link/post on the page), shows a drop zone in the corner and adds the
-// dropped profile or post to the basket.
-(() => {
+// dropped profile or post to the basket. `run` is shared with buttons.js.
+var InstaBasketDrop = (() => {
   const HIDE_DELAY = 400;
   const RETRY_AFTER = 6 * 60 * 60 * 1000; // retry missing details at most every 6 hours
   let host, zone, label, hideTimer, resetTimer, busy = false;
@@ -193,4 +193,6 @@
   });
 
   setTimeout(() => fillMissing().catch(() => {}), 3000);
+
+  return { run };
 })();
