@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "InstaBasket",
   "version": "0.2.0",
-  "description": "Instagram'da profilleri ve gönderileri sürükleyip sepete bırak.",
+  "description": "Drag Instagram profiles and posts into a basket.",
   "permissions": ["storage", "unlimitedStorage"],
   "host_permissions": [
     "https://www.instagram.com/*",

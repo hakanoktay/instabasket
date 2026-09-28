@@ -1,13 +1,13 @@
-// Content script ve popup'ın ortak kullandığı URL ayrıştırma ve depolama.
+// URL parsing and storage shared by the content script and the popup.
 //
-// Her kayıt chrome.storage.local'da kendi anahtarında durur:
-//   p:<kullanıcı adı>  → profil
-//   m:<gönderi kodu>   → görsel / video / reel (story için m:story:<id>)
-// Böylece aynı anda yapılan eklemeler birbirinin üzerine yazmaz.
+// Every record lives under its own key in chrome.storage.local:
+//   p:<username>   → profile
+//   m:<shortcode>  → photo / video / reel (stories use m:story:<id>)
+// so concurrent additions never overwrite each other.
 var InstaBasket = (() => {
   const BASE = 'https://www.instagram.com/';
   const USERNAME = /^[A-Za-z0-9._]{1,30}$/;
-  // Kullanıcı adı gibi görünen ama Instagram'ın kendi sayfaları olan yollar.
+  // Paths that look like usernames but are Instagram's own pages.
   const RESERVED = new Set([
     'about', 'accounts', 'api', 'ar', 'challenge', 'developer', 'direct', 'emails',
     'explore', 'graphql', 'legal', 'locations', 'nametag', 'p', 'privacy', 'reel',
@@ -15,8 +15,8 @@ var InstaBasket = (() => {
   ]);
   const MEDIA_PATHS = { p: 'post', reel: 'reel', reels: 'reel', tv: 'video' };
 
-  // Bir URL'yi profil ya da gönderi olarak tanır. Instagram dışı ya da tanınmayan
-  // URL'ler için null döner. ?img_index=1 gibi parametreler atılır.
+  // Classifies a URL as a profile or a media item. Returns null for non-Instagram
+  // or unrecognized URLs. Query parameters such as ?img_index=1 are dropped.
   function parse(raw) {
     const text = (raw || '').split(/\r?\n/).find((l) => l && !l.startsWith('#'));
     if (!text) return null;
@@ -30,13 +30,13 @@ var InstaBasket = (() => {
 
     const parts = u.pathname.split('/').filter(Boolean);
 
-    // /p/KOD/, /reel/KOD/, /tv/KOD/
+    // /p/CODE/, /reel/CODE/, /tv/CODE/
     if (MEDIA_PATHS[parts[0]] && parts[1]) return media(parts[1], MEDIA_PATHS[parts[0]], null);
-    // /kullanici/p/KOD/, /kullanici/reel/KOD/
+    // /username/p/CODE/, /username/reel/CODE/
     if (parts.length >= 3 && USERNAME.test(parts[0]) && MEDIA_PATHS[parts[1]]) {
       return media(parts[2], MEDIA_PATHS[parts[1]], parts[0].toLowerCase());
     }
-    // /stories/kullanici/ID/
+    // /stories/username/ID/
     if (parts[0] === 'stories' && USERNAME.test(parts[1] || '') && /^\d+$/.test(parts[2] || '')) {
       const username = parts[1].toLowerCase();
       return {
@@ -44,7 +44,7 @@ var InstaBasket = (() => {
         url: `${BASE}stories/${username}/${parts[2]}/`,
       };
     }
-    // /kullanici/ ve profilin alt sekmeleri (/kullanici/reels/, /kullanici/tagged/)
+    // /username/ and profile sub-tabs (/username/reels/, /username/tagged/)
     if (parts.length >= 1 && parts.length <= 2 && USERNAME.test(parts[0]) && !RESERVED.has(parts[0].toLowerCase())) {
       return { kind: 'profile', username: parts[0].toLowerCase() };
     }
@@ -72,8 +72,8 @@ var InstaBasket = (() => {
     return { profiles: profiles.sort(byNewest), media: mediaList.sort(byNewest) };
   }
 
-  // 0.1 sürümündeki düz "basket" listesini yeni yapıya taşır. Eksik bilgiler
-  // (sahip, küçük resim) bir sonraki Instagram ziyaretinde tamamlanır.
+  // Moves the flat "basket" list from version 0.1 into the new layout. Missing
+  // details (owner, thumbnail) are filled in on the next Instagram visit.
   async function migrate(all) {
     if (!Array.isArray(all.basket)) return;
     const next = {};
@@ -116,7 +116,7 @@ var InstaBasket = (() => {
     saveProfile: (p) => merge('p:' + p.username, p),
     saveMedia: (m) => merge('m:' + m.key, strip(m)),
     removeMedia: (key) => chrome.storage.local.remove('m:' + key),
-    // Profil silinince ona ait görseller de silinir.
+    // Removing a profile also removes its media.
     async removeProfile(username) {
       const { media: list } = await load();
       const keys = ['p:' + username];

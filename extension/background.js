@@ -1,11 +1,12 @@
-// Instagram CDN'inden görseli indirip kare olarak küçültür ve data: URL döndürür.
-// Content script bunu kendisi yapamaz: CDN farklı bir alan adında.
+// Downloads an image from Instagram's CDN, crops it to a square thumbnail and
+// returns it as a data: URL. The content script can't do this itself because
+// the CDN is on a different origin.
 const ALLOWED_HOSTS = /(^|\.)(cdninstagram\.com|fbcdn\.net)$/;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type !== 'thumbnail') return;
   thumbnail(msg.url, msg.size).then(sendResponse, () => sendResponse(null));
-  return true; // yanıt asenkron
+  return true; // respond asynchronously
 });
 
 async function thumbnail(url, size) {
@@ -15,7 +16,7 @@ async function thumbnail(url, size) {
   if (!res.ok) return null;
   const bitmap = await createImageBitmap(await res.blob());
 
-  // Ortadan kare kırp.
+  // Center-crop to a square.
   const side = Math.min(bitmap.width, bitmap.height);
   const out = Math.min(size || 240, side);
   const canvas = new OffscreenCanvas(out, out);

@@ -1,12 +1,12 @@
-// Instagram sayfasına URL içeren bir sürükleme girince (adres çubuğundan ya da
-// sayfadaki bir link/gönderiden) köşede bir bırakma alanı gösterir ve bırakılan
-// profili ya da gönderiyi sepete ekler.
+// When a drag carrying a URL enters an Instagram page (from the address bar or
+// from a link/post on the page), shows a drop zone in the corner and adds the
+// dropped profile or post to the basket.
 (() => {
   const HIDE_DELAY = 400;
-  const RETRY_AFTER = 6 * 60 * 60 * 1000; // eksik bilgiyi en fazla 6 saatte bir yeniden dene
+  const RETRY_AFTER = 6 * 60 * 60 * 1000; // retry missing details at most every 6 hours
   let host, zone, label, hideTimer, resetTimer, busy = false;
 
-  // ---- Sepete ekleme ----
+  // ---- Adding to the basket ----
 
   async function enrichProfile(username) {
     let info = {};
@@ -20,7 +20,7 @@
     return InstaBasket.saveProfile(update);
   }
 
-  // Görselin sahibi listede yoksa listeye ekler. Yeni eklendiyse true döner.
+  // Adds the media owner to the profile list if missing. Returns true if newly added.
   async function ensureProfile(username) {
     if (await InstaBasket.getProfile(username)) return false;
     await InstaBasket.saveProfile({ username, addedAt: Date.now() });
@@ -46,28 +46,28 @@
 
   async function add(raw) {
     const item = InstaBasket.parse(raw);
-    if (!item) return { state: 'bad', text: 'Instagram profili ya da gönderisi değil' };
+    if (!item) return { state: 'bad', text: 'Not an Instagram profile or post' };
 
     if (item.kind === 'profile') {
-      if (await InstaBasket.getProfile(item.username)) return { state: 'dup', text: `@${item.username} zaten listede` };
+      if (await InstaBasket.getProfile(item.username)) return { state: 'dup', text: `@${item.username} is already in the list` };
       await InstaBasket.saveProfile({ username: item.username, addedAt: Date.now() });
       await enrichProfile(item.username);
-      return { state: 'done', text: `@${item.username} eklendi ✓` };
+      return { state: 'done', text: `@${item.username} added ✓` };
     }
 
-    if (await InstaBasket.getMedia(item.key)) return { state: 'dup', text: 'Bu gönderi zaten sepette' };
+    if (await InstaBasket.getMedia(item.key)) return { state: 'dup', text: 'This post is already in the basket' };
     await InstaBasket.saveMedia({ ...item, addedAt: Date.now() });
     const saved = await enrichMedia(item);
-    if (!saved.username) return { state: 'done', text: 'Eklendi ✓ (sahibi bulunamadı)' };
+    if (!saved.username) return { state: 'done', text: 'Added ✓ (owner not found)' };
     const isNew = await ensureProfile(saved.username);
     return {
       state: 'done',
-      text: isNew ? `Eklendi ✓ @${saved.username} de listeye alındı` : `@${saved.username} altına eklendi ✓`,
+      text: isNew ? `Added ✓ @${saved.username} was added to profiles too` : `Added under @${saved.username} ✓`,
     };
   }
 
-  // Önceden eklenmiş ama bilgisi eksik kalan kayıtları (ağ hatası, eski sürümden
-  // taşınan kayıtlar) Instagram açıkken arka planda tamamlar.
+  // Fills in records that were saved with missing details (network errors,
+  // records migrated from the old version) in the background while Instagram is open.
   async function fillMissing() {
     const { profiles, media } = await InstaBasket.load();
     const stale = (x) => !x.triedAt || Date.now() - x.triedAt > RETRY_AFTER;
@@ -84,7 +84,7 @@
     }
   }
 
-  // ---- Bırakma alanı ----
+  // ---- Drop zone ----
 
   function hasUrl(e) {
     return e.dataTransfer && Array.from(e.dataTransfer.types).includes('text/uri-list');
@@ -93,7 +93,7 @@
   function build() {
     host = document.createElement('div');
     host.id = 'instabasket-host';
-    // Instagram'ın CSS'i bırakma alanını etkilemesin diye shadow DOM.
+    // Shadow DOM keeps Instagram's CSS away from the drop zone.
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `
       <style>
@@ -146,7 +146,7 @@
     if (busy) return;
     mount();
     zone.className = 'zone' + (zone.classList.contains('over') ? ' over' : '');
-    label.textContent = 'Sepete bırak';
+    label.textContent = 'Drop into basket';
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hide, HIDE_DELAY);
   }
@@ -166,26 +166,26 @@
 
   async function run(raw) {
     busy = true;
-    flash('busy', 'Ekleniyor…');
+    flash('busy', 'Adding…');
     let result;
     try {
       result = await add(raw);
     } catch {
-      // Eklenti güncellenip sayfa yenilenmediyse chrome.storage erişilemez olur.
-      result = { state: 'bad', text: 'Sayfayı yenileyip tekrar dene' };
+      // chrome.storage becomes unavailable if the extension was reloaded but the page wasn't.
+      result = { state: 'bad', text: 'Reload the page and try again' };
     }
     busy = false;
     flash(result.state, result.text, 1600);
     return result;
   }
 
-  // Sürükleme sayfanın üzerinde olduğu sürece dragover sürekli tetiklenir;
-  // kesilince (bırakıldı, iptal edildi, pencereden çıkıldı) alan kendiliğinden kapanır.
+  // dragover keeps firing while a drag is over the page; once it stops (dropped,
+  // cancelled, left the window) the zone hides itself.
   for (const type of ['dragenter', 'dragover']) {
     window.addEventListener(type, (e) => { if (hasUrl(e)) show(); }, true);
   }
 
-  // Popup'taki "Bu sayfayı ekle" butonu.
+  // The popup's "Add this page" button.
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type !== 'add') return;
     run(location.href).then(sendResponse);

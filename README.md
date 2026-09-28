@@ -1,26 +1,26 @@
 # InstaBasket
 
-Instagram'da profilleri ve gönderileri sürükleyip bir "sepete" bırakmanı sağlayan Chrome eklentisi.
+A Chrome extension that lets you drag Instagram profiles and posts into a "basket".
 
-## Nasıl çalışır
+## How it works
 
-- `instagram.com` üzerindeyken adres çubuğundaki URL'yi (ya da sayfadaki bir profil/gönderi linkini) sürükleyip sayfanın üzerine getir.
-- Sağ üst köşede **🧺 Sepete bırak** kutusu açılır; linki oraya bırak.
-- Sürüklemek yerine eklenti ikonuna tıklayıp **+ Bu sayfayı ekle** butonunu da kullanabilirsin.
+- While on `instagram.com`, drag the URL from the address bar (or a profile/post link on the page) over the page.
+- A **🧺 Drop into basket** box appears in the top-right corner; drop the link there.
+- Instead of dragging, you can also click the extension icon and use **+ Add this page**.
 
-Sepet iki bölümden oluşur:
+The basket has two sections:
 
-- **Profiller:** Profil linki bırakınca profil, fotoğrafı ve adıyla birlikte eklenir.
-- **Görseller:** Gönderi, reel ya da video linki bırakınca (ör. `instagram.com/p/KOD/?img_index=1`) gönderinin sahibi bulunur ve görsel o kullanıcının altına eklenir. Kullanıcı profillerde yoksa otomatik olarak profillere de eklenir.
+- **Profiles:** Dropping a profile link adds the profile with its picture and name.
+- **Media:** Dropping a post, reel or video link (e.g. `instagram.com/p/CODE/?img_index=1`) looks up the post's owner and files it under that user. If the owner isn't in Profiles yet, they're added automatically.
 
-Profil ve kapak görselleri eklentinin içine küçük resim olarak kaydedilir; Instagram'ın görsel linkleri zamanla geçersiz olsa da listede görünmeye devam ederler. Bir bilgi o an çekilemezse (bağlantı hatası vb.) Instagram'ı bir sonraki açışında arka planda tamamlanır.
+Profile pictures and cover images are stored inside the extension as small thumbnails, so they keep showing even after Instagram's image links expire. If some detail can't be fetched at the moment (network error, etc.), it's filled in in the background the next time you open Instagram.
 
-## Kurulum
+## Installation
 
-1. Depoyu ZIP olarak indirip aç.
-2. Chrome'da `chrome://extensions` adresini aç.
-3. Sağ üstten **Geliştirici modu**nu aç.
-4. **Paketlenmemiş öğe yükle** butonuna basıp `extension` klasörünü seç.
-5. Açık Instagram sekmeleri varsa yenile.
+1. Download the repository as a ZIP and extract it.
+2. Open `chrome://extensions` in Chrome.
+3. Turn on **Developer mode** in the top-right corner.
+4. Click **Load unpacked** and select the `extension` folder.
+5. Reload any open Instagram tabs.
 
-Eklentiyi güncellediğinde `chrome://extensions` sayfasında eklentinin yenile (⟳) butonuna bas ve Instagram sekmelerini yenile.
+After updating the extension, click its reload (⟳) button on `chrome://extensions` and reload your Instagram tabs.

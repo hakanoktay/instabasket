@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="popup.css">
@@ -7,32 +7,32 @@
 <body>
   <header>
     <h1>🧺 InstaBasket</h1>
-    <button id="add-current" class="primary" hidden>+ Bu sayfayı ekle</button>
+    <button id="add-current" class="primary" hidden>+ Add this page</button>
   </header>
   <p id="add-result" hidden></p>
 
   <nav>
-    <button class="tab" data-tab="profiles">Profiller <span id="profiles-count"></span></button>
-    <button class="tab" data-tab="media">Görseller <span id="media-count"></span></button>
+    <button class="tab" data-tab="profiles">Profiles <span id="profiles-count"></span></button>
+    <button class="tab" data-tab="media">Media <span id="media-count"></span></button>
   </nav>
 
   <section id="profiles">
-    <p class="empty">Henüz profil yok. Instagram'da bir profilin ya da gönderinin linkini sürükleyip köşede açılan kutuya bırak.</p>
+    <p class="empty">No profiles yet. On Instagram, drag a profile or post link and drop it into the box that appears in the corner.</p>
     <ul class="profiles"></ul>
   </section>
 
   <section id="media" hidden>
     <div id="filter" hidden>
       <span></span>
-      <button title="Filtreyi kaldır">✕</button>
+      <button title="Clear filter">✕</button>
     </div>
-    <p class="empty">Henüz görsel yok. Bir gönderi, reel ya da video linkini sürükleyip bırak; sahibi de profillere eklenir.</p>
+    <p class="empty">No media yet. Drag and drop a post, reel or video link; its owner is added to profiles too.</p>
     <div class="groups"></div>
   </section>
 
   <footer>
-    <button id="copy">Linkleri kopyala</button>
-    <button id="clear">Tümünü temizle</button>
+    <button id="copy">Copy links</button>
+    <button id="clear">Clear all</button>
   </footer>
 
   <script src="basket.js"></script>

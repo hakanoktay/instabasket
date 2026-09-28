@@ -1,5 +1,5 @@
 const TYPE_LABELS = {
-  photo: 'Fotoğraf', album: 'Albüm', video: 'Video', reel: 'Reel', story: 'Hikaye', post: 'Gönderi',
+  photo: 'Photo', album: 'Album', video: 'Video', reel: 'Reel', story: 'Story', post: 'Post',
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -44,9 +44,9 @@ function renderProfiles() {
     const n = counts[p.username] || 0;
     const showMedia = el('button', {
       class: 'count-link',
-      title: 'Bu kullanıcının görsellerini göster',
+      title: 'Show this user\'s media',
       onclick: () => { filterUser = p.username; render(); selectTab('media'); },
-    }, `${n} görsel`);
+    }, `${n} media`);
     showMedia.disabled = n === 0;
     return el('li', {},
       avatar(p, p.username),
@@ -56,9 +56,9 @@ function renderProfiles() {
       showMedia,
       el('button', {
         class: 'remove',
-        title: 'Sil',
+        title: 'Delete',
         onclick: async () => {
-          const msg = n ? `@${p.username} ve ona ait ${n} görsel silinsin mi?` : `@${p.username} silinsin mi?`;
+          const msg = n ? `Delete @${p.username} and their ${n} media?` : `Delete @${p.username}?`;
           if (confirm(msg)) await InstaBasket.removeProfile(p.username);
         },
       }, '✕'),
@@ -71,10 +71,10 @@ function renderMedia() {
   const list = filterUser ? state.media.filter((m) => m.username === filterUser) : state.media;
 
   $('#filter').hidden = !filterUser;
-  if (filterUser) $('#filter span').textContent = `Sadece @${filterUser}`;
+  if (filterUser) $('#filter span').textContent = `Only @${filterUser}`;
   $('#media .empty').hidden = list.length > 0;
 
-  // Kullanıcıya göre grupla; en son görsel eklenen kullanıcı en üstte.
+  // Group by user; the user with the most recently added media comes first.
   const groups = new Map();
   for (const m of list) {
     const key = m.username || '';
@@ -85,13 +85,13 @@ function renderMedia() {
   $('#media .groups').replaceChildren(...[...groups].map(([username, items]) => el('div', { class: 'group' },
     el('h2', {},
       username ? avatar(profiles[username], username, true) : null,
-      username ? profileLink(username) : el('span', {}, 'Sahibi bulunamadı'),
+      username ? profileLink(username) : el('span', {}, 'Owner not found'),
       el('span', { class: 'n' }, `(${items.length})`)),
     el('div', { class: 'grid' }, ...items.map((m) => el('div', { class: 'tile' },
       el('a', { href: m.url, target: '_blank', title: m.url },
-        m.thumb ? el('img', { src: m.thumb, alt: '' }) : el('div', { class: 'placeholder' }, 'Önizleme yok')),
-      el('span', { class: 'badge' }, TYPE_LABELS[m.type] || 'Gönderi'),
-      el('button', { class: 'remove', title: 'Sil', onclick: () => InstaBasket.removeMedia(m.key) }, '✕'),
+        m.thumb ? el('img', { src: m.thumb, alt: '' }) : el('div', { class: 'placeholder' }, 'No preview')),
+      el('span', { class: 'badge' }, TYPE_LABELS[m.type] || 'Post'),
+      el('button', { class: 'remove', title: 'Delete', onclick: () => InstaBasket.removeMedia(m.key) }, '✕'),
     ))),
   )));
 }
@@ -113,15 +113,15 @@ $('#copy').addEventListener('click', async () => {
     ? state.profiles.map((p) => InstaBasket.profileUrl(p.username))
     : (filterUser ? state.media.filter((m) => m.username === filterUser) : state.media).map((m) => m.url);
   await navigator.clipboard.writeText(urls.join('\n'));
-  $('#copy').textContent = 'Kopyalandı ✓';
-  setTimeout(() => { $('#copy').textContent = 'Linkleri kopyala'; }, 1200);
+  $('#copy').textContent = 'Copied ✓';
+  setTimeout(() => { $('#copy').textContent = 'Copy links'; }, 1200);
 });
 
 $('#clear').addEventListener('click', async () => {
-  if (confirm('Tüm profiller ve görseller silinsin mi?')) await InstaBasket.clear();
+  if (confirm('Delete all profiles and media?')) await InstaBasket.clear();
 });
 
-// Açık sekme Instagram'daysa o sayfayı tek tıkla ekle (sürüklemeye gerek kalmadan).
+// If the active tab is an Instagram profile or post, add it with one click (no dragging needed).
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !InstaBasket.parse(tab.url)) return;
@@ -129,16 +129,16 @@ $('#clear').addEventListener('click', async () => {
   button.hidden = false;
   button.addEventListener('click', async () => {
     button.disabled = true;
-    button.textContent = 'Ekleniyor…';
+    button.textContent = 'Adding…';
     let result;
     try {
       result = await chrome.tabs.sendMessage(tab.id, { type: 'add' });
     } catch {
-      result = { text: 'Instagram sekmesini yenileyip tekrar dene' };
+      result = { text: 'Reload the Instagram tab and try again' };
     }
     $('#add-result').hidden = false;
     $('#add-result').textContent = result?.text || '';
-    button.textContent = '+ Bu sayfayı ekle';
+    button.textContent = '+ Add this page';
     button.disabled = false;
   });
 })();
