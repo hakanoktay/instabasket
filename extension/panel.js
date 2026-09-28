@@ -1,0 +1,383 @@
+// The card in the top-right corner of Instagram: the drop target while dragging,
+// then the result of adding (with the list picker) or removing (with undo).
+// Styled after Instagram's own menus and buttons, in light and dark mode.
+var InstaBasketPanel = (() => {
+  const RESULT_MS = 8000; // how long the card stays after adding (paused while hovered)
+  const SHORT_MS = 2500; // errors and "removed"
+  const SEARCH_FROM = 7; // show a search field when there are this many lists
+  let host, card, els, onDrop, keyHandler, current;
+
+  const ICONS = {
+    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  };
+
+  const STYLE = `
+    :host { all: initial; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    .card {
+      --bg: #fff; --elevated: #fafafa; --text: #000; --muted: #737373; --line: #dbdbdb;
+      --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2;
+      --red: #ed4956; --green: #58c322; --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      position: fixed; top: 16px; right: 16px; z-index: 2147483647; width: 340px;
+      max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+      background: var(--bg); color: var(--text); border-radius: 12px; box-shadow: var(--shadow);
+      font: 400 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden; animation: in 0.18s ease-out;
+    }
+    .card.dark {
+      --bg: #262626; --elevated: #363636; --text: #f5f5f5; --muted: #a8a8a8; --line: #363636;
+      --secondary: #363636; --secondary-hover: #4a4a4a; --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    @keyframes in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+    svg { display: block; width: 100%; height: 100%; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+
+    /* Drop target while dragging */
+    .drop {
+      display: none; margin: 12px; padding: 22px 12px; border-radius: 10px; text-align: center;
+      border: 2px dashed var(--line); color: var(--muted); font-weight: 600; transition: all 0.12s;
+    }
+    .drop .icon { width: 36px; height: 36px; margin: 0 auto 8px; color: var(--text); }
+    .card.dropping .drop { display: block; }
+    .card.dropping .head, .card.dropping .picker, .card.dropping .progress { display: none; }
+    .card.over .drop { border-color: var(--blue); border-style: solid; background: rgba(0, 149, 246, 0.08); color: var(--blue); }
+    .card.over .drop .icon { color: var(--blue); }
+
+    /* Result row */
+    .head { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; }
+    .thumb { flex: none; width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: var(--secondary); }
+    .thumb.round { border-radius: 50%; }
+    .thumb.icon { padding: 10px; color: var(--text); }
+    .text { flex: 1; min-width: 0; }
+    .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .sub b { color: var(--text); font-weight: 600; }
+    .state { flex: none; width: 22px; height: 22px; border-radius: 50%; padding: 4px; color: #fff; background: var(--green); }
+    .card.dup .state { background: var(--blue); }
+    .card.bad .state, .card.removed .state { background: var(--red); }
+    .card.busy .state { background: none; border: 2px solid var(--line); border-top-color: var(--blue); animation: spin 0.7s linear infinite; }
+    .card.busy .state svg { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .text-btn { border: none; background: none; padding: 4px 6px; font-weight: 600; color: var(--blue); }
+    .text-btn:hover { color: var(--text); }
+    .text-btn.danger { color: var(--red); }
+    .close { flex: none; width: 28px; height: 28px; padding: 6px; border: none; background: none; border-radius: 50%; color: var(--muted); }
+    .close:hover { background: var(--secondary); color: var(--text); }
+
+    /* List picker, opened with an animation after adding */
+    .picker { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); min-height: 0; }
+    .picker.open { grid-template-rows: 1fr; }
+    .picker-inner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+    .picker-top { display: flex; align-items: center; gap: 8px; padding: 12px 14px 8px; }
+    .picker-top .label { flex: 1; font-weight: 600; }
+    .picker-top .hint { color: var(--muted); font-size: 12px; }
+    .search { display: flex; align-items: center; gap: 8px; margin: 0 12px 8px; padding: 0 10px; height: 36px; border-radius: 8px; background: var(--secondary); color: var(--muted); }
+    .search .i { width: 16px; height: 16px; flex: none; }
+    .search input { flex: 1; min-width: 0; border: none; outline: none; background: none; font: inherit; color: var(--text); }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 12px 12px;
+      max-height: 244px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+      /* Fade the edges when the list scrolls */
+      mask-image: linear-gradient(to bottom, transparent 0, #000 6px, #000 calc(100% - 14px), transparent 100%);
+    }
+    .box {
+      position: relative; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+      min-height: 64px; padding: 10px 34px 10px 12px; text-align: left; border-radius: 10px;
+      border: 1.5px solid var(--line); background: var(--bg);
+      transition: border-color 0.12s, background 0.12s;
+    }
+    /* Boxes slide in only when the picker opens, not on every re-render. */
+    .grid.entering .box { opacity: 0; transform: translateY(6px); animation: box-in 0.28s ease-out forwards; }
+    @keyframes box-in { to { opacity: 1; transform: none; } }
+    .box:hover { background: var(--elevated); }
+    .box .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .box .count { color: var(--muted); font-size: 12px; }
+    .box .tick {
+      position: absolute; top: 50%; right: 10px; width: 20px; height: 20px; margin-top: -10px; padding: 3px;
+      border-radius: 50%; border: 1.5px solid var(--line); color: transparent; transition: all 0.12s;
+    }
+    .box .key {
+      position: absolute; top: 6px; right: 8px; font-size: 10px; line-height: 1; color: var(--muted); display: none;
+    }
+    .box.on { border-color: var(--blue); background: rgba(0, 149, 246, 0.06); }
+    .box.on .tick { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .box.new { align-items: center; justify-content: center; flex-direction: row; gap: 6px; padding: 10px; border-style: dashed; color: var(--muted); font-weight: 600; }
+    .box.new .i { width: 18px; height: 18px; }
+    .box.new input { width: 100%; border: none; outline: none; background: none; font: inherit; font-weight: 600; color: var(--text); text-align: center; }
+    .empty { grid-column: 1 / -1; color: var(--muted); text-align: center; padding: 8px 0; font-size: 12px; }
+
+    /* Countdown until the card closes; pauses on hover */
+    .progress { height: 3px; background: transparent; flex: none; }
+    .bar { height: 100%; background: var(--blue); transform-origin: left; }
+    .bar:not(.run) { visibility: hidden; }
+    .bar.run { animation: countdown var(--ms) linear forwards; }
+    .card:hover .bar.run, .card:focus-within .bar.run { animation-play-state: paused; }
+    @keyframes countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  `;
+
+  function isDarkPage() {
+    // Instagram's own theme, read from the page background.
+    const c = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
+    if (!c || (c[3] !== undefined && +c[3] === 0)) return matchMedia('(prefers-color-scheme: dark)').matches;
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] < 128;
+  }
+
+  function build() {
+    host = document.createElement('div');
+    host.id = 'instabasket-host';
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `<style>${STYLE}</style>
+      <div class="card">
+        <div class="drop"><div class="icon">${ICONS.basket}</div>Drop to add to basket</div>
+        <div class="head">
+          <div class="thumb-slot"></div>
+          <div class="text"><div class="title"></div><div class="sub"></div></div>
+          <div class="action"></div>
+          <div class="state">${ICONS.check}</div>
+          <button class="close" title="Close">${ICONS.close}</button>
+        </div>
+        <div class="picker"><div class="picker-inner">
+          <div class="picker-top"><span class="label">Add to a list</span><span class="hint"></span></div>
+          <label class="search" hidden><span class="i">${ICONS.search}</span><input placeholder="Search lists"></label>
+          <div class="grid"></div>
+        </div></div>
+        <div class="progress"><div class="bar"></div></div>
+      </div>`;
+    card = root.querySelector('.card');
+    els = Object.fromEntries(['thumb-slot', 'title', 'sub', 'action', 'picker', 'search', 'grid', 'bar', 'hint']
+      .map((c) => [c, root.querySelector('.' + c)]));
+    els.searchInput = els.search.querySelector('input');
+
+    root.querySelector('.close').addEventListener('click', hide);
+    els.bar.addEventListener('animationend', hide);
+    els.searchInput.addEventListener('input', () => renderBoxes());
+
+    card.addEventListener('dragenter', (e) => { e.preventDefault(); card.classList.add('over'); });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      card.classList.add('over');
+    });
+    card.addEventListener('dragleave', (e) => { if (!card.contains(e.relatedTarget)) card.classList.remove('over'); });
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove('over');
+      onDrop?.(e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain'));
+    });
+  }
+
+  function mount(state) {
+    if (!host) build();
+    if (!host.isConnected) document.documentElement.appendChild(host);
+    card.className = `card ${state}${isDarkPage() ? ' dark' : ''}`;
+    stopTimer();
+    setKeys(false);
+  }
+
+  function hide() {
+    current = null;
+    setKeys(false);
+    host?.remove();
+  }
+
+  function startTimer(ms) {
+    els.bar.style.setProperty('--ms', ms + 'ms');
+    els.bar.classList.remove('run');
+    void els.bar.offsetWidth; // restart the animation
+    els.bar.classList.add('run');
+  }
+
+  function stopTimer() {
+    els?.bar.classList.remove('run');
+  }
+
+  function setThumb(src, round) {
+    const slot = els['thumb-slot'];
+    if (src) {
+      slot.replaceChildren(Object.assign(document.createElement('img'), { className: 'thumb' + (round ? ' round' : ''), src }));
+    } else {
+      const div = document.createElement('div');
+      div.className = 'thumb icon' + (round ? ' round' : '');
+      div.innerHTML = ICONS.basket;
+      slot.replaceChildren(div);
+    }
+  }
+
+  function setHead(title, sub) {
+    els.title.textContent = title;
+    els.sub.replaceChildren(...(Array.isArray(sub) ? sub : [sub || '']));
+    els.action.replaceChildren();
+  }
+
+  function closePicker() {
+    els.picker.classList.remove('open');
+    els.grid.replaceChildren();
+  }
+
+  // ---- States ----
+
+  // `drop` is called with the dropped URL.
+  function showDrop(drop) {
+    onDrop = drop;
+    if (card?.classList.contains('dropping') && host.isConnected) return;
+    mount('dropping');
+  }
+
+  function isDropping() {
+    return !!host?.isConnected && card.classList.contains('dropping');
+  }
+
+  function showBusy() {
+    mount('busy');
+    setThumb(null);
+    setHead('Adding…', 'Fetching details from Instagram');
+    closePicker();
+  }
+
+  function showError(text) {
+    mount('bad');
+    setThumb(null);
+    setHead(text, '');
+    closePicker();
+    startTimer(SHORT_MS);
+  }
+
+  // After adding (or finding it already saved): the item, then the list boxes.
+  async function showResult(result, onRemove) {
+    const { recordKey } = result;
+    const [record, lists, all] = await Promise.all([
+      InstaBasket.get(recordKey), InstaBasket.getLists(), chrome.storage.local.get(null),
+    ]);
+    if (!record) return showError('Something went wrong');
+    const isProfile = recordKey.startsWith('p:');
+    const user = record.username && all['u:' + record.username];
+
+    mount(result.state === 'dup' ? 'dup' : 'done');
+    setThumb(isProfile ? user?.pic : record.thumb, isProfile);
+    const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
+    if (isProfile) {
+      setHead('@' + record.username, [result.state === 'dup' ? 'Already in ' : 'Saved to ', b('Profiles')]);
+    } else {
+      const owner = record.username ? `@${record.username}` : 'Media';
+      setHead(owner, [result.state === 'dup' ? 'Already in ' : 'Saved to ', b('Media')]);
+    }
+    if (onRemove) {
+      const remove = Object.assign(document.createElement('button'), { className: 'text-btn danger', textContent: 'Remove' });
+      remove.addEventListener('click', onRemove);
+      els.action.replaceChildren(remove);
+    }
+
+    // Counts per list, for the boxes.
+    const counts = {};
+    for (const [k, v] of Object.entries(all)) {
+      if (/^[pm]:/.test(k)) for (const id of v.lists || []) counts[id] = (counts[id] || 0) + 1;
+    }
+    current = { recordKey, record, lists, counts, inLists: new Set(record.lists || []) };
+    els.searchInput.value = '';
+    els.search.hidden = lists.length < SEARCH_FROM;
+    els.hint.textContent = lists.length ? 'Press 1–9' : '';
+    els.grid.classList.add('entering');
+    renderBoxes();
+    setTimeout(() => els.grid.classList.remove('entering'), 700);
+    requestAnimationFrame(() => els.picker.classList.add('open'));
+    setKeys(true);
+    startTimer(RESULT_MS);
+  }
+
+  function renderBoxes() {
+    if (!current) return;
+    const q = els.searchInput.value.trim().toLowerCase();
+    const shown = current.lists.filter((l) => !q || l.name.toLowerCase().includes(q));
+    current.shown = shown;
+
+    const boxes = shown.map((list, i) => {
+      const box = document.createElement('button');
+      box.className = 'box' + (current.inLists.has(list.id) ? ' on' : '');
+      box.style.animationDelay = `${Math.min(i, 8) * 30}ms`;
+      box.innerHTML = `<span class="name"></span><span class="count"></span><span class="tick">${ICONS.check}</span>` +
+        (i < 9 ? `<span class="key">${i + 1}</span>` : '');
+      box.querySelector('.name').textContent = list.name;
+      const n = current.counts[list.id] || 0;
+      box.querySelector('.count').textContent = `${n} item${n === 1 ? '' : 's'}`;
+      box.title = list.name;
+      box.addEventListener('click', () => toggle(list.id));
+      return box;
+    });
+
+    const add = document.createElement('button');
+    add.className = 'box new';
+    add.style.animationDelay = `${Math.min(shown.length, 8) * 30}ms`;
+    add.innerHTML = `<span class="i">${ICONS.plus}</span><span>New list</span>`;
+    add.addEventListener('click', () => {
+      if (add.querySelector('input')) return;
+      const input = Object.assign(document.createElement('input'), { placeholder: 'List name', maxLength: 40 });
+      input.value = q && !shown.length ? els.searchInput.value.trim() : '';
+      add.replaceChildren(input);
+      input.focus();
+      input.addEventListener('keydown', async (e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') return renderBoxes();
+        if (e.key !== 'Enter' || !input.value.trim()) return;
+        const list = await InstaBasket.createList(input.value);
+        current.lists.push(list);
+        els.searchInput.value = '';
+        els.search.hidden = current.lists.length < SEARCH_FROM;
+        await toggle(list.id);
+      });
+    });
+
+    const empty = !shown.length && q ? [Object.assign(document.createElement('div'), { className: 'empty', textContent: 'No matching lists' })] : [];
+    els.grid.replaceChildren(...boxes, ...empty, add);
+    // Number hints only make sense while nothing is being typed.
+    for (const k of els.grid.querySelectorAll('.key')) k.style.display = q ? 'none' : 'block';
+  }
+
+  async function toggle(listId) {
+    if (!current) return;
+    const on = !current.inLists.has(listId);
+    if (on) current.inLists.add(listId);
+    else current.inLists.delete(listId);
+    current.counts[listId] = (current.counts[listId] || 0) + (on ? 1 : -1);
+    renderBoxes();
+    startTimer(RESULT_MS); // interacting keeps the card open
+    await InstaBasket.setInList(current.recordKey, listId, on);
+  }
+
+  // 1–9 toggle the first nine lists while the picker is open.
+  function setKeys(on) {
+    if (keyHandler) removeEventListener('keydown', keyHandler, true);
+    keyHandler = null;
+    if (!on) return;
+    keyHandler = (e) => {
+      if (!current || e.metaKey || e.ctrlKey || e.altKey || !/^[1-9]$/.test(e.key)) return;
+      const t = e.composedPath()[0];
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      const list = current.shown?.[+e.key - 1];
+      if (!list) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggle(list.id);
+    };
+    addEventListener('keydown', keyHandler, true);
+  }
+
+  // After removing: what was removed, with an undo button.
+  function showRemoved(title, thumb, round, onUndo) {
+    mount('removed');
+    setThumb(thumb, round);
+    setHead(title, 'Removed from basket');
+    closePicker();
+    const undo = Object.assign(document.createElement('button'), { className: 'text-btn', textContent: 'Undo' });
+    undo.addEventListener('click', onUndo);
+    els.action.replaceChildren(undo);
+    startTimer(5000);
+  }
+
+  return { isDarkPage, showDrop, isDropping, showBusy, showError, showResult, showRemoved, hide };
+})();

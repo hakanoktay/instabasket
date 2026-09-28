@@ -5,7 +5,7 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 ## How it works
 
 - While on `instagram.com`, drag the URL from the address bar (or a profile/post link on the page) over the page.
-- A **🧺 Drop into basket** box appears in the top-right corner; drop the link there.
+- A card appears in the top-right corner; drop the link on it.
 - Instead of dragging, you can also click the extension icon and use **+ Add this page**.
 
 There are also **🧺 Add to basket** buttons on Instagram itself:
@@ -15,7 +15,11 @@ There are also **🧺 Add to basket** buttons on Instagram itself:
 - next to the Follow button on profile pages,
 - in the Reels viewer, two icons at the top of the right-hand icon column: **Profile** adds the reel's owner, **Media** adds the reel itself.
 
-Buttons turn into **✓ In basket** once the item is saved.
+Once an item is saved its button shows **✓ In basket**. Hovering it turns it into a red **Remove** (like "Following" → "Unfollow" on Instagram); clicking removes the item, and the corner card offers **Undo** for a few seconds.
+
+### After adding
+
+Everything you add is saved right away. The corner card then shows what was added and, below it, your lists as large boxes that slide open. Click boxes (or press **1–9**) to put the item into those lists, or create a new list from the **+ New list** box. With many lists a search field appears and the boxes scroll. The card closes on its own after a few seconds; a bar at the bottom shows the time left, and it pauses while your mouse is over the card.
 
 The basket has two independent sections:
 
@@ -30,8 +34,8 @@ Profiles and media can be sorted into lists (e.g. "Fashion", "Inspiration"); one
 
 - Create a list by typing a name into **New list…** in the popup.
 - Click a list chip to show only what's in it; **All** shows everything. While a list is selected you can rename or delete it (deleting a list keeps its contents).
-- Use the 🏷 button on a profile or media thumbnail to pick its lists.
-- On Instagram, right after adding something, the corner notice shows your lists for a few seconds so you can file the item immediately.
+- Use the tag button on a profile or media thumbnail to pick its lists.
+- On Instagram, right after adding something, the corner card shows your lists so you can file the item immediately.
 
 Profile pictures and cover images are stored inside the extension as small thumbnails, so they keep showing even after Instagram's image links expire. If some detail can't be fetched at the moment (network error, etc.), it's filled in in the background the next time you open Instagram.
 

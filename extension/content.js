@@ -1,10 +1,9 @@
-// When a drag carrying a URL enters an Instagram page (from the address bar or
-// from a link/post on the page), shows a drop zone in the corner and adds the
-// dropped profile or post to the basket. `run` is shared with buttons.js.
+// Adds and removes profiles and media. When a drag carrying a URL enters an
+// Instagram page (from the address bar or a link on the page), shows the drop
+// card in the corner (panel.js). `run` and `remove` are shared with buttons.js.
 var InstaBasketDrop = (() => {
-  const HIDE_DELAY = 400;
+  const DRAG_END_DELAY = 400;
   const RETRY_AFTER = 6 * 60 * 60 * 1000; // retry missing details at most every 6 hours
-  let host, zone, label, listsEl, hideTimer, resetTimer, busy = false;
 
   // ---- Adding to the basket ----
 
@@ -89,132 +88,10 @@ var InstaBasketDrop = (() => {
     }
   }
 
-  // ---- Drop zone ----
-
-  function hasUrl(e) {
-    return e.dataTransfer && Array.from(e.dataTransfer.types).includes('text/uri-list');
-  }
-
-  function build() {
-    host = document.createElement('div');
-    host.id = 'instabasket-host';
-    // Shadow DOM keeps Instagram's CSS away from the drop zone.
-    const root = host.attachShadow({ mode: 'open' });
-    root.innerHTML = `
-      <style>
-        .zone {
-          position: fixed; top: 20px; right: 20px; z-index: 2147483647;
-          width: 250px; min-height: 140px; padding: 12px; box-sizing: border-box;
-          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-          text-align: center; background: rgba(255, 255, 255, 0.97); color: #262626;
-          border: 3px dashed #c13584; border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-          font: 600 15px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          transition: transform 0.12s, background 0.12s;
-        }
-        .zone.over { transform: scale(1.05); background: #fdf2f8; border-style: solid; }
-        .zone.busy { border-style: solid; }
-        .zone.done { border-color: #16a34a; border-style: solid; }
-        .zone.dup { border-color: #d97706; border-style: solid; }
-        .zone.bad { border-color: #dc2626; border-style: solid; }
-        .icon { font-size: 34px; }
-        .lists { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
-        .lists:empty { display: none; }
-        .lists .hint { width: 100%; font-weight: 400; font-size: 12px; color: #737373; }
-        .lists button {
-          font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer;
-          border: 1px solid #dbdbdb; background: #fff; color: #262626; border-radius: 12px; padding: 5px 9px;
-        }
-        .lists button.on { background: #c13584; border-color: #c13584; color: #fff; }
-      </style>
-      <div class="zone"><div class="icon">🧺</div><div class="label"></div><div class="lists"></div></div>`;
-    zone = root.querySelector('.zone');
-    label = root.querySelector('.label');
-    listsEl = root.querySelector('.lists');
-
-    // Keep the notice open while the pointer is on it (e.g. picking lists).
-    zone.addEventListener('mouseenter', () => clearTimeout(resetTimer));
-    zone.addEventListener('mouseleave', () => {
-      if (listsEl.childElementCount) resetTimer = setTimeout(hide, 1500);
-    });
-
-    zone.addEventListener('dragenter', (e) => {
-      e.preventDefault();
-      zone.classList.add('over');
-    });
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-      zone.classList.add('over');
-    });
-    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const dt = e.dataTransfer;
-      run(dt.getData('text/uri-list') || dt.getData('text/plain'));
-    });
-  }
-
-  function mount() {
-    clearTimeout(resetTimer);
-    if (!host) build();
-    if (!host.isConnected) document.documentElement.appendChild(host);
-  }
-
-  function show() {
-    if (busy) return;
-    mount();
-    zone.className = 'zone' + (zone.classList.contains('over') ? ' over' : '');
-    label.textContent = 'Drop into basket';
-    listsEl.replaceChildren();
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(hide, HIDE_DELAY);
-  }
-
-  function hide() {
-    clearTimeout(hideTimer);
-    host?.remove();
-  }
-
-  function flash(state, text, ms) {
-    mount();
-    clearTimeout(hideTimer);
-    zone.className = 'zone ' + state;
-    label.textContent = text;
-    listsEl.replaceChildren();
-    if (ms) resetTimer = setTimeout(hide, ms);
-  }
-
-  // After adding, offers the user's lists as toggles so the item can be filed right away.
-  async function offerLists(recordKey) {
-    const [lists, record] = await Promise.all([
-      InstaBasket.getLists(),
-      recordKey.startsWith('p:') ? InstaBasket.getProfile(recordKey.slice(2)) : InstaBasket.getMedia(recordKey.slice(2)),
-    ]);
-    if (!lists.length || !record) return;
-    const inLists = new Set(record.lists || []);
-    listsEl.replaceChildren(
-      Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Add to list:' }),
-      ...lists.map((list) => {
-        const b = document.createElement('button');
-        b.textContent = list.name;
-        b.classList.toggle('on', inLists.has(list.id));
-        b.addEventListener('click', async () => {
-          const on = !b.classList.contains('on');
-          b.classList.toggle('on', on);
-          await InstaBasket.setInList(recordKey, list.id, on);
-        });
-        return b;
-      }),
-    );
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(hide, 4500);
-  }
+  // ---- Adding and removing, with feedback in the corner card ----
 
   async function run(raw) {
-    busy = true;
-    flash('busy', 'Adding…');
+    InstaBasketPanel.showBusy();
     let result;
     try {
       result = await add(raw);
@@ -222,16 +99,42 @@ var InstaBasketDrop = (() => {
       // chrome.storage becomes unavailable if the extension was reloaded but the page wasn't.
       result = { state: 'bad', text: 'Reload the page and try again' };
     }
-    busy = false;
-    flash(result.state, result.text, 1600);
-    if (result.recordKey) await offerLists(result.recordKey).catch(() => {});
+    if (result.recordKey) await InstaBasketPanel.showResult(result, () => remove(result.recordKey));
+    else InstaBasketPanel.showError(result.text);
     return result;
   }
 
-  // dragover keeps firing while a drag is over the page; once it stops (dropped,
-  // cancelled, left the window) the zone hides itself.
+  // Removes a saved profile or media item and offers to undo it.
+  async function remove(recordKey) {
+    const record = await InstaBasket.remove(recordKey);
+    if (!record) return;
+    const isProfile = recordKey.startsWith('p:');
+    const user = record.username && (await InstaBasket.getUser(record.username));
+    InstaBasketPanel.showRemoved(
+      record.username ? '@' + record.username : 'Media',
+      isProfile ? user?.pic : record.thumb,
+      isProfile,
+      async () => {
+        await InstaBasket.restore(recordKey, record);
+        await InstaBasketPanel.showResult({ state: 'dup', recordKey }, () => remove(recordKey));
+      },
+    );
+  }
+
+  // Show the drop card while a drag carrying a URL is over the page. dragover
+  // keeps firing during the drag; once it stops (dropped, cancelled, left the
+  // window) the card hides itself.
+  let dragTimer;
+  function hasUrl(e) {
+    return e.dataTransfer && Array.from(e.dataTransfer.types).includes('text/uri-list');
+  }
   for (const type of ['dragenter', 'dragover']) {
-    window.addEventListener(type, (e) => { if (hasUrl(e)) show(); }, true);
+    window.addEventListener(type, (e) => {
+      if (!hasUrl(e)) return;
+      InstaBasketPanel.showDrop((url) => { clearTimeout(dragTimer); run(url); });
+      clearTimeout(dragTimer);
+      dragTimer = setTimeout(() => { if (InstaBasketPanel.isDropping()) InstaBasketPanel.hide(); }, DRAG_END_DELAY);
+    }, true);
   }
 
   // The popup's "Add this page" button.
@@ -243,5 +146,5 @@ var InstaBasketDrop = (() => {
 
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
-  return { run };
+  return { run, remove };
 })();

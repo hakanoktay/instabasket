@@ -10,47 +10,72 @@
 // icon column next to the video.
 (() => {
   const SCAN_DELAY = 250;
-  const buttons = new Set(); // { host, button, variant, idle, target }
+  const buttons = new Set(); // { host, button, target, label }
   const owners = new Map(); // shortcode → username, for reels whose owner link isn't found
   let scanTimer;
   let lastHref = location.href;
 
   const ICONS = {
+    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
     profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
     media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M3 13l4-4 5 5"/><path d="M20 14v6M17 17h6"/></svg>',
-    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
   };
 
+  // Instagram's colours: blue for actions, red for destructive ones, grey
+  // secondary buttons. A saved button shows its state; hovering it turns it
+  // into "Remove" (like "Following" → "Unfollow").
   const STYLE = `
     :host { all: initial; }
     button {
-      display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;
-      font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      border-radius: 8px; border: 1px solid #c13584; background: #fff; color: #c13584;
-      padding: 5px 9px;
+      --blue: #0095f6; --red: #ed4956; --text: #000; --muted: #737373; --secondary: #efefef; --secondary-hover: #dbdbdb;
+      position: relative; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;
+      font: 600 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      border: none; background: none; padding: 0; color: var(--text);
     }
-    button:hover { background: #fdf2f8; }
-    button.saved { border-color: #16a34a; color: #16a34a; background: #fff; cursor: default; }
-    button.busy { opacity: 0.6; cursor: progress; }
-    .inline { margin-left: 8px; vertical-align: middle; }
-    .header { padding: 7px 12px; font-size: 14px; }
+    button.dark { --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --secondary-hover: #262626; }
+    button.busy { opacity: 0.5; cursor: progress; }
+    .view { display: inline-flex; align-items: center; gap: 6px; }
+    .view svg { width: 16px; height: 16px; flex: none; }
+    .rm, .done { display: none; }
+    .saved .add { display: none; }
+    .saved .done { display: inline-flex; }
+    .saved:hover .done { display: none; }
+    .saved:hover .rm { display: inline-flex; }
+
+    /* Next to a post's date: a text button, like Instagram's blue "Follow" links. */
+    .inline { margin-left: 10px; font-size: 12px; vertical-align: middle; color: var(--blue); }
+    .inline .view svg { width: 14px; height: 14px; }
+    .inline:hover { color: var(--text); }
+    .inline.saved { color: var(--muted); }
+    .inline.saved:hover { color: var(--red); }
+
+    /* Profile header: a grey secondary button, like "Message". */
+    .header { height: 32px; padding: 0 16px; border-radius: 8px; background: var(--secondary); }
+    .header:hover { background: var(--secondary-hover); }
+    .header.saved:hover { color: var(--red); }
+
+    /* Thumbnails: a round icon button in the corner, shown on hover. */
     .overlay {
-      position: absolute; top: 8px; right: 8px; z-index: 2; padding: 6px 8px;
-      border: none; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 12px;
-      opacity: 0; transition: opacity 0.12s;
+      position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; justify-content: center;
+      border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; backdrop-filter: blur(4px);
+      opacity: 0; transform: scale(0.9); transition: opacity 0.15s, transform 0.15s, background 0.15s;
     }
-    /* Shown when hovering the thumbnail; always shown once it's in the basket. */
-    :host-context(a:hover) .overlay, .overlay.saved, .overlay.busy { opacity: 1; }
+    .overlay .view svg { width: 18px; height: 18px; }
+    :host-context(a:hover) .overlay, .overlay.saved, .overlay.busy { opacity: 1; transform: none; }
     .overlay:hover { background: rgba(0, 0, 0, 0.8); }
-    .overlay.saved { background: rgba(22, 163, 74, 0.9); color: #fff; }
-    /* Reels viewer: styled like Instagram's own icon column (icon + small caption). */
-    .reel {
-      flex-direction: column; gap: 6px; padding: 4px; border: none; background: none;
-      color: inherit; font-weight: 400;
-    }
-    .reel:hover { background: none; opacity: 0.7; }
-    .reel.saved { color: #22c55e; background: none; border: none; }
-    .reel svg { width: 26px; height: 26px; display: block; }
+    .overlay.saved { background: var(--blue); }
+    .overlay.saved:hover { background: var(--red); }
+    .overlay .label { display: none; }
+
+    /* Reels viewer: icon with a caption, like Instagram's own icon column. */
+    .reel { flex-direction: column; color: inherit; font-weight: 400; font-size: 12px; padding: 4px; }
+    .reel .view { flex-direction: column; gap: 6px; }
+    .reel .view svg { width: 26px; height: 26px; }
+    .reel:hover { opacity: 0.7; }
+    .reel.saved { color: var(--blue); }
+    .reel.saved:hover { color: var(--red); opacity: 1; }
   `;
 
   const storageKey = (item) => (item.kind === 'profile' ? 'p:' + item.username : 'm:' + item.key);
@@ -59,16 +84,24 @@
   // it. `target()` returns { url, key } for what the button adds (or null if it
   // can't be determined yet); it's re-evaluated because in the Reels viewer the
   // same button can end up pointing at a different reel.
+  //   opts.icon / opts.label: icon and text shown while not saved
   function makeButton(variant, target, opts = {}) {
     const host = document.createElement('span');
     host.dataset.instabasket = variant;
     if (variant === 'overlay') Object.assign(host.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
     const root = host.attachShadow({ mode: 'open' });
-    root.innerHTML = `<style>${STYLE}</style><button class="${opts.cls || variant}"></button>`;
+    const label = opts.label || 'Add to basket';
+    const savedLabel = opts.savedLabel || 'In basket';
+    root.innerHTML = `<style>${STYLE}</style>
+      <button class="${variant}${InstaBasketPanel.isDarkPage() && variant !== 'reel' ? ' dark' : ''}">
+        <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
+        <span class="view done">${ICONS.check}<span class="label">${savedLabel}</span></span>
+        <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
+      </button>`;
     const button = root.querySelector('button');
     if (variant === 'overlay') button.style.pointerEvents = 'auto';
 
-    const entry = { host, button, variant, target, idle: opts.idle, icon: opts.icon, caption: opts.caption };
+    const entry = { host, button, target, label };
     buttons.add(entry);
     setSaved(entry, false);
     refresh(entry);
@@ -78,12 +111,12 @@
     button.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (button.classList.contains('saved') || button.classList.contains('busy')) return;
+      if (button.classList.contains('busy')) return;
       button.classList.add('busy');
-      if (!entry.icon) button.textContent = variant === 'overlay' ? '…' : 'Adding…';
       const t = await target(true);
-      if (t) await InstaBasketDrop.run(t.url);
-      else await InstaBasketDrop.run(null); // shows "not an Instagram profile or post"
+      if (!t) await InstaBasketDrop.run(null); // shows "not an Instagram profile or post"
+      else if (button.classList.contains('saved')) await InstaBasketDrop.remove(t.key);
+      else await InstaBasketDrop.run(t.url);
       button.classList.remove('busy');
       refresh(entry);
     });
@@ -91,15 +124,8 @@
   }
 
   function setSaved(entry, saved) {
-    const { button } = entry;
-    button.classList.toggle('saved', saved);
-    button.title = saved ? 'In basket' : entry.caption ? `Add ${entry.caption.toLowerCase()} to basket` : 'Add to basket';
-    if (entry.icon) {
-      button.innerHTML = (saved ? ICONS.check : ICONS[entry.icon]) + `<span>${entry.caption}</span>`;
-    } else {
-      const overlay = entry.variant === 'overlay';
-      button.textContent = saved ? (overlay ? '✓' : '✓ In basket') : entry.idle;
-    }
+    entry.button.classList.toggle('saved', saved);
+    entry.button.title = saved ? 'In basket · click to remove' : entry.label;
   }
 
   async function refresh(entry) {
@@ -136,7 +162,7 @@
       link.dataset.instabasketDone = '1';
       const item = postItem(link.getAttribute('href'));
       if (!item) continue;
-      link.after(makeButton('inline', fixed(item, item.url), { idle: '🧺 Add to basket' }));
+      link.after(makeButton('inline', fixed(item, item.url)));
     }
   }
 
@@ -151,7 +177,7 @@
       const item = postItem(link.getAttribute('href'));
       if (!item) continue;
       if (getComputedStyle(link).position === 'static') link.style.position = 'relative';
-      link.appendChild(makeButton('overlay', fixed(item, item.url), { idle: '🧺' }));
+      link.appendChild(makeButton('overlay', fixed(item, item.url)));
     }
   }
 
@@ -172,7 +198,7 @@
     // the profile picture's button has none.
     const actions = [...header.querySelectorAll('button, [role="button"]')]
       .find((b) => b.textContent.trim() && !b.closest('[data-instabasket]'));
-    const host = makeButton('header', fixed(item, InstaBasket.profileUrl(item.username)), { idle: '🧺 Add to basket' });
+    const host = makeButton('header', fixed(item, InstaBasket.profileUrl(item.username)));
     host.dataset.key = wanted;
     Object.assign(host.style, { marginLeft: '8px', display: 'inline-flex', alignSelf: 'center' });
     if (actions) {
@@ -291,8 +317,8 @@
 
       // Match the colour of Instagram's own icons (white on the dark Reels page).
       const color = getComputedStyle(found.first.querySelector('svg') || found.first).color;
-      for (const [icon, caption, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
-        const host = makeButton('reel', target, { cls: 'reel', icon, caption });
+      for (const [icon, label, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
+        const host = makeButton('reel', target, { icon, label, savedLabel: label });
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
         column.insertBefore(host, found.first);
       }

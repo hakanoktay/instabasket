@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "InstaBasket",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Drag Instagram profiles and posts into a basket.",
   "permissions": ["storage", "unlimitedStorage"],
   "host_permissions": [
@@ -19,7 +19,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.instagram.com/*", "https://instagram.com/*"],
-      "js": ["basket.js", "instagram.js", "content.js", "buttons.js"],
+      "js": ["basket.js", "instagram.js", "panel.js", "content.js", "buttons.js"],
       "run_at": "document_idle"
     }
   ]

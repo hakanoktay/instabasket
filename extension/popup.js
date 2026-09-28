@@ -2,7 +2,19 @@ const TYPE_LABELS = {
   photo: 'Photo', album: 'Album', video: 'Video', reel: 'Reel', story: 'Story', post: 'Post',
 };
 
+const ICONS = {
+  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+};
+
 const $ = (sel) => document.querySelector(sel);
+
+function icon(name) {
+  const span = document.createElement('span');
+  span.className = 'i';
+  span.innerHTML = ICONS[name];
+  return span;
+}
 let state = { profiles: [], media: [], users: {}, lists: [] };
 let activeTab = 'profiles';
 let activeList = null; // list id, or null for all
@@ -41,11 +53,11 @@ const visibleMedia = () =>
 function listButton(recordKey, record, extraClass = '') {
   const names = (record.lists || []).map((id) => state.lists.find((l) => l.id === id)?.name).filter(Boolean);
   return el('button', {
-    class: `list-btn ${extraClass} ${names.length ? 'on' : ''}`,
+    class: `icon-btn list-btn ${extraClass} ${names.length ? 'on' : ''}`,
     'data-key': recordKey,
     title: names.length ? `Lists: ${names.join(', ')}` : 'Add to a list',
     onclick: (e) => { e.preventDefault(); e.stopPropagation(); openPicker(recordKey, e.currentTarget); },
-  }, '🏷', names.length > 1 ? el('span', {}, String(names.length)) : null);
+  }, icon('tag'), names.length > 1 ? el('span', { class: 'n' }, String(names.length)) : null);
 }
 
 // ---- Tabs and lists bar ----
@@ -162,8 +174,8 @@ function renderProfiles() {
 
   $('#profiles .empty').hidden = profiles.length > 0;
   $('#profiles .empty').textContent = activeList
-    ? 'No profiles in this list yet. Use 🏷 on a profile to add it.'
-    : 'No profiles yet. On Instagram, use the 🧺 buttons or drag a profile link into the box that appears in the corner.';
+    ? 'No profiles in this list yet. Use the tag button on a profile to add it.'
+    : 'No profiles yet. On Instagram, use the basket buttons or drag a profile link onto the page.';
 
   $('#profiles ul').replaceChildren(...profiles.map((p) => {
     const n = counts[p.username] || 0;
@@ -181,10 +193,10 @@ function renderProfiles() {
         onclick: () => { filterUser = p.username; activeList = null; selectTab('media'); render(); },
       }, `${n} media`),
       el('button', {
-        class: 'remove',
+        class: 'icon-btn remove',
         title: 'Remove profile (their media is kept)',
         onclick: async () => { if (confirm(`Remove @${p.username} from profiles?`)) await InstaBasket.removeProfile(p.username); },
-      }, '✕'),
+      }, icon('trash')),
     );
   }));
 }
@@ -199,8 +211,8 @@ function renderMedia() {
   if (filterUser) $('#filter span').textContent = `Only @${filterUser}`;
   $('#media .empty').hidden = list.length > 0;
   $('#media .empty').textContent = activeList
-    ? 'No media in this list yet. Use 🏷 on a media item to add it.'
-    : 'No media yet. On Instagram, use the 🧺 buttons or drag a post, reel or video link into the corner box.';
+    ? 'No media in this list yet. Use the tag button on a thumbnail to add it.'
+    : 'No media yet. On Instagram, use the basket buttons or drag a post, reel or video link onto the page.';
 
   // Group by user; the user with the most recently added media comes first.
   const groups = new Map();
@@ -218,7 +230,7 @@ function renderMedia() {
       el('span', { class: 'spacer' }),
       username && !saved.has(username)
         ? el('button', {
-          class: 'add-profile', title: 'Add this user to profiles',
+          class: 'text-btn add-profile', title: 'Add this user to profiles',
           onclick: () => InstaBasket.saveProfile({ username, addedAt: Date.now(), lists: [] }),
         }, '+ Profile')
         : username ? el('span', { class: 'saved-profile', title: 'In profiles' }, '✓ Profile') : null),
@@ -227,7 +239,7 @@ function renderMedia() {
         m.thumb ? el('img', { src: m.thumb, alt: '' }) : el('div', { class: 'placeholder' }, 'No preview')),
       el('span', { class: 'badge' }, TYPE_LABELS[m.type] || 'Post'),
       listButton('m:' + m.key, m, 'tile-btn'),
-      el('button', { class: 'remove tile-btn', title: 'Delete', onclick: () => InstaBasket.removeMedia(m.key) }, '✕'),
+      el('button', { class: 'remove tile-btn', title: 'Remove', onclick: () => InstaBasket.removeMedia(m.key) }, icon('trash')),
     ))),
   )));
 }

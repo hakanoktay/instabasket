@@ -152,6 +152,15 @@ var InstaBasket = (() => {
     renameList,
     deleteList,
     setInList,
+    get,
+    // Removes a saved profile or media item by storage key ("p:alice", "m:CODE")
+    // and returns it so the removal can be undone with restore().
+    async remove(recordKey) {
+      const record = await get(recordKey);
+      await chrome.storage.local.remove(recordKey);
+      return record;
+    },
+    restore: (recordKey, record) => chrome.storage.local.set({ [recordKey]: record }),
     async clear() {
       const all = await chrome.storage.local.get(null);
       await chrome.storage.local.remove(Object.keys(all).filter((k) => /^[pmu]:/.test(k) || k === 'basket'));

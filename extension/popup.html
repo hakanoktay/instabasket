@@ -6,8 +6,8 @@
 </head>
 <body>
   <header>
-    <h1>🧺 InstaBasket</h1>
-    <button id="add-current" class="primary" hidden>+ Add this page</button>
+    <h1><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg></span>InstaBasket</h1>
+    <button id="add-current" class="btn primary" hidden>+ Add this page</button>
   </header>
   <p id="add-result" hidden></p>
 
@@ -19,8 +19,8 @@
   <div id="lists">
     <div class="chips"></div>
     <div id="list-actions" hidden>
-      <button id="rename-list">Rename list</button>
-      <button id="delete-list">Delete list</button>
+      <button id="rename-list" class="text-btn">Rename list</button>
+      <button id="delete-list" class="text-btn danger">Delete list</button>
     </div>
   </div>
 
@@ -32,15 +32,15 @@
   <section id="media" hidden>
     <div id="filter" hidden>
       <span></span>
-      <button title="Clear filter">✕</button>
+      <button class="icon-btn" title="Clear filter"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
     </div>
     <p class="empty"></p>
     <div class="groups"></div>
   </section>
 
   <footer>
-    <button id="copy">Copy links</button>
-    <button id="clear">Clear all</button>
+    <button id="copy" class="btn">Copy links</button>
+    <button id="clear" class="btn">Clear all</button>
   </footer>
 
   <div id="picker" hidden></div>
