@@ -6,14 +6,35 @@
 </head>
 <body>
   <header>
-    <h1>🧺 InstaBasket <span id="count"></span></h1>
-    <div class="actions">
-      <button id="copy" title="Tüm linkleri kopyala">Kopyala</button>
-      <button id="clear" title="Sepeti boşalt">Temizle</button>
-    </div>
+    <h1>🧺 InstaBasket</h1>
+    <button id="add-current" class="primary" hidden>+ Bu sayfayı ekle</button>
   </header>
-  <p id="empty">Sepet boş. Instagram'da bir URL'yi sürükleyip köşede açılan kutuya bırak.</p>
-  <ul id="list"></ul>
+  <p id="add-result" hidden></p>
+
+  <nav>
+    <button class="tab" data-tab="profiles">Profiller <span id="profiles-count"></span></button>
+    <button class="tab" data-tab="media">Görseller <span id="media-count"></span></button>
+  </nav>
+
+  <section id="profiles">
+    <p class="empty">Henüz profil yok. Instagram'da bir profilin ya da gönderinin linkini sürükleyip köşede açılan kutuya bırak.</p>
+    <ul class="profiles"></ul>
+  </section>
+
+  <section id="media" hidden>
+    <div id="filter" hidden>
+      <span></span>
+      <button title="Filtreyi kaldır">✕</button>
+    </div>
+    <p class="empty">Henüz görsel yok. Bir gönderi, reel ya da video linkini sürükleyip bırak; sahibi de profillere eklenir.</p>
+    <div class="groups"></div>
+  </section>
+
+  <footer>
+    <button id="copy">Linkleri kopyala</button>
+    <button id="clear">Tümünü temizle</button>
+  </footer>
+
   <script src="basket.js"></script>
   <script src="popup.js"></script>
 </body>

@@ -1,9 +1,17 @@
 {
   "manifest_version": 3,
   "name": "InstaBasket",
-  "version": "0.1.0",
-  "description": "Instagram'da URL'leri sürükleyip sepete bırak.",
-  "permissions": ["storage"],
+  "version": "0.2.0",
+  "description": "Instagram'da profilleri ve gönderileri sürükleyip sepete bırak.",
+  "permissions": ["storage", "unlimitedStorage"],
+  "host_permissions": [
+    "https://www.instagram.com/*",
+    "https://*.cdninstagram.com/*",
+    "https://*.fbcdn.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "InstaBasket",
     "default_popup": "popup.html"
@@ -11,7 +19,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.instagram.com/*", "https://instagram.com/*"],
-      "js": ["basket.js", "content.js"],
+      "js": ["basket.js", "instagram.js", "content.js"],
       "run_at": "document_idle"
     }
   ]
