@@ -1,9 +1,9 @@
 // Adds "Add to basket" buttons to Instagram pages:
-//   - Profile and Media icons in each post's action bar, left of the save icon
-//     (home feed, post page, post modal)
+//   - Profile, Media and Download icons in each post's action bar, left of the
+//     save icon (home feed, post page, post modal)
 //   - on hover over post thumbnails (profile grid, explore)
 //   - next to the Follow button on profile pages
-//   - "Profile" and "Media" icons in the right-hand action column of the Reels viewer
+//   - "Profile", "Media" and "Download" icons in the right-hand action column of the Reels viewer
 //
 // Instagram's markup has no stable class names and its labels are localized, so
 // buttons are anchored on things that rarely change: post links, <time>
@@ -27,6 +27,7 @@
     media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="13" height="13" rx="3"/><circle cx="6.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/><path d="M2.5 13.5l3.5-3.5 5.5 5.5"/><path d="M19 14.5v7M15.5 18h7"/></svg>',
     mediaFilled: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5 2h7a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4H5a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4zM6.5 5.8a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM3 13.3v.2A1.5 1.5 0 0 0 4.5 15h6.3l-4.8-4.8z"/><path d="M15.5 18.5l2.5 2.5 4.5-5"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v12M7 10.5l5 5 5-5"/><path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg>',
   };
 
 
@@ -133,6 +134,31 @@
       else await InstaBasketDrop.run(t.url);
       button.classList.remove('busy');
       refresh(entry);
+    });
+    return host;
+  }
+
+  // A plain command button with no saved state (Download), styled like the others.
+  function makeCommandButton(variant, run, opts) {
+    const host = document.createElement('span');
+    host.dataset.instabasket = variant;
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `<style>${STYLE}</style>
+      <button class="${variant}" title="${opts.title}">
+        <span class="view add">${ICONS[opts.icon]}<span class="label">${opts.label}</span></span>
+      </button>`;
+    const button = root.querySelector('button');
+    for (const type of ['mousedown', 'pointerdown', 'touchstart']) button.addEventListener(type, (e) => e.stopPropagation());
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (button.classList.contains('busy')) return;
+      button.classList.add('busy');
+      try {
+        await run();
+      } finally {
+        button.classList.remove('busy');
+      }
     });
     return host;
   }
@@ -260,6 +286,9 @@
     group.append(
       makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket' }),
       makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket' }),
+      makeCommandButton('action', () => InstaBasketDrop.download(item.code), {
+        icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)',
+      }),
     );
     saveItem.appendChild(group);
   }
@@ -447,6 +476,13 @@
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
         column.insertBefore(host, found.first);
       }
+      const downloadButton = makeCommandButton('reel', async () => {
+        const media = reelMedia(column, memory);
+        if (media?.code) await InstaBasketDrop.download(media.code);
+        else InstaBasketPanel.showError("Couldn't tell which reel this is");
+      }, { icon: 'download', label: 'Download', title: 'Download this reel (best quality)' });
+      Object.assign(downloadButton.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
+      column.insertBefore(downloadButton, found.first);
     }
   }
 

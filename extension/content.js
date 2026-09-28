@@ -146,5 +146,41 @@ var InstaBasketDrop = (() => {
 
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
-  return { run, remove };
+  // Downloads every photo / video of a post in the highest quality, named
+  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>.
+  async function download(code) {
+    InstaBasketPanel.showBusy('Preparing download…', 'Finding the best quality');
+    try {
+      const post = await InstaApi.mediaFiles(code);
+      if (!post.files.length) throw new Error('no files');
+      const stamp = compactTime(post.takenAt ? post.takenAt * 1000 : Date.now());
+      const base = `${post.username || 'instagram'}_${stamp}`;
+      const files = post.files.map((f, i) => ({
+        url: f.url,
+        filename: `${base}${post.files.length > 1 ? `_${i + 1}` : ''}.${extension(f)}`,
+      }));
+      const started = await chrome.runtime.sendMessage({ type: 'download', files });
+      if (!started) throw new Error('not started');
+      const what = post.files.length === 1 ? (post.files[0].kind === 'video' ? 'video' : 'photo') : `${started} files`;
+      InstaBasketPanel.showInfo(`Downloading ${what}`, `${files[0].filename}${files.length > 1 ? ' …' : ''}`, post.thumbUrl);
+      return started;
+    } catch {
+      InstaBasketPanel.showError("Couldn't download this post");
+      return 0;
+    }
+  }
+
+  // 2025-07-27 14:32 → "2507271432" (local time)
+  function compactTime(ms) {
+    const d = new Date(ms);
+    const two = (n) => String(n).padStart(2, '0');
+    return `${two(d.getFullYear() % 100)}${two(d.getMonth() + 1)}${two(d.getDate())}${two(d.getHours())}${two(d.getMinutes())}`;
+  }
+
+  function extension(file) {
+    const m = new URL(file.url).pathname.match(/\.(jpe?g|png|webp|heic|mp4|mov)$/i);
+    return m ? m[1].toLowerCase().replace('jpeg', 'jpg') : file.kind === 'video' ? 'mp4' : 'jpg';
+  }
+
+  return { run, remove, download };
 })();

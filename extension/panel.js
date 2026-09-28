@@ -203,7 +203,9 @@ var InstaBasketPanel = (() => {
   function setThumb(src, round) {
     const slot = els['thumb-slot'];
     if (src) {
-      slot.replaceChildren(Object.assign(document.createElement('img'), { className: 'thumb' + (round ? ' round' : ''), src }));
+      const img = Object.assign(document.createElement('img'), { className: 'thumb' + (round ? ' round' : ''), src });
+      img.onerror = () => setThumb(null, round); // expired or blocked image: show the basket instead
+      slot.replaceChildren(img);
     } else {
       const div = document.createElement('div');
       div.className = 'thumb icon' + (round ? ' round' : '');
@@ -236,14 +238,23 @@ var InstaBasketPanel = (() => {
     return !!host?.isConnected && card.classList.contains('dropping');
   }
 
-  function showBusy() {
+  function showBusy(title = 'Adding…', sub = 'Fetching details from Instagram') {
     mount('busy');
     const spinner = document.createElement('div');
     spinner.className = 'spinner';
     spinner.innerHTML = '<span></span>';
     els['thumb-slot'].replaceChildren(spinner);
-    setHead('Adding…', 'Fetching details from Instagram');
+    setHead(title, sub);
     closePicker();
+  }
+
+  // A short notice with a thumbnail, e.g. after starting downloads.
+  function showInfo(title, sub, thumb) {
+    mount('done');
+    setThumb(thumb, false);
+    setHead(title, sub);
+    closePicker();
+    startTimer(4000);
   }
 
   function showError(text) {
@@ -385,5 +396,5 @@ var InstaBasketPanel = (() => {
     startTimer(5000);
   }
 
-  return { isDarkPage, showDrop, isDropping, showBusy, showError, showResult, showRemoved, hide };
+  return { isDarkPage, showDrop, isDropping, showBusy, showInfo, showError, showResult, showRemoved, hide };
 })();

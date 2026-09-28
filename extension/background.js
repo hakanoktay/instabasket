@@ -1,13 +1,32 @@
-// Downloads an image from Instagram's CDN, crops it to a square thumbnail and
-// returns it as a data: URL. The content script can't do this itself because
-// the CDN is on a different origin.
+// Background work the content script can't do itself because Instagram's CDN
+// is on a different origin: making thumbnails (downloads an image, crops it to
+// a square and returns a data: URL) and saving media files to Downloads.
 const ALLOWED_HOSTS = /(^|\.)(cdninstagram\.com|fbcdn\.net)$/;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type !== 'thumbnail') return;
-  thumbnail(msg.url, msg.size).then(sendResponse, () => sendResponse(null));
-  return true; // respond asynchronously
+  if (msg?.type === 'thumbnail') {
+    thumbnail(msg.url, msg.size).then(sendResponse, () => sendResponse(null));
+    return true; // respond asynchronously
+  }
+  if (msg?.type === 'download') {
+    download(msg.files).then(sendResponse, () => sendResponse(0));
+    return true;
+  }
 });
+
+// Saves files from Instagram's CDN into Downloads/InstaBasket/. Returns how
+// many downloads were started.
+async function download(files) {
+  let started = 0;
+  for (const { url, filename } of files || []) {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' || !ALLOWED_HOSTS.test(u.hostname)) continue;
+    const safe = String(filename).replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 120);
+    await chrome.downloads.download({ url: u.href, filename: `InstaBasket/${safe}`, conflictAction: 'uniquify', saveAs: false });
+    started++;
+  }
+  return started;
+}
 
 async function thumbnail(url, size) {
   const u = new URL(url);

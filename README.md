@@ -10,12 +10,16 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 
 There are also **🧺 Add to basket** buttons on Instagram itself:
 
-- **Profile** and **Media** icons in every post's action bar, just left of Instagram's save icon (home feed, post page and post popup),
+- **Profile**, **Media** and **Download** icons in every post's action bar, just left of Instagram's save icon (home feed, post page and post popup),
 - in the corner of post thumbnails when you hover them (profile grid, explore),
 - next to the Follow button on profile pages,
-- in the Reels viewer, two icons at the top of the right-hand icon column: **Profile** adds the reel's owner, **Media** adds the reel itself.
+- in the Reels viewer, icons at the top of the right-hand icon column: **Profile** adds the reel's owner, **Media** adds the reel itself, **Download** downloads it.
 
 Once an item is saved its button shows **✓ In basket**. Hovering it turns it into a red **Remove** (like "Following" → "Unfollow" on Instagram); clicking removes the item, and the corner card offers **Undo** for a few seconds.
+
+### Downloading
+
+**Download** saves every photo and video of a post (all items of an album) in the highest resolution Instagram offers, into `Downloads/InstaBasket/`. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
 
 ### Video controls
 

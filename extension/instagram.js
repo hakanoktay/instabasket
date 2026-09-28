@@ -92,5 +92,26 @@ var InstaApi = (() => {
     }
   }
 
-  return { profile, media, thumbnail, codeToId };
+  // Every photo / video of a post (all items of an album), each in the highest
+  // resolution Instagram offers, plus the owner and publish time for file names.
+  async function mediaFiles(code) {
+    const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
+    const item = items[0];
+    const parts = item.carousel_media?.length ? item.carousel_media : [item];
+    const largest = (list) => list.reduce((a, b) => ((b.width || 0) * (b.height || 0) > (a.width || 0) * (a.height || 0) ? b : a));
+    const files = parts.map((m) => {
+      if (m.video_versions?.length) return { url: largest(m.video_versions).url, kind: 'video' };
+      if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image' };
+      return null;
+    }).filter(Boolean);
+    const cover = item.image_versions2 || item.carousel_media?.[0]?.image_versions2;
+    return {
+      username: item.user?.username?.toLowerCase() || null,
+      takenAt: item.taken_at || null, // unix seconds
+      thumbUrl: pick(cover?.candidates, 150),
+      files,
+    };
+  }
+
+  return { profile, media, mediaFiles, thumbnail, codeToId };
 })();
