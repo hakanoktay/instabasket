@@ -10,6 +10,10 @@ const ICONS = {
   reel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><path d="M2.5 8h19M9 2.5l3 5.5M15 2.5l3 5.5"/><path d="M10 11.5v6l5-3z" fill="currentColor"/></svg>',
   album: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h11a3 3 0 0 1 3 3v11h-2V6a1 1 0 0 0-1-1H7z"/><rect x="3" y="7" width="14" height="14" rx="2.5"/></svg>',
   video: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
+  open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>',
+  personAdd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
+  personCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4" fill="currentColor"/><path d="M3 21a7 7 0 0 1 12.5-4.3" fill="currentColor"/><path d="M15.5 18l2.5 2.5 4.5-5"/></svg>',
+  personRemove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M16 17h6"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
 };
 
@@ -39,8 +43,8 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-function avatar(username, small) {
-  const cls = 'avatar' + (small ? ' small' : '');
+function avatar(username, size) {
+  const cls = 'avatar' + (size === 'tiny' ? ' tiny' : size ? ' small' : '');
   const pic = state.users[username]?.pic;
   if (pic) return el('img', { class: cls, src: pic, alt: '' });
   return el('span', { class: cls }, (username || '?')[0]);
@@ -222,36 +226,47 @@ function renderMedia() {
     ? 'No media in this list yet. Use the tag button on a thumbnail to add it.'
     : 'No media yet. On Instagram, use the basket buttons or drag a post, reel or video link onto the page.';
 
-  // Group by user; the user with the most recently added media comes first.
-  const groups = new Map();
-  for (const m of list) {
-    const key = m.username || '';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(m);
-  }
+  $('#media .groups').replaceChildren(el('div', { class: 'cards' }, ...list.map((m) => mediaCard(m, saved))));
+}
 
-  $('#media .groups').replaceChildren(...[...groups].map(([username, items]) => el('div', { class: 'group' },
-    el('h2', {},
-      username ? avatar(username, true) : null,
-      username ? profileLink(username) : el('span', {}, 'Owner not found'),
-      el('span', { class: 'n' }, `(${items.length})`),
-      el('span', { class: 'spacer' }),
-      username && !saved.has(username)
-        ? el('button', {
-          class: 'text-btn add-profile', title: 'Add this user to profiles',
-          onclick: () => InstaBasket.saveProfile({ username, addedAt: Date.now(), lists: [] }),
-        }, '+ Profile')
-        : username ? el('span', { class: 'saved-profile', title: 'In profiles' }, 'In profiles') : null),
-    el('div', { class: 'grid' }, ...items.map((m) => el('div', { class: 'tile' },
-      el('a', { href: m.url, target: '_blank', title: m.url },
+// One media item: the thumbnail (tag and open buttons on hover) and, always
+// visible below it, the owner, their profile toggle and the delete button.
+function mediaCard(m, savedProfiles) {
+  const inList = m.lists?.some((id) => state.lists.some((l) => l.id === id));
+  return el('div', { class: 'card' },
+    el('div', { class: 'tile' },
+      el('a', { href: m.url, target: '_blank', title: 'Open on Instagram' },
         m.thumb ? el('img', { src: m.thumb, alt: '' }) : el('div', { class: 'placeholder' }, 'No preview')),
       TYPE_ICONS[m.type] ? el('span', { class: 'type', title: TYPE_LABELS[m.type] }, icon(TYPE_ICONS[m.type])) : null,
-      m.lists?.some((id) => state.lists.some((l) => l.id === id)) ? el('span', { class: 'in-list' }, icon('tagFilled')) : null,
+      inList ? el('span', { class: 'in-list' }, icon('tagFilled')) : null,
       el('div', { class: 'tile-actions' },
         listButton('m:' + m.key, m, 'tile-btn'),
-        el('button', { class: 'icon-btn remove tile-btn', title: 'Remove', onclick: () => InstaBasket.removeMedia(m.key) }, icon('trash'))),
-    ))),
-  )));
+        el('a', { class: 'icon-btn tile-btn', href: m.url, target: '_blank', title: 'Open on Instagram' }, icon('open')))),
+    el('div', { class: 'card-foot' },
+      m.username ? avatar(m.username, 'tiny') : null,
+      m.username
+        ? el('button', {
+          class: 'owner', title: `Show only @${m.username}`,
+          onclick: () => { filterUser = m.username; renderMedia(); },
+        }, '@' + m.username)
+        : el('span', { class: 'owner unknown' }, 'Owner not found'),
+      m.username ? profileToggle(m.username, savedProfiles.has(m.username)) : null,
+      el('button', {
+        class: 'icon-btn remove', title: 'Delete from basket', onclick: () => InstaBasket.removeMedia(m.key),
+      }, icon('trash'))),
+  );
+}
+
+// Adds the owner to Profiles, or (once added) shows that and removes on click
+// – the same "saved → hover to remove" pattern as the buttons on Instagram.
+function profileToggle(username, saved) {
+  return el('button', {
+    class: 'icon-btn profile-toggle' + (saved ? ' saved' : ''),
+    title: saved ? `@${username} is in Profiles · click to remove` : `Add @${username} to Profiles`,
+    onclick: () => (saved
+      ? InstaBasket.removeProfile(username)
+      : InstaBasket.saveProfile({ username, addedAt: Date.now(), lists: [] })),
+  }, icon(saved ? 'personCheck' : 'personAdd'), saved ? icon('personRemove') : null);
 }
 
 async function render() {
