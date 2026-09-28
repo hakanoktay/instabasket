@@ -12,7 +12,8 @@ There are also **🧺 Add to basket** buttons on Instagram itself:
 
 - next to the date under every post (home feed, post page and post popup),
 - in the corner of post thumbnails when you hover them (profile grid, explore),
-- next to the Follow button on profile pages.
+- next to the Follow button on profile pages,
+- in the Reels viewer, two icons at the top of the right-hand icon column: **Profile** adds the reel's owner, **Media** adds the reel itself (and its owner, if missing).
 
 Buttons turn into **✓ In basket** once the item is saved.
 
