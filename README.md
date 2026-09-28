@@ -48,3 +48,7 @@ Profile pictures and cover images are stored inside the extension as small thumb
 5. Reload any open Instagram tabs.
 
 After updating the extension, click its reload (⟳) button on `chrome://extensions` and reload your Instagram tabs.
+
+## Roadmap
+
+Planned features are listed in [ROADMAP.md](ROADMAP.md).
