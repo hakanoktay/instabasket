@@ -188,7 +188,7 @@
       const bar = findActionBar(link);
       if (bar) {
         link.dataset.instabasketDone = '1';
-        if (!bar.row.querySelector(':scope > [data-instabasket="action-group"]')) addActionButtons(bar, item);
+        if (!bar.saveItem.querySelector(':scope > [data-instabasket="action-group"]')) addActionButtons(bar, item);
         continue;
       }
       const tries = (actionTries.get(link) || 0) + 1;
@@ -248,20 +248,20 @@
     };
     const group = document.createElement('span');
     group.dataset.instabasket = 'action-group';
-    // margin-left: auto keeps the group next to the save icon whether the bar
-    // spaces its items with auto margins or with justify-content.
+    // Attached to the save icon and positioned just left of it, outside the
+    // bar's own layout: Instagram lays the bar out differently in the feed
+    // (a fixed grid) and in the post view (a flexible row), and adding an
+    // element to either can push the save icon onto a new line.
+    if (getComputedStyle(saveItem).position === 'static') saveItem.style.position = 'relative';
     Object.assign(group.style, {
-      display: 'inline-flex', alignItems: 'center', marginLeft: 'auto', color: getComputedStyle(save).color,
+      position: 'absolute', right: '100%', top: '50%', transform: 'translateY(-50%)',
+      display: 'inline-flex', alignItems: 'center', color: getComputedStyle(save).color, whiteSpace: 'nowrap',
     });
     group.append(
       makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket' }),
       makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket' }),
     );
-    row.insertBefore(group, saveItem);
-    // If the save icon pushed itself right with its own auto margin, the two
-    // auto margins would split the space; keep ours and drop the gap.
-    const gap = saveItem.getBoundingClientRect().left - group.getBoundingClientRect().right;
-    if (gap > 16) saveItem.style.marginLeft = '0';
+    saveItem.appendChild(group);
   }
 
   // The post's owner: the first profile link in the post above its action bar
