@@ -15,13 +15,19 @@
   let scanTimer;
   let lastHref = location.href;
 
+  // Outline icons for "not saved", filled ones for "saved" – the same
+  // convention as Instagram's bookmark (outline → filled when saved).
   const ICONS = {
     basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
+    basketFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6" fill="none"/></svg>',
     profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
+    // Like Instagram's "Following" icon: a filled person with a check.
+    profileFilled: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4" fill="currentColor"/><path d="M3 21a7 7 0 0 1 12.5-4.3" fill="currentColor"/><path d="M15.5 18l2.5 2.5 4.5-5"/></svg>',
     media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M3 13l4-4 5 5"/><path d="M20 14v6M17 17h6"/></svg>',
-    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    mediaFilled: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="3" fill="currentColor"/><path d="M16.5 19l2.5 2.5 4-4.5"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
   };
+
 
   // Instagram's colours: blue for actions, red for destructive ones, grey
   // secondary buttons. A saved button shows its state; hovering it turns it
@@ -48,7 +54,7 @@
     .inline { margin-left: 10px; font-size: 12px; vertical-align: middle; color: var(--blue); }
     .inline .view svg { width: 14px; height: 14px; }
     .inline:hover { color: var(--text); }
-    .inline.saved { color: var(--muted); }
+    .inline.saved { color: var(--text); }
     .inline.saved:hover { color: var(--red); }
 
     /* Profile header: a grey secondary button, like "Message". */
@@ -65,16 +71,14 @@
     .overlay .view svg { width: 18px; height: 18px; }
     :host-context(a:hover) .overlay, .overlay.saved, .overlay.busy { opacity: 1; transform: none; }
     .overlay:hover { background: rgba(0, 0, 0, 0.8); }
-    .overlay.saved { background: var(--blue); }
     .overlay.saved:hover { background: var(--red); }
     .overlay .label { display: none; }
 
     /* Reels viewer: icon with a caption, like Instagram's own icon column. */
     .reel { flex-direction: column; color: inherit; font-weight: 400; font-size: 12px; padding: 4px; }
     .reel .view { flex-direction: column; gap: 6px; }
-    .reel .view svg { width: 26px; height: 26px; }
+    .reel .view svg { width: 24px; height: 24px; }
     .reel:hover { opacity: 0.7; }
-    .reel.saved { color: var(--blue); }
     .reel.saved:hover { color: var(--red); opacity: 1; }
   `;
 
@@ -95,7 +99,7 @@
     root.innerHTML = `<style>${STYLE}</style>
       <button class="${variant}${InstaBasketPanel.isDarkPage() && variant !== 'reel' ? ' dark' : ''}">
         <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
-        <span class="view done">${ICONS.check}<span class="label">${savedLabel}</span></span>
+        <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
       </button>`;
     const button = root.querySelector('button');

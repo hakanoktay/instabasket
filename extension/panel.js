@@ -22,7 +22,7 @@ var InstaBasketPanel = (() => {
     .card {
       --bg: #fff; --elevated: #fafafa; --text: #000; --muted: #737373; --line: #dbdbdb;
       --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2;
-      --red: #ed4956; --green: #58c322; --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      --red: #ed4956; --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       position: fixed; top: 16px; right: 16px; z-index: 2147483647; width: 340px;
       max-height: calc(100vh - 32px); display: flex; flex-direction: column;
       background: var(--bg); color: var(--text); border-radius: 12px; box-shadow: var(--shadow);
@@ -39,29 +39,32 @@ var InstaBasketPanel = (() => {
 
     /* Drop target while dragging */
     .drop {
-      display: none; margin: 12px; padding: 22px 12px; border-radius: 10px; text-align: center;
+      display: none; margin: 12px; padding: 22px 12px; border-radius: 8px; text-align: center;
       border: 2px dashed var(--line); color: var(--muted); font-weight: 600; transition: all 0.12s;
     }
     .drop .icon { width: 36px; height: 36px; margin: 0 auto 8px; color: var(--text); }
     .card.dropping .drop { display: block; }
     .card.dropping .head, .card.dropping .picker, .card.dropping .progress { display: none; }
-    .card.over .drop { border-color: var(--blue); border-style: solid; background: rgba(0, 149, 246, 0.08); color: var(--blue); }
+    .card.over .drop { border-color: var(--blue); border-style: solid; background: var(--elevated); color: var(--blue); }
     .card.over .drop .icon { color: var(--blue); }
 
     /* Result row */
     .head { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; }
-    .thumb { flex: none; width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: var(--secondary); }
+    .thumb { flex: none; width: 44px; height: 44px; border-radius: 4px; object-fit: cover; background: var(--secondary); }
     .thumb.round { border-radius: 50%; }
     .thumb.icon { padding: 10px; color: var(--text); }
     .text { flex: 1; min-width: 0; }
     .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .sub b { color: var(--text); font-weight: 600; }
-    .state { flex: none; width: 22px; height: 22px; border-radius: 50%; padding: 4px; color: #fff; background: var(--green); }
-    .card.dup .state { background: var(--blue); }
-    .card.bad .state, .card.removed .state { background: var(--red); }
-    .card.busy .state { background: none; border: 2px solid var(--line); border-top-color: var(--blue); animation: spin 0.7s linear infinite; }
-    .card.busy .state svg { display: none; }
+    /* The result is stated in words, as in Instagram's own toasts; errors in red. */
+    .card.bad .title { color: var(--red); }
+    /* Instagram's grey spinner while fetching */
+    .spinner { flex: none; width: 44px; height: 44px; display: grid; place-items: center; }
+    .spinner span {
+      width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid var(--secondary); border-top-color: var(--muted);
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
     .text-btn { border: none; background: none; padding: 4px 6px; font-weight: 600; color: var(--blue); }
     .text-btn:hover { color: var(--text); }
@@ -87,8 +90,8 @@ var InstaBasketPanel = (() => {
     }
     .box {
       position: relative; display: flex; flex-direction: column; justify-content: center; gap: 2px;
-      min-height: 64px; padding: 10px 34px 10px 12px; text-align: left; border-radius: 10px;
-      border: 1.5px solid var(--line); background: var(--bg);
+      min-height: 64px; padding: 10px 34px 10px 12px; text-align: left; border-radius: 8px;
+      border: 1px solid var(--line); background: var(--bg);
       transition: border-color 0.12s, background 0.12s;
     }
     /* Boxes slide in only when the picker opens, not on every re-render. */
@@ -104,7 +107,8 @@ var InstaBasketPanel = (() => {
     .box .key {
       position: absolute; top: 6px; right: 8px; font-size: 10px; line-height: 1; color: var(--muted); display: none;
     }
-    .box.on { border-color: var(--blue); background: rgba(0, 149, 246, 0.06); }
+    /* Selected like accounts in Instagram's share dialog: a filled blue circle with a white check. */
+    .box.on { border-color: var(--muted); }
     .box.on .tick { background: var(--blue); border-color: var(--blue); color: #fff; }
     .box.new { align-items: center; justify-content: center; flex-direction: row; gap: 6px; padding: 10px; border-style: dashed; color: var(--muted); font-weight: 600; }
     .box.new .i { width: 18px; height: 18px; }
@@ -113,7 +117,7 @@ var InstaBasketPanel = (() => {
 
     /* Countdown until the card closes; pauses on hover */
     .progress { height: 3px; background: transparent; flex: none; }
-    .bar { height: 100%; background: var(--blue); transform-origin: left; }
+    .bar { height: 100%; background: var(--muted); opacity: 0.5; transform-origin: left; }
     .bar:not(.run) { visibility: hidden; }
     .bar.run { animation: countdown var(--ms) linear forwards; }
     .card:hover .bar.run, .card:focus-within .bar.run { animation-play-state: paused; }
@@ -138,7 +142,6 @@ var InstaBasketPanel = (() => {
           <div class="thumb-slot"></div>
           <div class="text"><div class="title"></div><div class="sub"></div></div>
           <div class="action"></div>
-          <div class="state">${ICONS.check}</div>
           <button class="close" title="Close">${ICONS.close}</button>
         </div>
         <div class="picker"><div class="picker-inner">
@@ -235,7 +238,10 @@ var InstaBasketPanel = (() => {
 
   function showBusy() {
     mount('busy');
-    setThumb(null);
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.innerHTML = '<span></span>';
+    els['thumb-slot'].replaceChildren(spinner);
     setHead('Adding…', 'Fetching details from Instagram');
     closePicker();
   }

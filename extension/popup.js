@@ -1,9 +1,15 @@
 const TYPE_LABELS = {
   photo: 'Photo', album: 'Album', video: 'Video', reel: 'Reel', story: 'Story', post: 'Post',
 };
+const TYPE_ICONS = { reel: 'reel', album: 'album', video: 'video', story: 'video' };
 
 const ICONS = {
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+  tagFilled: '<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M2 12.4V4a2 2 0 0 1 2-2h8.4l9.6 9.6a1.2 1.2 0 0 1 0 1.7l-8.7 8.7a1.2 1.2 0 0 1-1.7 0zM7.5 5.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>',
+  // Media type glyphs, shown in the corner of thumbnails as on Instagram's grids.
+  reel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><path d="M2.5 8h19M9 2.5l3 5.5M15 2.5l3 5.5"/><path d="M10 11.5v6l5-3z" fill="currentColor"/></svg>',
+  album: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h11a3 3 0 0 1 3 3v11h-2V6a1 1 0 0 0-1-1H7z"/><rect x="3" y="7" width="14" height="14" rx="2.5"/></svg>',
+  video: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
 };
 
@@ -57,7 +63,7 @@ function listButton(recordKey, record, extraClass = '') {
     'data-key': recordKey,
     title: names.length ? `Lists: ${names.join(', ')}` : 'Add to a list',
     onclick: (e) => { e.preventDefault(); e.stopPropagation(); openPicker(recordKey, e.currentTarget); },
-  }, icon('tag'), names.length > 1 ? el('span', { class: 'n' }, String(names.length)) : null);
+  }, icon(names.length ? 'tagFilled' : 'tag'));
 }
 
 // ---- Tabs and lists bar ----
@@ -145,18 +151,20 @@ function renderPicker() {
     ...state.lists.map((list) => {
       const check = el('input', { type: 'checkbox', checked: !!record.lists?.includes(list.id) });
       check.addEventListener('change', () => InstaBasket.setInList(picker.recordKey, list.id, check.checked));
-      return el('label', {}, check, list.name);
+      return el('label', {}, el('span', { class: 'name' }, list.name), check);
     }),
     state.lists.length ? null : el('div', { class: 'none' }, 'No lists yet. Type a name to create one.'),
     input,
   ].filter(Boolean));
   box.hidden = false;
 
-  // Place under the button, kept inside the popup.
+  // Place under the button, or above it when there's no room below, kept inside the popup.
   const r = picker.anchor.getBoundingClientRect();
   const left = Math.min(r.left, document.documentElement.clientWidth - box.offsetWidth - 8);
   box.style.left = `${Math.max(8, left)}px`;
-  box.style.top = `${r.bottom + window.scrollY + 4}px`;
+  const below = innerHeight - r.bottom - 8;
+  const top = below >= box.offsetHeight || r.top < box.offsetHeight ? r.bottom + 4 : r.top - box.offsetHeight - 4;
+  box.style.top = `${Math.max(8, top) + window.scrollY}px`;
   if (!state.lists.length) input.focus();
 }
 
@@ -233,13 +241,15 @@ function renderMedia() {
           class: 'text-btn add-profile', title: 'Add this user to profiles',
           onclick: () => InstaBasket.saveProfile({ username, addedAt: Date.now(), lists: [] }),
         }, '+ Profile')
-        : username ? el('span', { class: 'saved-profile', title: 'In profiles' }, '✓ Profile') : null),
+        : username ? el('span', { class: 'saved-profile', title: 'In profiles' }, 'In profiles') : null),
     el('div', { class: 'grid' }, ...items.map((m) => el('div', { class: 'tile' },
       el('a', { href: m.url, target: '_blank', title: m.url },
         m.thumb ? el('img', { src: m.thumb, alt: '' }) : el('div', { class: 'placeholder' }, 'No preview')),
-      el('span', { class: 'badge' }, TYPE_LABELS[m.type] || 'Post'),
-      listButton('m:' + m.key, m, 'tile-btn'),
-      el('button', { class: 'remove tile-btn', title: 'Remove', onclick: () => InstaBasket.removeMedia(m.key) }, icon('trash')),
+      TYPE_ICONS[m.type] ? el('span', { class: 'type', title: TYPE_LABELS[m.type] }, icon(TYPE_ICONS[m.type])) : null,
+      m.lists?.some((id) => state.lists.some((l) => l.id === id)) ? el('span', { class: 'in-list' }, icon('tagFilled')) : null,
+      el('div', { class: 'tile-actions' },
+        listButton('m:' + m.key, m, 'tile-btn'),
+        el('button', { class: 'icon-btn remove tile-btn', title: 'Remove', onclick: () => InstaBasket.removeMedia(m.key) }, icon('trash'))),
     ))),
   )));
 }
