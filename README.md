@@ -10,7 +10,7 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 
 There are also **🧺 Add to basket** buttons on Instagram itself:
 
-- next to the date under every post (home feed, post page and post popup),
+- **Profile** and **Media** icons in every post's action bar, just left of Instagram's save icon (home feed, post page and post popup),
 - in the corner of post thumbnails when you hover them (profile grid, explore),
 - next to the Follow button on profile pages,
 - in the Reels viewer, two icons at the top of the right-hand icon column: **Profile** adds the reel's owner, **Media** adds the reel itself.

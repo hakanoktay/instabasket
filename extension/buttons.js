@@ -1,5 +1,6 @@
 // Adds "Add to basket" buttons to Instagram pages:
-//   - next to the date under each post (home feed, post page, post modal)
+//   - Profile and Media icons in each post's action bar, left of the save icon
+//     (home feed, post page, post modal)
 //   - on hover over post thumbnails (profile grid, explore)
 //   - next to the Follow button on profile pages
 //   - "Profile" and "Media" icons in the right-hand action column of the Reels viewer
@@ -82,6 +83,13 @@
     .reel .view svg { width: 24px; height: 24px; }
     .reel:hover { opacity: 0.7; }
     .reel.saved:hover { color: var(--red); opacity: 1; }
+
+    /* A post's action bar (like, comment, share … save): icons only, 24px, like Instagram's. */
+    .action { color: inherit; padding: 8px; }
+    .action .view svg { width: 24px; height: 24px; }
+    .action .label { display: none; }
+    .action:hover { opacity: 0.5; }
+    .action.saved:hover { color: var(--red); opacity: 1; }
   `;
 
   const storageKey = (item) => (item.kind === 'profile' ? 'p:' + item.username : 'm:' + item.key);
@@ -99,7 +107,7 @@
     const label = opts.label || 'Add to basket';
     const savedLabel = opts.savedLabel || 'In basket';
     root.innerHTML = `<style>${STYLE}</style>
-      <button class="${variant}${InstaBasketPanel.isDarkPage() && variant !== 'reel' ? ' dark' : ''}">
+      <button class="${variant}${InstaBasketPanel.isDarkPage() && variant !== 'reel' && variant !== 'action' ? ' dark' : ''}">
         <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
         <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
@@ -159,17 +167,127 @@
     return item?.kind === 'media' && item.code ? item : null;
   }
 
-  // Posts in the feed, on the post page and in the post modal: the date under
-  // the action bar is a link to the post.
-  function addDateButtons() {
+  // Posts in the feed, on the post page and in the post modal. Every post has a
+  // date that links to the post, which tells us which post it is. The Profile
+  // and Media icons go into the post's action bar, just left of the save
+  // (bookmark) icon. The action bar has no language-independent markers, so it's
+  // found by position: the row of 24px icons in the post, save being the
+  // rightmost. If it can't be found after a few tries, a text button is put
+  // next to the date instead.
+  const actionTries = new WeakMap();
+
+  function addPostButtons() {
     for (const time of document.querySelectorAll('a[href] time[datetime]')) {
       const link = time.closest('a');
       if (link.dataset.instabasketDone) continue;
-      link.dataset.instabasketDone = '1';
       const item = postItem(link.getAttribute('href'));
-      if (!item) continue;
-      link.after(makeButton('inline', fixed(item, item.url)));
+      if (!item) {
+        link.dataset.instabasketDone = '1';
+        continue;
+      }
+      const bar = findActionBar(link);
+      if (bar) {
+        link.dataset.instabasketDone = '1';
+        if (!bar.row.querySelector(':scope > [data-instabasket="action-group"]')) addActionButtons(bar, item);
+        continue;
+      }
+      const tries = (actionTries.get(link) || 0) + 1;
+      actionTries.set(link, tries);
+      if (tries >= 6) {
+        link.dataset.instabasketDone = '1';
+        link.after(makeButton('inline', fixed(item, item.url)));
+      }
     }
+  }
+
+  // Walks up from the post's date link to the smallest element that holds an
+  // icon row, and returns that row: { row, save, container }.
+  function findActionBar(link) {
+    let el = link.parentElement;
+    for (let depth = 0; el && depth < 14; depth++, el = el.parentElement) {
+      const icons = [...el.querySelectorAll('svg')].filter((s) => {
+        if (s.closest('[data-instabasket]')) return false;
+        const r = s.getBoundingClientRect();
+        return r.width >= 18 && r.width <= 32 && r.height >= 18 && r.height <= 32;
+      });
+      if (icons.length < 4) continue;
+      // Group icons into rows by their vertical centre.
+      const rows = [];
+      for (const s of icons) {
+        const r = s.getBoundingClientRect();
+        const y = r.top + r.height / 2;
+        let row = rows.find((g) => Math.abs(g.y - y) < 5);
+        if (!row) rows.push((row = { y, icons: [] }));
+        row.icons.push(s);
+      }
+      const rects = (g) => g.icons.map((s) => s.getBoundingClientRect());
+      const best = rows
+        .filter((g) => g.icons.length >= 4)
+        .map((g) => ({ ...g, span: Math.max(...rects(g).map((r) => r.right)) - Math.min(...rects(g).map((r) => r.left)) }))
+        .filter((g) => g.span >= 150)
+        .sort((a, b) => b.icons.length - a.icons.length)[0];
+      if (!best) continue;
+      // The save icon is the rightmost one; the row is the element holding all of them.
+      const save = best.icons.reduce((a, b) => (b.getBoundingClientRect().left > a.getBoundingClientRect().left ? b : a));
+      let row = save.parentElement;
+      while (row && !best.icons.every((s) => row.contains(s))) row = row.parentElement;
+      if (!row) return null;
+      let saveItem = save;
+      while (saveItem.parentElement !== row) saveItem = saveItem.parentElement;
+      return { row, saveItem, save, container: el };
+    }
+    return null;
+  }
+
+  function addActionButtons(bar, item) {
+    const { row, saveItem, save, container } = bar;
+    const mediaTarget = fixed(item, item.url);
+    const profileTarget = async (allowFetch) => {
+      const username = await postOwner(container, row, item, allowFetch);
+      return username && { url: InstaBasket.profileUrl(username), key: 'p:' + username };
+    };
+    const group = document.createElement('span');
+    group.dataset.instabasket = 'action-group';
+    // margin-left: auto keeps the group next to the save icon whether the bar
+    // spaces its items with auto margins or with justify-content.
+    Object.assign(group.style, {
+      display: 'inline-flex', alignItems: 'center', marginLeft: 'auto', color: getComputedStyle(save).color,
+    });
+    group.append(
+      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket' }),
+      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket' }),
+    );
+    row.insertBefore(group, saveItem);
+    // If the save icon pushed itself right with its own auto margin, the two
+    // auto margins would split the space; keep ours and drop the gap.
+    const gap = saveItem.getBoundingClientRect().left - group.getBoundingClientRect().right;
+    if (gap > 16) saveItem.style.marginLeft = '0';
+  }
+
+  // The post's owner: the first profile link in the post above its action bar
+  // (the header, or the caption), else looked up from the post.
+  async function postOwner(container, row, item, allowFetch) {
+    if (item.username) return item.username;
+    if (owners.has(item.code)) return owners.get(item.code);
+    const barTop = row.getBoundingClientRect().top;
+    // Widen the search step by step, but stop before it reaches another post.
+    for (let el = container; el && el !== document.body; el = el.parentElement) {
+      const otherPost = [...el.querySelectorAll('a[href] time[datetime]')].some((t) => {
+        const other = postItem(t.closest('a').getAttribute('href')); // null for comment timestamps
+        return other && other.code !== item.code;
+      });
+      if (otherPost) break;
+      for (const a of el.querySelectorAll('a[href]')) {
+        if (a.closest('[data-instabasket]')) continue;
+        const r = a.getBoundingClientRect();
+        if (!r.width || r.top >= barTop) continue;
+        const p = InstaBasket.parse(new URL(a.getAttribute('href'), location.href).href);
+        if (p?.kind === 'profile') return p.username;
+      }
+    }
+    if (!allowFetch) return null;
+    owners.set(item.code, (await InstaApi.media(item.code).catch(() => ({}))).username || null);
+    return owners.get(item.code);
   }
 
   // Thumbnails on profile grids and explore: links to posts that wrap an image.
@@ -335,7 +453,7 @@
   function scan() {
     for (const entry of buttons) if (!entry.host.isConnected) buttons.delete(entry);
     try {
-      addDateButtons();
+      addPostButtons();
       addOverlayButtons();
       addProfileButton();
       addReelButtons();
