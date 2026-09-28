@@ -105,7 +105,7 @@
     const button = root.querySelector('button');
     if (variant === 'overlay') button.style.pointerEvents = 'auto';
 
-    const entry = { host, button, target, label };
+    const entry = { host, button, target, title: opts.title || label };
     buttons.add(entry);
     setSaved(entry, false);
     refresh(entry);
@@ -129,7 +129,7 @@
 
   function setSaved(entry, saved) {
     entry.button.classList.toggle('saved', saved);
-    entry.button.title = saved ? 'In basket · click to remove' : entry.label;
+    entry.button.title = saved ? 'In basket · click to remove' : entry.title;
   }
 
   async function refresh(entry) {
@@ -322,7 +322,8 @@
       // Match the colour of Instagram's own icons (white on the dark Reels page).
       const color = getComputedStyle(found.first.querySelector('svg') || found.first).color;
       for (const [icon, label, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
-        const host = makeButton('reel', target, { icon, label, savedLabel: label });
+        const title = icon === 'profile' ? 'Add this profile to basket' : 'Add this reel to basket';
+        const host = makeButton('reel', target, { icon, label, savedLabel: label, title });
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
         column.insertBefore(host, found.first);
       }
