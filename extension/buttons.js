@@ -12,7 +12,6 @@
   const SCAN_DELAY = 250;
   const buttons = new Set(); // { host, button, variant, idle, target }
   const owners = new Map(); // shortcode → username, for reels whose owner link isn't found
-  const reelSeen = new WeakMap(); // <video> → the reel it was showing when last on screen
   let scanTimer;
   let lastHref = location.href;
 
@@ -214,32 +213,44 @@
     return el;
   }
 
-  // Which reel a video is. The Reels viewer changes the address bar to
+  // The reel's current <video>. Instagram sometimes swaps the video element
+  // while keeping the icon column, so it's looked up from the column each time.
+  function reelVideo(column) {
+    for (let el = column.parentElement; el; el = el.parentElement) {
+      const video = el.querySelector('video');
+      if (video) return video;
+    }
+    return null;
+  }
+
+  // Which reel a column belongs to. The Reels viewer changes the address bar to
   // /reels/CODE/ for the reel on screen, so that's used when the reel itself
-  // has no link to its own page.
-  function reelMedia(video, container) {
-    for (const a of container.querySelectorAll('a[href*="/reel/"], a[href*="/p/"]')) {
+  // has no link to its own page. `memory.media` keeps the answer for when the
+  // reel is scrolled away and the address bar shows another one.
+  function reelMedia(column, memory) {
+    const video = reelVideo(column);
+    if (!video) return memory.media;
+    for (const a of reelContainer(video, column)?.querySelectorAll('a[href*="/reel/"], a[href*="/p/"]') || []) {
       const item = postItem(a.getAttribute('href'));
-      if (item) return item;
+      if (item) return (memory.media = item);
     }
     const v = video.getBoundingClientRect();
-    const onScreen = v.top < innerHeight / 2 && v.bottom > innerHeight / 2;
-    if (onScreen) {
+    if (v.top < innerHeight / 2 && v.bottom > innerHeight / 2) {
       const item = InstaBasket.parse(location.href);
-      if (item?.kind === 'media' && item.code) reelSeen.set(video, item);
+      if (item?.kind === 'media' && item.code) memory.media = item;
     }
-    // Remember it after scrolling away, when the address bar shows another reel.
-    return reelSeen.get(video) || null;
+    return memory.media;
   }
 
   // The reel's owner: the username link next to the reel (bottom left in the
   // Reels viewer). Matched by position so links elsewhere on the page (like
   // your own profile in the sidebar) are never picked. Falls back to looking
   // the reel up when no such link is found.
-  async function reelOwner(video, media, allowFetch) {
-    const v = video.getBoundingClientRect();
+  async function reelOwner(column, media, allowFetch) {
+    const video = reelVideo(column);
+    const v = video ? video.getBoundingClientRect() : { width: 0 };
     let best = null;
-    for (const a of document.querySelectorAll('main a[href]')) {
+    for (const a of v.width ? document.querySelectorAll('main a[href]') : []) {
       if (a.closest('[data-instabasket]')) continue;
       const r = a.getBoundingClientRect();
       if (!r.width || r.bottom < v.top || r.top > v.bottom || r.right < v.left - 600 || r.left > v.right) continue;
@@ -259,20 +270,22 @@
   function addReelButtons() {
     if (!location.pathname.startsWith('/reels/')) return;
     for (const video of document.querySelectorAll('video')) {
-      if (video.dataset.instabasketDone) continue;
       const rect = video.getBoundingClientRect();
       if (rect.width < 150 || rect.height < 250) continue;
       const found = findReelColumn(video);
       if (!found) continue; // not laid out yet; retried on the next scan
-      video.dataset.instabasketDone = '1';
-      const container = reelContainer(video, found.column);
+      const { column } = found;
+      // The column is what's marked, not the video: a new <video> in the same
+      // reel must not get a second pair of buttons.
+      if (column.querySelector(':scope > [data-instabasket="reel"]')) continue;
 
+      const memory = { media: null };
       const mediaTarget = async () => {
-        const media = reelMedia(video, container);
+        const media = reelMedia(column, memory);
         return media && { url: media.url, key: storageKey(media) };
       };
       const profileTarget = async (allowFetch) => {
-        const username = await reelOwner(video, reelMedia(video, container), allowFetch);
+        const username = await reelOwner(column, reelMedia(column, memory), allowFetch);
         return username && { url: InstaBasket.profileUrl(username), key: 'p:' + username };
       };
 
@@ -281,7 +294,7 @@
       for (const [icon, caption, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
         const host = makeButton('reel', target, { cls: 'reel', icon, caption });
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
-        found.column.insertBefore(host, found.first);
+        column.insertBefore(host, found.first);
       }
     }
   }
@@ -311,6 +324,11 @@
 
   // Instagram is a single-page app: posts load while scrolling and navigation
   // doesn't reload the page, so rescan whenever the DOM changes or the page scrolls.
+  // After the extension is reloaded or updated, buttons from the previous copy
+  // are still on the page but no longer work; replace them.
+  document.querySelectorAll('[data-instabasket]').forEach((el) => el.remove());
+  document.querySelectorAll('[data-instabasket-done]').forEach((el) => delete el.dataset.instabasketDone);
+
   new MutationObserver(scheduleScan).observe(document.documentElement, { childList: true, subtree: true });
   addEventListener('scroll', scheduleScan, { capture: true, passive: true });
   chrome.storage.onChanged.addListener(() => buttons.forEach(refresh));
