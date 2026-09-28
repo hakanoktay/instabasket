@@ -258,7 +258,7 @@ var InstaBasketPanel = (() => {
   async function showResult(result, onRemove) {
     const { recordKey } = result;
     const [record, lists, all] = await Promise.all([
-      InstaBasket.get(recordKey), InstaBasket.getLists(), chrome.storage.local.get(null),
+      InstaBasket.get(recordKey), InstaBasket.getLists(recordKey[0]), chrome.storage.local.get(null),
     ]);
     if (!record) return showError('Something went wrong');
     const isProfile = recordKey.startsWith('p:');
@@ -330,7 +330,7 @@ var InstaBasketPanel = (() => {
         e.stopPropagation();
         if (e.key === 'Escape') return renderBoxes();
         if (e.key !== 'Enter' || !input.value.trim()) return;
-        const list = await InstaBasket.createList(input.value);
+        const list = await InstaBasket.createList(input.value, current.recordKey[0]);
         current.lists.push(list);
         els.searchInput.value = '';
         els.search.hidden = current.lists.length < SEARCH_FROM;

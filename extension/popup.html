@@ -17,11 +17,17 @@
   </nav>
 
   <div id="lists">
-    <div class="chips"></div>
-    <div id="list-actions" hidden>
-      <button id="rename-list" class="text-btn">Rename list</button>
-      <button id="delete-list" class="text-btn danger">Delete list</button>
+    <div class="chips-wrap">
+      <button class="scroll-btn left" title="Scroll left" hidden><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span></button>
+      <div class="chips"></div>
+      <button class="scroll-btn right" title="Scroll right" hidden><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
     </div>
+    <button id="new-list" class="chip add" title="New list"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+    <form id="new-list-form" hidden>
+      <input placeholder="New list name" maxlength="40" required>
+      <button type="submit" class="btn primary">Create</button>
+      <button type="button" class="btn cancel">Cancel</button>
+    </form>
   </div>
 
   <section id="profiles">
@@ -38,9 +44,23 @@
     <div class="groups"></div>
   </section>
 
-  <footer>
-    <button id="copy" class="btn">Copy links</button>
-    <button id="clear" class="btn">Clear all</button>
+  <!-- Shown while a list is selected: its name and the rename / delete actions. -->
+  <footer id="list-footer" hidden>
+    <div class="view">
+      <span class="list-name"></span>
+      <button class="btn rename">Rename</button>
+      <button class="btn danger delete">Delete list</button>
+    </div>
+    <form class="rename-form" hidden>
+      <input maxlength="40" required>
+      <button type="submit" class="btn primary">Save</button>
+      <button type="button" class="btn cancel">Cancel</button>
+    </form>
+    <div class="confirm" hidden>
+      <span class="question"></span>
+      <button class="btn cancel">Cancel</button>
+      <button class="btn danger-fill confirm-delete">Delete</button>
+    </div>
   </footer>
 
   <div id="picker" hidden></div>

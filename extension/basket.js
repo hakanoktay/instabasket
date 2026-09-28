@@ -7,7 +7,8 @@
 //                    (stories use m:story:<id>)
 //   u:<username>   → cached account details   { username, fullName, pic }, used by
 //                    both saved profiles and the owners of saved media
-//   lists          → the user's lists [{ id, name }]; profiles and media refer to them by id
+//   lists          → the user's lists [{ id, name, kind }]; kind is 'p' (profile lists) or
+//                    'm' (media lists) – the two tabs have separate lists. Records refer to lists by id.
 //
 // Saving media never saves its owner as a profile; the two are independent.
 var InstaBasket = (() => {
@@ -67,6 +68,7 @@ var InstaBasket = (() => {
 
   async function load() {
     const all = await chrome.storage.local.get(null);
+    await splitLists(all);
     const profiles = [];
     const media = [];
     const users = {};
@@ -77,6 +79,29 @@ var InstaBasket = (() => {
     }
     const byNewest = (a, b) => (b.addedAt || 0) - (a.addedAt || 0);
     return { profiles: profiles.sort(byNewest), media: media.sort(byNewest), users, lists: all.lists || [] };
+  }
+
+  // Lists used to be shared by profiles and media. Each old list becomes a media
+  // list (same id) plus a profile list with the same name, and saved profiles
+  // move over to the profile copy.
+  async function splitLists(all) {
+    const old = (all.lists || []).filter((l) => !l.kind);
+    if (!old.length) return;
+    const lists = (all.lists || []).filter((l) => l.kind);
+    const update = {};
+    for (const l of old) {
+      const profileId = l.id + '-p';
+      lists.push({ ...l, kind: 'm' }, { id: profileId, name: l.name, kind: 'p' });
+      for (const [k, v] of Object.entries(all)) {
+        const record = update[k] || v;
+        if (k.startsWith('p:') && record.lists?.includes(l.id)) {
+          update[k] = { ...record, lists: record.lists.map((x) => (x === l.id ? profileId : x)) };
+        }
+      }
+    }
+    update.lists = lists;
+    await chrome.storage.local.set(update);
+    Object.assign(all, update);
   }
 
   function strip(item) {
@@ -96,13 +121,20 @@ var InstaBasket = (() => {
     return value;
   }
 
-  async function getLists() {
-    return (await get('lists')) || [];
+  // `kind` is 'p' or 'm'; omitted, all lists are returned.
+  async function getLists(kind) {
+    let lists = (await get('lists')) || [];
+    if (lists.some((l) => !l.kind)) {
+      const all = await chrome.storage.local.get(null);
+      await splitLists(all);
+      lists = all.lists;
+    }
+    return kind ? lists.filter((l) => l.kind === kind) : lists;
   }
 
-  async function createList(name) {
+  async function createList(name, kind) {
     const lists = await getLists();
-    const list = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.trim() };
+    const list = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.trim(), kind };
     await chrome.storage.local.set({ lists: [...lists, list] });
     return list;
   }

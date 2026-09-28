@@ -30,12 +30,15 @@ Removing a profile keeps its media, and vice versa.
 
 ### Lists
 
-Profiles and media can be sorted into lists (e.g. "Fashion", "Inspiration"); one item can be in several lists.
+Profiles and media each have their own lists (e.g. profile lists "Designers", "Friends"; media lists "Fashion", "Inspiration"). One item can be in several lists.
 
-- Create a list by typing a name into **New list…** in the popup.
-- Click a list chip to show only what's in it; **All** shows everything. While a list is selected you can rename or delete it (deleting a list keeps its contents).
+- Create a list with the **+** button at the right end of the list row.
+- Click a list to show only what's in it; **All** shows everything. With many lists the row scrolls sideways: use the arrow buttons, the mouse wheel or a trackpad.
+- While a list is selected, the bottom bar shows its name with **Rename** and **Delete list**. Deleting asks for confirmation and keeps the list's items in your basket.
 - Use the tag button on a profile or media thumbnail to pick its lists.
-- On Instagram, right after adding something, the corner card shows your lists so you can file the item immediately.
+- On Instagram, right after adding something, the corner card shows the matching lists so you can file the item immediately.
+
+In the popup, profile pictures and usernames are links: right-click → *Open link in new tab* opens the profile. A normal click on a username in Media shows only that user's media.
 
 Profile pictures and cover images are stored inside the extension as small thumbnails, so they keep showing even after Instagram's image links expire. If some detail can't be fetched at the moment (network error, etc.), it's filled in in the background the next time you open Instagram.
 

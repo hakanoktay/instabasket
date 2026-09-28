@@ -49,13 +49,24 @@ nav { display: flex; border-top: 1px solid var(--divider); margin-bottom: 12px; 
 .tab.active { color: var(--text); border-top-color: var(--text); }
 .tab span { font-weight: 400; letter-spacing: 0; }
 
-/* List chips */
-#lists { margin-bottom: 12px; }
-.chips {
-  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
-  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
-}
+/* List chips: a sideways-scrolling row with arrow buttons at the ends and a
+   fixed "+" button on the right, so creating a list never scrolls out of view. */
+#lists { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex: none; }
+.chips-wrap { position: relative; flex: 1; min-width: 0; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; }
 .chips::-webkit-scrollbar { display: none; }
+.chips-wrap.fade-left .chips { mask-image: linear-gradient(to right, transparent 0, #000 40px); }
+.chips-wrap.fade-right .chips { mask-image: linear-gradient(to left, transparent 0, #000 40px); }
+.chips-wrap.fade-left.fade-right .chips { mask-image: linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%); }
+.scroll-btn {
+  position: absolute; top: 50%; z-index: 1; width: 28px; height: 28px; margin-top: -14px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--elevated); color: var(--text); box-shadow: var(--shadow);
+  animation: pop 0.14s ease-out;
+}
+.scroll-btn:hover { background: var(--secondary); }
+.scroll-btn .i { width: 14px; height: 14px; }
+.scroll-btn.left { left: 0; }
+.scroll-btn.right { right: 0; }
 .chip {
   flex: none; height: 32px; padding: 0 14px; border-radius: 8px; background: var(--secondary);
   font-weight: 600; white-space: nowrap;
@@ -63,12 +74,14 @@ nav { display: flex; border-top: 1px solid var(--divider); margin-bottom: 12px; 
 .chip:hover { background: var(--secondary-hover); }
 .chip.active { background: var(--text); color: var(--bg); }
 .chip .n { font-weight: 400; opacity: 0.7; }
-.new-list {
-  flex: none; width: 100px; height: 32px; padding: 0 12px; border-radius: 8px;
-  border: 1px dashed var(--line); background: none; outline: none; transition: width 0.15s;
+.chip.add { width: 32px; padding: 0; display: grid; place-items: center; }
+.chip.add .i { width: 16px; height: 16px; }
+#new-list-form { display: flex; gap: 8px; flex: 1; animation: pop 0.14s ease-out; }
+#lists.creating .chips-wrap, #lists.creating #new-list { display: none; }
+#new-list-form input, #list-footer input {
+  flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: none; outline: none;
+  border-radius: 8px; background: var(--secondary);
 }
-.new-list:focus { width: 150px; border-style: solid; border-color: var(--muted); }
-#list-actions { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; }
 
 /* Content */
 section { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; margin-right: -8px; padding-right: 8px; }
@@ -110,8 +123,9 @@ ul.profiles li:hover { background: var(--hover); }
 .tile:hover img { transform: scale(1.03); }
 .card-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; }
 .avatar.tiny { width: 20px; height: 20px; font-size: 10px; }
+.avatar-link { display: inline-flex; flex: none; border-radius: 50%; }
 .owner {
-  flex: 1; min-width: 0; text-align: left; font-size: 12px; font-weight: 600;
+  flex: 1; color: var(--text); text-decoration: none; min-width: 0; text-align: left; font-size: 12px; font-weight: 600;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .owner:hover { color: var(--muted); }
@@ -176,7 +190,15 @@ ul.profiles li:hover { background: var(--hover); }
   border-radius: 8px; background: var(--secondary);
 }
 
-footer {
-  flex: none; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; padding-top: 12px;
-  border-top: 1px solid var(--divider);
-}
+/* Footer, shown while a list is selected */
+#list-footer { flex: none; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--divider); }
+#list-footer .view, #list-footer .rename-form, #list-footer .confirm { display: flex; align-items: center; gap: 8px; animation: pop 0.14s ease-out; }
+#list-footer [hidden] { display: none !important; }
+#list-footer .list-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; }
+#list-footer .list-name b { overflow: hidden; text-overflow: ellipsis; }
+#list-footer .list-name .i { width: 14px; height: 14px; color: var(--muted); }
+#list-footer .n { color: var(--muted); font-weight: 400; }
+#list-footer .question { flex: 1; min-width: 0; font-size: 13px; line-height: 16px; }
+.btn.danger { color: var(--red); }
+.btn.danger-fill { background: var(--red); color: #fff; }
+.btn.danger-fill:hover { background: #d93a47; }

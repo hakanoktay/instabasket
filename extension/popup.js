@@ -43,11 +43,12 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+// Profile pictures are links to the profile, so right-click → "Open link in new tab" works.
 function avatar(username, size) {
   const cls = 'avatar' + (size === 'tiny' ? ' tiny' : size ? ' small' : '');
   const pic = state.users[username]?.pic;
-  if (pic) return el('img', { class: cls, src: pic, alt: '' });
-  return el('span', { class: cls }, (username || '?')[0]);
+  const img = pic ? el('img', { class: cls, src: pic, alt: '' }) : el('span', { class: cls }, (username || '?')[0]);
+  return el('a', { class: 'avatar-link', href: InstaBasket.profileUrl(username), target: '_blank', title: `Open @${username} on Instagram` }, img);
 }
 
 function profileLink(username) {
@@ -80,6 +81,9 @@ function selectTab(tab) {
   renderLists();
 }
 
+const tabKind = () => (activeTab === 'profiles' ? 'p' : 'm');
+const listsOf = (kind) => state.lists.filter((l) => l.kind === kind);
+
 function renderLists() {
   const records = activeTab === 'profiles' ? state.profiles : state.media;
   const count = (id) => records.filter((r) => r.lists?.includes(id)).length;
@@ -88,37 +92,98 @@ function renderLists() {
     onclick: () => { activeList = id; render(); },
   }, name, n != null ? el('span', { class: 'n' }, ` ${n}`) : null);
 
-  const input = el('input', { class: 'new-list', placeholder: 'New list…', maxlength: 40 });
-  input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter' && input.value.trim()) {
-      const list = await InstaBasket.createList(input.value);
-      activeList = list.id;
-    } else if (e.key === 'Escape') {
-      input.value = '';
-      input.blur();
-    }
-  });
-
-  $('#lists .chips').replaceChildren(
-    chip(null, 'All'),
-    ...state.lists.map((l) => chip(l.id, l.name, count(l.id))),
-    input,
-  );
-  $('#list-actions').hidden = !activeList;
+  const chips = $('#lists .chips');
+  chips.replaceChildren(chip(null, 'All'), ...listsOf(tabKind()).map((l) => chip(l.id, l.name, count(l.id))));
+  chips.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  updateScrollButtons();
+  renderFooter();
 }
 
-$('#rename-list').addEventListener('click', async () => {
-  const list = state.lists.find((l) => l.id === activeList);
-  const name = list && prompt('List name', list.name);
-  if (name?.trim()) await InstaBasket.renameList(list.id, name);
-});
+// The chips row scrolls sideways: arrow buttons appear at whichever end has
+// more lists, and a normal (vertical) mouse wheel scrolls it too – no trackpad needed.
+function updateScrollButtons() {
+  const chips = $('#lists .chips');
+  const max = chips.scrollWidth - chips.clientWidth;
+  $('.scroll-btn.left').hidden = chips.scrollLeft <= 1;
+  $('.scroll-btn.right').hidden = chips.scrollLeft >= max - 1;
+  $('.chips-wrap').classList.toggle('fade-left', chips.scrollLeft > 1);
+  $('.chips-wrap').classList.toggle('fade-right', chips.scrollLeft < max - 1);
+}
+$('#lists .chips').addEventListener('scroll', updateScrollButtons, { passive: true });
+$('#lists .chips').addEventListener('wheel', (e) => {
+  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // already horizontal (trackpad)
+  e.preventDefault();
+  $('#lists .chips').scrollBy({ left: e.deltaY, behavior: 'auto' });
+}, { passive: false });
+for (const [cls, dir] of [['left', -1], ['right', 1]]) {
+  $(`.scroll-btn.${cls}`).addEventListener('click', () => {
+    const chips = $('#lists .chips');
+    chips.scrollBy({ left: dir * chips.clientWidth * 0.7, behavior: 'smooth' });
+  });
+}
 
-$('#delete-list').addEventListener('click', async () => {
+// "+" turns the lists row into a name field.
+$('#new-list').addEventListener('click', () => {
+  $('#lists').classList.add('creating');
+  $('#new-list-form').hidden = false;
+  $('#new-list-form input').value = '';
+  $('#new-list-form input').focus();
+});
+function closeNewList() {
+  $('#lists').classList.remove('creating');
+  $('#new-list-form').hidden = true;
+}
+$('#new-list-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#new-list-form input').value.trim();
+  if (!name) return;
+  closeNewList();
+  const list = await InstaBasket.createList(name, tabKind());
+  activeList = list.id;
+});
+$('#new-list-form .cancel').addEventListener('click', closeNewList);
+$('#new-list-form input').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeNewList(); } });
+
+// ---- Footer: actions for the selected list ----
+
+function renderFooter(mode = 'view') {
   const list = state.lists.find((l) => l.id === activeList);
-  if (list && confirm(`Delete the list "${list.name}"? The profiles and media in it are kept.`)) {
-    activeList = null;
-    await InstaBasket.deleteList(list.id);
+  const footer = $('#list-footer');
+  footer.hidden = !list;
+  if (!list) return;
+  const records = list.kind === 'p' ? state.profiles : state.media;
+  const n = records.filter((r) => r.lists?.includes(list.id)).length;
+  footer.querySelector('.list-name').replaceChildren(icon('tagFilled'), el('b', {}, list.name), el('span', { class: 'n' }, ` · ${n}`));
+  footer.querySelector('.view').hidden = mode !== 'view';
+  footer.querySelector('.rename-form').hidden = mode !== 'rename';
+  footer.querySelector('.confirm').hidden = mode !== 'confirm';
+  if (mode === 'rename') {
+    const input = footer.querySelector('.rename-form input');
+    input.value = list.name;
+    input.select();
   }
+  if (mode === 'confirm') {
+    footer.querySelector('.question').replaceChildren(
+      'Delete ', el('b', {}, `"${list.name}"`), '? ',
+      el('span', { class: 'n' }, 'Its items stay in your basket.'));
+    footer.querySelector('.confirm-delete').focus();
+  }
+}
+
+$('#list-footer .rename').addEventListener('click', () => renderFooter('rename'));
+$('#list-footer .delete').addEventListener('click', () => renderFooter('confirm'));
+for (const b of document.querySelectorAll('#list-footer .cancel')) b.addEventListener('click', () => renderFooter('view'));
+$('#list-footer .rename-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#list-footer .rename-form input').value.trim();
+  if (name) await InstaBasket.renameList(activeList, name);
+  renderFooter('view');
+});
+$('#list-footer .rename-form input').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); renderFooter('view'); } });
+$('#list-footer .confirm-delete').addEventListener('click', async () => {
+  const id = activeList;
+  activeList = null;
+  await InstaBasket.deleteList(id);
 });
 
 // ---- List picker ----
@@ -140,10 +205,11 @@ function renderPicker() {
   const record = kind === 'p' ? state.profiles.find((p) => p.username === key) : state.media.find((m) => m.key === key);
   if (!record || !picker.anchor.isConnected) return closePicker();
 
+  const lists = listsOf(kind);
   const input = el('input', { placeholder: 'New list…', maxlength: 40 });
   input.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter' && input.value.trim()) {
-      const list = await InstaBasket.createList(input.value);
+      const list = await InstaBasket.createList(input.value, kind);
       await InstaBasket.setInList(picker.recordKey, list.id, true);
     } else if (e.key === 'Escape') {
       closePicker();
@@ -152,12 +218,12 @@ function renderPicker() {
 
   box.replaceChildren(...[
     el('div', { class: 'title' }, 'Lists'),
-    ...state.lists.map((list) => {
+    ...lists.map((list) => {
       const check = el('input', { type: 'checkbox', checked: !!record.lists?.includes(list.id) });
       check.addEventListener('change', () => InstaBasket.setInList(picker.recordKey, list.id, check.checked));
       return el('label', {}, el('span', { class: 'name' }, list.name), check);
     }),
-    state.lists.length ? null : el('div', { class: 'none' }, 'No lists yet. Type a name to create one.'),
+    lists.length ? null : el('div', { class: 'none' }, 'No lists yet. Type a name to create one.'),
     input,
   ].filter(Boolean));
   box.hidden = false;
@@ -169,7 +235,7 @@ function renderPicker() {
   const below = innerHeight - r.bottom - 8;
   const top = below >= box.offsetHeight || r.top < box.offsetHeight ? r.bottom + 4 : r.top - box.offsetHeight - 4;
   box.style.top = `${Math.max(8, top) + window.scrollY}px`;
-  if (!state.lists.length) input.focus();
+  if (!lists.length) input.focus();
 }
 
 document.addEventListener('click', (e) => {
@@ -245,9 +311,16 @@ function mediaCard(m, savedProfiles) {
     el('div', { class: 'card-foot' },
       m.username ? avatar(m.username, 'tiny') : null,
       m.username
-        ? el('button', {
-          class: 'owner', title: `Show only @${m.username}`,
-          onclick: () => { filterUser = m.username; renderMedia(); },
+        // A real link, so right-click → "Open link in new tab" opens the profile;
+        // a normal click filters to this user's media.
+        ? el('a', {
+          class: 'owner', href: InstaBasket.profileUrl(m.username), target: '_blank', title: `Show only @${m.username}`,
+          onclick: (e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+            e.preventDefault();
+            filterUser = m.username;
+            renderMedia();
+          },
         }, '@' + m.username)
         : el('span', { class: 'owner unknown' }, 'Owner not found'),
       m.username ? profileToggle(m.username, savedProfiles.has(m.username)) : null,
@@ -288,21 +361,15 @@ async function render() {
   }
 }
 
-for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => selectTab(b.dataset.tab));
+for (const b of document.querySelectorAll('.tab')) {
+  b.addEventListener('click', () => {
+    if (activeTab === b.dataset.tab) return;
+    activeList = null; // lists are per tab
+    selectTab(b.dataset.tab);
+    render();
+  });
+}
 $('#filter button').addEventListener('click', () => { filterUser = null; renderMedia(); });
-
-$('#copy').addEventListener('click', async () => {
-  const urls = activeTab === 'profiles'
-    ? visibleProfiles().map((p) => InstaBasket.profileUrl(p.username))
-    : visibleMedia().map((m) => m.url);
-  await navigator.clipboard.writeText(urls.join('\n'));
-  $('#copy').textContent = 'Copied ✓';
-  setTimeout(() => { $('#copy').textContent = 'Copy links'; }, 1200);
-});
-
-$('#clear').addEventListener('click', async () => {
-  if (confirm('Delete all profiles and media? Your lists are kept.')) await InstaBasket.clear();
-});
 
 // If the active tab is an Instagram profile or post, add it with one click (no dragging needed).
 (async () => {
