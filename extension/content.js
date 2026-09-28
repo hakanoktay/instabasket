@@ -140,6 +140,7 @@ var InstaBasketDrop = (() => {
   // Download progress, relayed by the background script.
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'dl-progress') InstaBasketPanel.downloads.progress(msg.job, msg.index, msg.loaded, msg.total, msg.done);
+    if (msg?.type === 'dl-waiting') InstaBasketPanel.downloads.waiting(msg.job);
   });
 
   // The popup's "Add this page" button.
@@ -152,8 +153,9 @@ var InstaBasketDrop = (() => {
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
   // Downloads every photo / video of a post in the highest quality, named
-  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>. Albums arrive as one ZIP
-  // (one "Save as" window at most). Progress is shown as balloons on the right.
+  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into the folder the user
+  // picked or, without one, Downloads/InstaBasket (albums as one ZIP). Progress
+  // is shown as balloons on the right.
   async function download(code) {
     const job = Math.random().toString(36).slice(2);
     const ui = InstaBasketPanel.downloads;
@@ -174,7 +176,7 @@ var InstaBasketDrop = (() => {
         files: files.map(({ url, filename }) => ({ url, filename })),
       });
       if (!res?.ok) throw new Error(res?.error || 'failed');
-      ui.finish(job, res.filename);
+      ui.finish(job, res);
       return true;
     } catch {
       ui.fail(job, "Couldn't download this post");

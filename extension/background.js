@@ -12,6 +12,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     startDownload(msg, sender.tab?.id).then(sendResponse, (err) => sendResponse({ error: String(err?.message || err) }));
     return true;
   }
+  if (msg?.type === 'folder-result') {
+    folderRequests.get(msg.request)?.(msg.result);
+    folderRequests.delete(msg.request);
+  }
+  if (msg?.type === 'open-folder-settings') {
+    chrome.windows.create({ url: 'folder.html', type: 'popup', width: 440, height: 480, focused: true });
+  }
   if (msg?.type === 'dl-progress') {
     // From the helper page; pass it on to the Instagram tab that asked.
     const tabId = jobs.get(msg.job);
@@ -22,9 +29,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ---- Downloads ----
 //
 // Files are fetched by the hidden helper page (offscreen.js), which reports
-// progress and packs an album into a single ZIP, so there's one download (and
-// at most one "Save as" window) per post. The result is saved in
-// Downloads/InstaBasket/.
+// progress. They're written straight into the folder the user picked, or –
+// without one – saved in Downloads/InstaBasket/, an album packed into a single
+// ZIP so there's one download (and at most one "Save as" window) per post.
 
 const jobs = new Map(); // job id → tab id, for progress messages
 
@@ -37,16 +44,57 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
   jobs.set(job, tabId);
   try {
     await ensureHelper();
+    if ((await downloadTarget(job, tabId)) === 'folder') {
+      const saved = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'save-to-folder', job, files });
+      if (saved && !saved.error) return { ok: true, mode: 'folder', folder: saved.folder, filenames: saved.filenames };
+      // Folder no longer usable (moved, deleted, access withdrawn): fall back to Downloads.
+    }
     const built = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'build', job, files, zipName: safeName(zipName), mtime });
     if (!built || built.error) throw new Error(built?.error || 'build failed');
     const id = await chrome.downloads.download({
       url: built.url, filename: `InstaBasket/${built.filename}`, conflictAction: 'uniquify', saveAs: false,
     });
     releaseWhenDone(id, built.url);
-    return { ok: true, filename: built.filename, size: built.size };
+    return { ok: true, mode: 'downloads', filename: built.filename, size: built.size };
   } finally {
     jobs.delete(job);
   }
+}
+
+// Where this download goes: the folder the user picked ('folder') or
+// Downloads/InstaBasket ('downloads'). The first time – or when Chrome wants
+// the folder access confirmed again – the folder window asks, and the download
+// waits for the answer.
+async function downloadTarget(job, tabId) {
+  const { downloadMode } = await chrome.storage.local.get('downloadMode');
+  if (downloadMode === 'zip') return 'downloads';
+  const folder = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'folder-state' }).catch(() => null);
+  if (downloadMode === 'folder' && folder?.state === 'granted') return 'folder';
+  // Ask at most once per browser session (the service worker itself restarts often).
+  const { askedFolder } = await chrome.storage.session.get('askedFolder');
+  if (askedFolder) return 'downloads';
+  await chrome.storage.session.set({ askedFolder: true });
+  chrome.tabs.sendMessage(tabId, { type: 'dl-waiting', job }).catch(() => {});
+  return (await askForFolder()) === 'folder' ? 'folder' : 'downloads';
+}
+
+const folderRequests = new Map(); // request id → resolve
+function askForFolder() {
+  const request = Math.random().toString(36).slice(2);
+  return new Promise(async (resolve) => {
+    folderRequests.set(request, resolve);
+    const win = await chrome.windows.create({
+      url: `folder.html?request=${request}`, type: 'popup', width: 440, height: 480, focused: true,
+    });
+    // Closing the window without choosing: use Downloads for this time.
+    const onClose = (id) => {
+      if (id !== win.id) return;
+      chrome.windows.onRemoved.removeListener(onClose);
+      folderRequests.get(request)?.('closed');
+      folderRequests.delete(request);
+    };
+    chrome.windows.onRemoved.addListener(onClose);
+  });
 }
 
 function safeName(name) {

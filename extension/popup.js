@@ -393,6 +393,8 @@ $('#filter button').addEventListener('click', () => { filterUser = null; renderM
   });
 })();
 
+$('#download-settings').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'open-folder-settings' }));
+
 chrome.storage.onChanged.addListener(render);
 selectTab('profiles');
 render();

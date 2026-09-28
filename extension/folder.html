@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>InstaBasket downloads</title>
+  <link rel="stylesheet" href="folder.css">
+</head>
+<body>
+  <main>
+    <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v12M7 10.5l5 5 5-5"/><path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg></div>
+    <h1>Where should InstaBasket save downloads?</h1>
+
+    <section id="ask">
+      <button id="choose" class="option primary">
+        <b>Choose a folder</b>
+        <span>Photos and videos are saved there directly, as separate files. No save window, no ZIP.</span>
+      </button>
+      <button id="use-downloads" class="option">
+        <b>Use the Downloads folder</b>
+        <span>Saved to Downloads/InstaBasket. Albums are saved as one ZIP file.</span>
+      </button>
+    </section>
+
+    <section id="reauth" hidden>
+      <p>Chrome needs you to confirm access to your download folder again.</p>
+      <button id="allow" class="option primary"><b>Allow access to “<span class="folder-name"></span>”</b>
+        <span>Choose “Allow on every visit” if Chrome offers it, so you're not asked again.</span></button>
+      <button id="choose-other" class="option"><b>Choose another folder</b></button>
+      <button id="use-downloads-2" class="option"><b>Use the Downloads folder instead</b></button>
+    </section>
+
+    <section id="current" hidden>
+      <p>Downloads are saved to <b class="where"></b>.</p>
+      <button id="change" class="option"><b>Choose another folder</b></button>
+      <button id="use-downloads-3" class="option"><b>Use the Downloads folder</b><span>Albums are saved as one ZIP file.</span></button>
+    </section>
+
+    <p id="error" hidden></p>
+  </main>
+  <script src="folderstore.js"></script>
+  <script src="folder.js"></script>
+</body>
+</html>

@@ -494,7 +494,7 @@ var InstaBasketPanel = (() => {
       if (!j) return;
       const n = files.length;
       setText(j.header, `Downloading ${n === 1 ? (files[0].kind === 'video' ? 'video' : 'photo') : `${n} files`}`,
-        `${username ? '@' + username : ''}${n > 1 ? ' · saved as one ZIP' : ''}`);
+        username ? '@' + username : '');
       files.forEach((f, i) => {
         const b = bubble('item', f.thumb, f.filename, 'Waiting…', 60 * (i + 1));
         if (!f.thumb) b.querySelector('.thumb').innerHTML = DL_ICONS[f.kind] || DL_ICONS.image;
@@ -524,11 +524,22 @@ var InstaBasketPanel = (() => {
       j.header.querySelector('.bar').style.width = `${Math.round(all * 100)}%`;
     },
 
-    finish(job, filename) {
+    // Waiting for the user to pick where downloads go (folder window).
+    waiting(job) {
+      const j = dlJobs.get(job);
+      if (j) setText(j.header, 'Choose where to save', 'In the window that just opened');
+    },
+
+    finish(job, res) {
       const j = dlJobs.get(job);
       if (!j) return;
       j.items.forEach((it) => it.done || markDone(it.el));
-      setText(j.header, 'Saved', `Downloads/InstaBasket/${filename}`);
+      if (res.mode === 'folder') {
+        const n = res.filenames.length;
+        setText(j.header, `Saved to “${res.folder}”`, n === 1 ? res.filenames[0] : `${n} files`);
+      } else {
+        setText(j.header, 'Saved', `Downloads/InstaBasket/${res.filename}`);
+      }
       markDone(j.header);
       dismiss(job, 4000);
     },
