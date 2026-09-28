@@ -35,7 +35,7 @@
   const STYLE = `
     :host { all: initial; }
     button {
-      --blue: #0095f6; --red: #ed4956; --text: #000; --muted: #737373; --secondary: #efefef; --secondary-hover: #dbdbdb;
+      --blue: #0095f6; --red: #ed4956; --green: #58c322; /* Instagram's success green */ --text: #000; --muted: #737373; --secondary: #efefef; --secondary-hover: #dbdbdb;
       position: relative; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;
       font: 600 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       border: none; background: none; padding: 0; color: var(--text);
@@ -46,7 +46,7 @@
     .view svg { width: 16px; height: 16px; flex: none; }
     .rm, .done { display: none; }
     .saved .add { display: none; }
-    .saved .done { display: inline-flex; }
+    .saved .done { display: inline-flex; color: var(--green); }
     .saved:hover .done { display: none; }
     .saved:hover .rm { display: inline-flex; }
 
@@ -54,7 +54,7 @@
     .inline { margin-left: 10px; font-size: 12px; vertical-align: middle; color: var(--blue); }
     .inline .view svg { width: 14px; height: 14px; }
     .inline:hover { color: var(--text); }
-    .inline.saved { color: var(--text); }
+    .inline.saved { color: var(--green); }
     .inline.saved:hover { color: var(--red); }
 
     /* Profile header: a grey secondary button, like "Message". */
@@ -71,6 +71,8 @@
     .overlay .view svg { width: 18px; height: 18px; }
     :host-context(a:hover) .overlay, .overlay.saved, .overlay.busy { opacity: 1; transform: none; }
     .overlay:hover { background: rgba(0, 0, 0, 0.8); }
+    .overlay.saved { background: var(--green); }
+    .overlay.saved .done { color: #fff; }
     .overlay.saved:hover { background: var(--red); }
     .overlay .label { display: none; }
 

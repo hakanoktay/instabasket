@@ -2,7 +2,7 @@
    secondary buttons, red for destructive actions, 8px radii. */
 :root {
   --bg: #fff; --elevated: #fff; --hover: #fafafa; --text: #000; --muted: #737373; --line: #dbdbdb; --divider: #efefef;
-  --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2; --red: #ed4956;
+  --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2; --red: #ed4956; --green: #58c322;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 @media (prefers-color-scheme: dark) {
@@ -105,7 +105,7 @@ ul.profiles li:hover { background: var(--hover); }
 .group h2 .n { color: var(--muted); font-weight: 400; }
 .group h2 .spacer { flex: 1; }
 .group h2 .add-profile { font-size: 12px; }
-.group h2 .saved-profile { font-size: 12px; color: var(--muted); font-weight: 600; }
+.group h2 .saved-profile { font-size: 12px; color: var(--green); font-weight: 600; }
 
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
 .tile { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--secondary); }
