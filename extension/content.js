@@ -4,11 +4,13 @@
 var InstaBasketDrop = (() => {
   const HIDE_DELAY = 400;
   const RETRY_AFTER = 6 * 60 * 60 * 1000; // retry missing details at most every 6 hours
-  let host, zone, label, hideTimer, resetTimer, busy = false;
+  let host, zone, label, listsEl, hideTimer, resetTimer, busy = false;
 
   // ---- Adding to the basket ----
 
-  async function enrichProfile(username) {
+  // Fetches an account's name and picture into the u: cache. Used for saved
+  // profiles and for the owners of saved media alike.
+  async function enrichUser(username) {
     let info = {};
     try {
       info = await InstaApi.profile(username);
@@ -17,15 +19,11 @@ var InstaBasketDrop = (() => {
     const update = { username, triedAt: Date.now() };
     if (info.fullName) update.fullName = info.fullName;
     if (pic) update.pic = pic;
-    return InstaBasket.saveProfile(update);
+    return InstaBasket.saveUser(update);
   }
 
-  // Adds the media owner to the profile list if missing. Returns true if newly added.
-  async function ensureProfile(username) {
-    if (await InstaBasket.getProfile(username)) return false;
-    await InstaBasket.saveProfile({ username, addedAt: Date.now() });
-    await enrichProfile(username);
-    return true;
+  async function ensureUser(username) {
+    if (!(await InstaBasket.getUser(username))?.pic) await enrichUser(username);
   }
 
   async function enrichMedia(item) {
@@ -44,39 +42,46 @@ var InstaBasketDrop = (() => {
     return InstaBasket.saveMedia(update);
   }
 
+  // Adds a profile or a media item. Adding media never adds its owner as a
+  // profile. `recordKey` in the result is used to offer the list picker.
   async function add(raw) {
     const item = InstaBasket.parse(raw);
     if (!item) return { state: 'bad', text: 'Not an Instagram profile or post' };
 
     if (item.kind === 'profile') {
-      if (await InstaBasket.getProfile(item.username)) return { state: 'dup', text: `@${item.username} is already in the list` };
-      await InstaBasket.saveProfile({ username: item.username, addedAt: Date.now() });
-      await enrichProfile(item.username);
-      return { state: 'done', text: `@${item.username} added ✓` };
+      const recordKey = 'p:' + item.username;
+      if (await InstaBasket.getProfile(item.username)) {
+        return { state: 'dup', text: `@${item.username} is already in profiles`, recordKey };
+      }
+      await InstaBasket.saveProfile({ username: item.username, addedAt: Date.now(), lists: [] });
+      await ensureUser(item.username);
+      return { state: 'done', text: `@${item.username} added ✓`, recordKey };
     }
 
-    if (await InstaBasket.getMedia(item.key)) return { state: 'dup', text: 'This post is already in the basket' };
-    await InstaBasket.saveMedia({ ...item, addedAt: Date.now() });
+    const recordKey = 'm:' + item.key;
+    if (await InstaBasket.getMedia(item.key)) return { state: 'dup', text: 'Already in media', recordKey };
+    await InstaBasket.saveMedia({ ...item, addedAt: Date.now(), lists: [] });
     const saved = await enrichMedia(item);
-    if (!saved.username) return { state: 'done', text: 'Added ✓ (owner not found)' };
-    const isNew = await ensureProfile(saved.username);
+    if (saved.username) await ensureUser(saved.username);
     return {
       state: 'done',
-      text: isNew ? `Added ✓ @${saved.username} was added to profiles too` : `Added under @${saved.username} ✓`,
+      text: saved.username ? `Media from @${saved.username} added ✓` : 'Media added ✓ (owner not found)',
+      recordKey,
     };
   }
 
-  // Fills in records that were saved with missing details (network errors,
-  // records migrated from the old version) in the background while Instagram is open.
+  // Fills in details that couldn't be fetched when something was added
+  // (network errors etc.) in the background while Instagram is open.
   async function fillMissing() {
-    const { profiles, media } = await InstaBasket.load();
-    const stale = (x) => !x.triedAt || Date.now() - x.triedAt > RETRY_AFTER;
+    const { profiles, media, users } = await InstaBasket.load();
+    const stale = (x) => !x?.triedAt || Date.now() - x.triedAt > RETRY_AFTER;
+    const usernames = new Set([...profiles.map((p) => p.username), ...media.map((m) => m.username).filter(Boolean)]);
     const jobs = [
       ...media.filter((m) => (!m.username || (m.code && !m.thumb)) && stale(m)).map((m) => async () => {
         const saved = await enrichMedia(m);
-        if (saved.username) await ensureProfile(saved.username);
+        if (saved.username) await ensureUser(saved.username);
       }),
-      ...profiles.filter((p) => !p.pic && stale(p)).map((p) => () => enrichProfile(p.username)),
+      ...[...usernames].filter((u) => !users[u]?.pic && stale(users[u])).map((u) => () => enrichUser(u)),
     ];
     for (const job of jobs.slice(0, 10)) {
       await job().catch(() => {});
@@ -113,10 +118,25 @@ var InstaBasketDrop = (() => {
         .zone.dup { border-color: #d97706; border-style: solid; }
         .zone.bad { border-color: #dc2626; border-style: solid; }
         .icon { font-size: 34px; }
+        .lists { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
+        .lists:empty { display: none; }
+        .lists .hint { width: 100%; font-weight: 400; font-size: 12px; color: #737373; }
+        .lists button {
+          font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer;
+          border: 1px solid #dbdbdb; background: #fff; color: #262626; border-radius: 12px; padding: 5px 9px;
+        }
+        .lists button.on { background: #c13584; border-color: #c13584; color: #fff; }
       </style>
-      <div class="zone"><div class="icon">🧺</div><div class="label"></div></div>`;
+      <div class="zone"><div class="icon">🧺</div><div class="label"></div><div class="lists"></div></div>`;
     zone = root.querySelector('.zone');
     label = root.querySelector('.label');
+    listsEl = root.querySelector('.lists');
+
+    // Keep the notice open while the pointer is on it (e.g. picking lists).
+    zone.addEventListener('mouseenter', () => clearTimeout(resetTimer));
+    zone.addEventListener('mouseleave', () => {
+      if (listsEl.childElementCount) resetTimer = setTimeout(hide, 1500);
+    });
 
     zone.addEventListener('dragenter', (e) => {
       e.preventDefault();
@@ -147,6 +167,7 @@ var InstaBasketDrop = (() => {
     mount();
     zone.className = 'zone' + (zone.classList.contains('over') ? ' over' : '');
     label.textContent = 'Drop into basket';
+    listsEl.replaceChildren();
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hide, HIDE_DELAY);
   }
@@ -161,7 +182,34 @@ var InstaBasketDrop = (() => {
     clearTimeout(hideTimer);
     zone.className = 'zone ' + state;
     label.textContent = text;
+    listsEl.replaceChildren();
     if (ms) resetTimer = setTimeout(hide, ms);
+  }
+
+  // After adding, offers the user's lists as toggles so the item can be filed right away.
+  async function offerLists(recordKey) {
+    const [lists, record] = await Promise.all([
+      InstaBasket.getLists(),
+      recordKey.startsWith('p:') ? InstaBasket.getProfile(recordKey.slice(2)) : InstaBasket.getMedia(recordKey.slice(2)),
+    ]);
+    if (!lists.length || !record) return;
+    const inLists = new Set(record.lists || []);
+    listsEl.replaceChildren(
+      Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Add to list:' }),
+      ...lists.map((list) => {
+        const b = document.createElement('button');
+        b.textContent = list.name;
+        b.classList.toggle('on', inLists.has(list.id));
+        b.addEventListener('click', async () => {
+          const on = !b.classList.contains('on');
+          b.classList.toggle('on', on);
+          await InstaBasket.setInList(recordKey, list.id, on);
+        });
+        return b;
+      }),
+    );
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(hide, 4500);
   }
 
   async function run(raw) {
@@ -176,6 +224,7 @@ var InstaBasketDrop = (() => {
     }
     busy = false;
     flash(result.state, result.text, 1600);
+    if (result.recordKey) await offerLists(result.recordKey).catch(() => {});
     return result;
   }
 

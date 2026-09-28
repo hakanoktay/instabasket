@@ -31,7 +31,38 @@ nav { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
 .tab.active { color: var(--text); border-bottom-color: var(--accent); }
 .tab span { font-weight: normal; }
 
-section { max-height: 430px; overflow-y: auto; }
+section { max-height: 400px; overflow-y: auto; }
+
+#lists { margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chip { border-radius: 12px; padding: 3px 10px; }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip .n { opacity: 0.7; }
+.new-list {
+  width: 90px; border: 1px dashed var(--line); border-radius: 12px; padding: 3px 10px;
+  font: inherit; background: none; color: var(--text);
+}
+.new-list:focus { outline: none; border-color: var(--accent); width: 130px; }
+#list-actions { display: flex; gap: 6px; margin-top: 6px; }
+#list-actions button { font-size: 12px; padding: 2px 8px; }
+#delete-list { color: var(--danger); }
+
+.list-btn { border: none; background: none; padding: 2px 4px; opacity: 0.45; }
+.list-btn.on { opacity: 1; }
+.list-btn span { font-size: 10px; color: var(--accent); font-weight: 700; }
+
+#picker {
+  position: absolute; z-index: 10; width: 190px; padding: 8px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+#picker .title { font-weight: 600; margin-bottom: 4px; }
+#picker label { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; }
+#picker .none { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+#picker input:not([type]) {
+  width: 100%; margin-top: 6px; padding: 4px 6px; font: inherit;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--soft); color: var(--text);
+}
 .empty { color: var(--muted); }
 
 .avatar {
@@ -60,6 +91,9 @@ ul.profiles li:first-child { border-top: none; }
 .group h2 { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 0 0 6px; }
 .group h2 a { color: var(--text); text-decoration: none; }
 .group h2 .n { color: var(--muted); font-weight: normal; }
+.group h2 .spacer { flex: 1; }
+.group h2 .add-profile { font-size: 11px; padding: 2px 8px; font-weight: 600; }
+.group h2 .saved-profile { font-size: 11px; color: #16a34a; font-weight: 600; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .tile { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--soft); }
 .tile a { display: block; width: 100%; height: 100%; }
@@ -69,10 +103,14 @@ ul.profiles li:first-child { border-top: none; }
   position: absolute; left: 4px; bottom: 4px; padding: 1px 5px; border-radius: 8px;
   background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; pointer-events: none;
 }
-.tile .remove {
-  position: absolute; top: 2px; right: 2px; display: none;
-  background: rgba(0, 0, 0, 0.6); color: #fff; border-radius: 50%; width: 20px; height: 20px; padding: 0; line-height: 20px;
+.tile .tile-btn {
+  position: absolute; top: 2px; display: none; opacity: 1;
+  background: rgba(0, 0, 0, 0.6); color: #fff; border-radius: 10px; min-width: 22px; height: 22px; padding: 0 4px; line-height: 22px;
 }
-.tile:hover .remove { display: block; }
+.tile .remove.tile-btn { right: 2px; }
+.tile .list-btn.tile-btn { left: 2px; }
+.tile .list-btn.tile-btn span { color: #fff; }
+.tile:hover .tile-btn, .tile .list-btn.on { display: block; }
+.tile .remove.tile-btn:hover { color: #fff; background: var(--danger); }
 
 footer { display: flex; justify-content: flex-end; gap: 6px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }

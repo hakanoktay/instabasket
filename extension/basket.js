@@ -1,9 +1,15 @@
 // URL parsing and storage shared by the content script and the popup.
 //
-// Every record lives under its own key in chrome.storage.local:
-//   p:<username>   → profile
-//   m:<shortcode>  → photo / video / reel (stories use m:story:<id>)
-// so concurrent additions never overwrite each other.
+// Every record lives under its own key in chrome.storage.local, so concurrent
+// additions never overwrite each other:
+//   p:<username>   → a saved profile          { username, addedAt, lists }
+//   m:<shortcode>  → a saved photo/video/reel { key, code, url, type, username, thumb, addedAt, lists }
+//                    (stories use m:story:<id>)
+//   u:<username>   → cached account details   { username, fullName, pic }, used by
+//                    both saved profiles and the owners of saved media
+//   lists          → the user's lists [{ id, name }]; profiles and media refer to them by id
+//
+// Saving media never saves its owner as a profile; the two are independent.
 var InstaBasket = (() => {
   const BASE = 'https://www.instagram.com/';
   const USERNAME = /^[A-Za-z0-9._]{1,30}$/;
@@ -61,33 +67,16 @@ var InstaBasket = (() => {
 
   async function load() {
     const all = await chrome.storage.local.get(null);
-    await migrate(all);
     const profiles = [];
-    const mediaList = [];
+    const media = [];
+    const users = {};
     for (const [k, v] of Object.entries(all)) {
       if (k.startsWith('p:')) profiles.push(v);
-      else if (k.startsWith('m:')) mediaList.push(v);
+      else if (k.startsWith('m:')) media.push(v);
+      else if (k.startsWith('u:')) users[v.username] = v;
     }
     const byNewest = (a, b) => (b.addedAt || 0) - (a.addedAt || 0);
-    return { profiles: profiles.sort(byNewest), media: mediaList.sort(byNewest) };
-  }
-
-  // Moves the flat "basket" list from version 0.1 into the new layout. Missing
-  // details (owner, thumbnail) are filled in on the next Instagram visit.
-  async function migrate(all) {
-    if (!Array.isArray(all.basket)) return;
-    const next = {};
-    for (const old of all.basket) {
-      const item = parse(old.url);
-      if (!item) continue;
-      const addedAt = old.addedAt || Date.now();
-      if (item.kind === 'profile') next['p:' + item.username] = { username: item.username, addedAt };
-      else next['m:' + item.key] = { ...strip(item), addedAt };
-    }
-    await chrome.storage.local.set(next);
-    await chrome.storage.local.remove('basket');
-    Object.assign(all, next);
-    delete all.basket;
+    return { profiles: profiles.sort(byNewest), media: media.sort(byNewest), users, lists: all.lists || [] };
   }
 
   function strip(item) {
@@ -107,25 +96,65 @@ var InstaBasket = (() => {
     return value;
   }
 
+  async function getLists() {
+    return (await get('lists')) || [];
+  }
+
+  async function createList(name) {
+    const lists = await getLists();
+    const list = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.trim() };
+    await chrome.storage.local.set({ lists: [...lists, list] });
+    return list;
+  }
+
+  async function renameList(id, name) {
+    const lists = await getLists();
+    await chrome.storage.local.set({ lists: lists.map((l) => (l.id === id ? { ...l, name: name.trim() } : l)) });
+  }
+
+  // Deletes the list itself; the profiles and media in it are kept.
+  async function deleteList(id) {
+    const all = await chrome.storage.local.get(null);
+    const update = { lists: (all.lists || []).filter((l) => l.id !== id) };
+    for (const [k, v] of Object.entries(all)) {
+      if (/^[pm]:/.test(k) && v.lists?.includes(id)) update[k] = { ...v, lists: v.lists.filter((x) => x !== id) };
+    }
+    await chrome.storage.local.set(update);
+  }
+
+  // `recordKey` is a storage key such as "p:alice" or "m:DQMXnfvDEcE".
+  async function setInList(recordKey, listId, inList) {
+    const record = await get(recordKey);
+    if (!record) return;
+    const lists = (record.lists || []).filter((x) => x !== listId);
+    if (inList) lists.push(listId);
+    await chrome.storage.local.set({ [recordKey]: { ...record, lists } });
+  }
+
   return {
     parse,
     profileUrl,
     load,
     getProfile: (username) => get('p:' + username),
     getMedia: (key) => get('m:' + key),
+    getUser: (username) => get('u:' + username),
     saveProfile: (p) => merge('p:' + p.username, p),
     saveMedia: (m) => merge('m:' + m.key, strip(m)),
+    saveUser: (u) => merge('u:' + u.username, u),
+    removeProfile: (username) => chrome.storage.local.remove('p:' + username),
     removeMedia: (key) => chrome.storage.local.remove('m:' + key),
-    // Removing a profile also removes its media.
-    async removeProfile(username) {
-      const { media: list } = await load();
-      const keys = ['p:' + username];
-      for (const m of list) if (m.username === username) keys.push('m:' + m.key);
-      await chrome.storage.local.remove(keys);
+    async removeUserMedia(username) {
+      const { media } = await load();
+      await chrome.storage.local.remove(media.filter((m) => m.username === username).map((m) => 'm:' + m.key));
     },
+    getLists,
+    createList,
+    renameList,
+    deleteList,
+    setInList,
     async clear() {
       const all = await chrome.storage.local.get(null);
-      await chrome.storage.local.remove(Object.keys(all).filter((k) => /^[pm]:/.test(k) || k === 'basket'));
+      await chrome.storage.local.remove(Object.keys(all).filter((k) => /^[pmu]:/.test(k) || k === 'basket'));
     },
   };
 })();

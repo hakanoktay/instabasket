@@ -16,8 +16,16 @@
     <button class="tab" data-tab="media">Media <span id="media-count"></span></button>
   </nav>
 
+  <div id="lists">
+    <div class="chips"></div>
+    <div id="list-actions" hidden>
+      <button id="rename-list">Rename list</button>
+      <button id="delete-list">Delete list</button>
+    </div>
+  </div>
+
   <section id="profiles">
-    <p class="empty">No profiles yet. On Instagram, drag a profile or post link and drop it into the box that appears in the corner.</p>
+    <p class="empty"></p>
     <ul class="profiles"></ul>
   </section>
 
@@ -26,7 +34,7 @@
       <span></span>
       <button title="Clear filter">✕</button>
     </div>
-    <p class="empty">No media yet. Drag and drop a post, reel or video link; its owner is added to profiles too.</p>
+    <p class="empty"></p>
     <div class="groups"></div>
   </section>
 
@@ -34,6 +42,8 @@
     <button id="copy">Copy links</button>
     <button id="clear">Clear all</button>
   </footer>
+
+  <div id="picker" hidden></div>
 
   <script src="basket.js"></script>
   <script src="popup.js"></script>
