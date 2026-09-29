@@ -102,13 +102,6 @@
     .action:hover { opacity: 0.5; }
     .action.saved:hover { color: var(--red); opacity: 1; }
 
-    /* Story viewer: icons in a translucent pill on the story, light brand tone. */
-    .story { color: #d9a8f0; padding: 6px; border-radius: 50%; }
-    .story .view svg { width: 22px; height: 22px; }
-    .story .label { display: none; }
-    .story:hover { background: rgba(255, 255, 255, 0.14); }
-    .story.saved .done { color: #7ee04a; }
-    .story.saved:hover { color: var(--red); }
   `;
 
   function isLightColor(color) {
@@ -512,8 +505,10 @@
 
   // ---- Story viewer (/stories/<username>/<id>/) ----
   //
-  // One bar for the story on screen: Profile, Media and Download in a small
-  // translucent pill on the story's top right, under Instagram's own icons.
+  // One column for the story on screen: Profile, Media and Download with
+  // captions, like the Reels column, just outside the story's right edge and
+  // level with its top, so nothing covers the story. In a window too narrow
+  // for that, it moves onto the story's top right on a translucent backing.
   // The story is found by its shape (a tall card in the middle of the
   // window); what the buttons act on comes from the address bar, which
   // Instagram updates as stories advance. Highlights have no owner or item in
@@ -549,10 +544,17 @@
       storyBar.style.display = 'none';
       return;
     }
-    Object.assign(storyBar.style, {
-      display: 'flex',
-      top: `${Math.round(card.top + Math.min(128, card.height * 0.14))}px`,
-      left: `${Math.round(card.right - 12 - storyBar.offsetWidth)}px`,
+    storyBar.style.display = 'flex';
+    const width = storyBar.offsetWidth;
+    const outside = card.right + 16 + width <= innerWidth - 8;
+    Object.assign(storyBar.style, outside ? {
+      top: `${Math.round(card.top + 12)}px`,
+      left: `${Math.round(card.right + 16)}px`,
+      background: 'none', backdropFilter: 'none',
+    } : {
+      top: `${Math.round(card.top + Math.min(110, card.height * 0.12))}px`,
+      left: `${Math.round(card.right - 10 - width)}px`,
+      background: 'rgba(20, 6, 28, 0.5)', backdropFilter: 'blur(8px)',
     });
   }
 
@@ -566,8 +568,8 @@
       storyBar = document.createElement('div');
       storyBar.dataset.keepkeep = 'story-bar';
       Object.assign(storyBar.style, {
-        position: 'fixed', zIndex: '2147483645', display: 'none', gap: '2px', padding: '3px',
-        borderRadius: '999px', background: 'rgba(20, 6, 28, 0.45)', backdropFilter: 'blur(8px)',
+        position: 'fixed', zIndex: '2147483645', display: 'none', flexDirection: 'column', gap: '10px', padding: '8px 4px',
+        borderRadius: '14px',
       });
       const profileTarget = async () => {
         const s = currentStory();
@@ -578,10 +580,11 @@
         return s && { url: s.url, key: storageKey(s) };
       };
       storyBar.append(
-        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark: true }),
-        makeButton('story', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this story to Media', dark: true }),
-        makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download this story (D)', dark: true }),
+        makeButton('reel', profileTarget, { icon: 'profile', label: 'Profile', savedLabel: 'Profile', title: 'Add this profile to basket', dark: true }),
+        makeButton('reel', mediaTarget, { icon: 'media', label: 'Media', savedLabel: 'Media', title: 'Add this story to Media', dark: true }),
+        makeCommandButton('reel', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download this story (D)', dark: true }),
       );
+      for (const host of storyBar.children) Object.assign(host.style, { display: 'flex', justifyContent: 'center' });
       document.body.appendChild(storyBar);
     }
     placeStoryBar();
