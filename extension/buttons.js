@@ -102,13 +102,13 @@
   //   opts.icon / opts.label: icon and text shown while not saved
   function makeButton(variant, target, opts = {}) {
     const host = document.createElement('span');
-    host.dataset.instabasket = variant;
+    host.dataset.keepkeep = variant;
     if (variant === 'overlay') Object.assign(host.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
     const root = host.attachShadow({ mode: 'open' });
     const label = opts.label || 'Add to basket';
     const savedLabel = opts.savedLabel || 'In basket';
     root.innerHTML = `<style>${STYLE}</style>
-      <button class="${variant}${InstaBasketPanel.isDarkPage() && variant !== 'reel' && variant !== 'action' ? ' dark' : ''}">
+      <button class="${variant}${KeepKeepPanel.isDarkPage() && variant !== 'reel' && variant !== 'action' ? ' dark' : ''}">
         <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
         <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
@@ -129,9 +129,9 @@
       if (button.classList.contains('busy')) return;
       button.classList.add('busy');
       const t = await target(true);
-      if (!t) await InstaBasketDrop.run(null); // shows "not an Instagram profile or post"
-      else if (button.classList.contains('saved')) await InstaBasketDrop.remove(t.key);
-      else await InstaBasketDrop.run(t.url);
+      if (!t) await KeepKeepDrop.run(null); // shows "not an Instagram profile or post"
+      else if (button.classList.contains('saved')) await KeepKeepDrop.remove(t.key);
+      else await KeepKeepDrop.run(t.url);
       button.classList.remove('busy');
       refresh(entry);
     });
@@ -141,7 +141,7 @@
   // A plain command button with no saved state (Download), styled like the others.
   function makeCommandButton(variant, run, opts) {
     const host = document.createElement('span');
-    host.dataset.instabasket = variant;
+    host.dataset.keepkeep = variant;
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <button class="${variant}" title="${opts.title}">
@@ -189,7 +189,7 @@
       return null;
     }
     if (url.pathname.split('/').filter(Boolean).length > 3) return null;
-    const item = InstaBasket.parse(url.href);
+    const item = KeepKeep.parse(url.href);
     return item?.kind === 'media' && item.code ? item : null;
   }
 
@@ -205,22 +205,22 @@
   function addPostButtons() {
     for (const time of document.querySelectorAll('a[href] time[datetime]')) {
       const link = time.closest('a');
-      if (link.dataset.instabasketDone) continue;
+      if (link.dataset.keepkeepDone) continue;
       const item = postItem(link.getAttribute('href'));
       if (!item) {
-        link.dataset.instabasketDone = '1';
+        link.dataset.keepkeepDone = '1';
         continue;
       }
       const bar = findActionBar(link);
       if (bar) {
-        link.dataset.instabasketDone = '1';
-        if (!bar.saveItem.querySelector(':scope > [data-instabasket="action-group"]')) addActionButtons(bar, item);
+        link.dataset.keepkeepDone = '1';
+        if (!bar.saveItem.querySelector(':scope > [data-keepkeep="action-group"]')) addActionButtons(bar, item);
         continue;
       }
       const tries = (actionTries.get(link) || 0) + 1;
       actionTries.set(link, tries);
       if (tries >= 6) {
-        link.dataset.instabasketDone = '1';
+        link.dataset.keepkeepDone = '1';
         link.after(makeButton('inline', fixed(item, item.url)));
       }
     }
@@ -232,7 +232,7 @@
     let el = link.parentElement;
     for (let depth = 0; el && depth < 14; depth++, el = el.parentElement) {
       const icons = [...el.querySelectorAll('svg')].filter((s) => {
-        if (s.closest('[data-instabasket]')) return false;
+        if (s.closest('[data-keepkeep]')) return false;
         const r = s.getBoundingClientRect();
         return r.width >= 18 && r.width <= 32 && r.height >= 18 && r.height <= 32;
       });
@@ -270,10 +270,10 @@
     const mediaTarget = fixed(item, item.url);
     const profileTarget = async (allowFetch) => {
       const username = await postOwner(container, row, item, allowFetch);
-      return username && { url: InstaBasket.profileUrl(username), key: 'p:' + username };
+      return username && { url: KeepKeep.profileUrl(username), key: 'p:' + username };
     };
     const group = document.createElement('span');
-    group.dataset.instabasket = 'action-group';
+    group.dataset.keepkeep = 'action-group';
     // Attached to the save icon and positioned just left of it, outside the
     // bar's own layout: Instagram lays the bar out differently in the feed
     // (a fixed grid) and in the post view (a flexible row), and adding an
@@ -286,7 +286,7 @@
     group.append(
       makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket' }),
       makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket' }),
-      makeCommandButton('action', () => InstaBasketDrop.download(item.code), {
+      makeCommandButton('action', () => KeepKeepDrop.download(item.code), {
         icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)',
       }),
     );
@@ -307,10 +307,10 @@
       });
       if (otherPost) break;
       for (const a of el.querySelectorAll('a[href]')) {
-        if (a.closest('[data-instabasket]')) continue;
+        if (a.closest('[data-keepkeep]')) continue;
         const r = a.getBoundingClientRect();
         if (!r.width || r.top >= barTop) continue;
-        const p = InstaBasket.parse(new URL(a.getAttribute('href'), location.href).href);
+        const p = KeepKeep.parse(new URL(a.getAttribute('href'), location.href).href);
         if (p?.kind === 'profile') return p.username;
       }
     }
@@ -322,11 +322,11 @@
   // Thumbnails on profile grids and explore: links to posts that wrap an image.
   function addOverlayButtons() {
     for (const link of document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]')) {
-      if (link.dataset.instabasketDone) continue;
+      if (link.dataset.keepkeepDone) continue;
       if (!link.querySelector('img') || link.querySelector('time')) continue;
       const rect = link.getBoundingClientRect();
       if (rect.width && rect.width < 100) continue;
-      link.dataset.instabasketDone = '1';
+      link.dataset.keepkeepDone = '1';
       const item = postItem(link.getAttribute('href'));
       if (!item) continue;
       if (getComputedStyle(link).position === 'static') link.style.position = 'relative';
@@ -336,9 +336,9 @@
 
   // Profile pages: next to Follow / Message (or Edit profile on your own profile).
   function addProfileButton() {
-    const item = InstaBasket.parse(location.href);
+    const item = KeepKeep.parse(location.href);
     const wanted = item?.kind === 'profile' ? storageKey(item) : null;
-    const existing = document.querySelector('[data-instabasket="header"]');
+    const existing = document.querySelector('[data-keepkeep="header"]');
     if (existing) {
       if (existing.dataset.key === wanted) return;
       existing.remove(); // navigated to another profile or away from profiles
@@ -350,8 +350,8 @@
     // The first button with visible text is Follow / Following / Edit profile;
     // the profile picture's button has none.
     const actions = [...header.querySelectorAll('button, [role="button"]')]
-      .find((b) => b.textContent.trim() && !b.closest('[data-instabasket]'));
-    const host = makeButton('header', fixed(item, InstaBasket.profileUrl(item.username)));
+      .find((b) => b.textContent.trim() && !b.closest('[data-keepkeep]'));
+    const host = makeButton('header', fixed(item, KeepKeep.profileUrl(item.username)));
     host.dataset.key = wanted;
     Object.assign(host.style, { marginLeft: '8px', display: 'inline-flex', alignSelf: 'center' });
     if (actions) {
@@ -371,7 +371,7 @@
   function findReelColumn(video) {
     const v = video.getBoundingClientRect();
     const icons = [...document.querySelectorAll('svg')].filter((s) => {
-      if (s.closest('[data-instabasket]')) return false;
+      if (s.closest('[data-keepkeep]')) return false;
       const r = s.getBoundingClientRect();
       return r.width >= 16 && r.width <= 48 && r.left >= v.right - 4 && r.left <= v.right + 160 &&
         r.top >= v.top - 20 && r.bottom <= v.bottom + 20;
@@ -415,7 +415,7 @@
     }
     const v = video.getBoundingClientRect();
     if (v.top < innerHeight / 2 && v.bottom > innerHeight / 2) {
-      const item = InstaBasket.parse(location.href);
+      const item = KeepKeep.parse(location.href);
       if (item?.kind === 'media' && item.code) memory.media = item;
     }
     return memory.media;
@@ -430,10 +430,10 @@
     const v = video ? video.getBoundingClientRect() : { width: 0 };
     let best = null;
     for (const a of v.width ? document.querySelectorAll('main a[href]') : []) {
-      if (a.closest('[data-instabasket]')) continue;
+      if (a.closest('[data-keepkeep]')) continue;
       const r = a.getBoundingClientRect();
       if (!r.width || r.bottom < v.top || r.top > v.bottom || r.right < v.left - 600 || r.left > v.right) continue;
-      const item = InstaBasket.parse(new URL(a.getAttribute('href'), location.href).href);
+      const item = KeepKeep.parse(new URL(a.getAttribute('href'), location.href).href);
       if (item?.kind !== 'profile') continue;
       const distance = Math.hypot(Math.max(0, v.left - r.right), v.bottom - r.bottom);
       if (!best || distance < best.distance) best = { username: item.username, distance };
@@ -456,7 +456,7 @@
       const { column } = found;
       // The column is what's marked, not the video: a new <video> in the same
       // reel must not get a second pair of buttons.
-      if (column.querySelector(':scope > [data-instabasket="reel"]')) continue;
+      if (column.querySelector(':scope > [data-keepkeep="reel"]')) continue;
 
       const memory = { media: null };
       const mediaTarget = async () => {
@@ -465,7 +465,7 @@
       };
       const profileTarget = async (allowFetch) => {
         const username = await reelOwner(column, reelMedia(column, memory), allowFetch);
-        return username && { url: InstaBasket.profileUrl(username), key: 'p:' + username };
+        return username && { url: KeepKeep.profileUrl(username), key: 'p:' + username };
       };
 
       // Match the colour of Instagram's own icons (white on the dark Reels page).
@@ -478,8 +478,8 @@
       }
       const downloadButton = makeCommandButton('reel', async () => {
         const media = reelMedia(column, memory);
-        if (media?.code) await InstaBasketDrop.download(media.code);
-        else InstaBasketPanel.showError("Couldn't tell which reel this is");
+        if (media?.code) await KeepKeepDrop.download(media.code);
+        else KeepKeepPanel.showError("Couldn't tell which reel this is");
       }, { icon: 'download', label: 'Download', title: 'Download this reel (best quality)' });
       Object.assign(downloadButton.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
       column.insertBefore(downloadButton, found.first);
@@ -494,7 +494,7 @@
       addProfileButton();
       addReelButtons();
     } catch (e) {
-      console.debug('[InstaBasket]', e);
+      console.debug('[KeepKeep]', e);
     }
     // Scrolling through reels changes the URL without reloading; reel buttons
     // may now point at a different reel.
@@ -513,8 +513,8 @@
   // doesn't reload the page, so rescan whenever the DOM changes or the page scrolls.
   // After the extension is reloaded or updated, buttons from the previous copy
   // are still on the page but no longer work; replace them.
-  document.querySelectorAll('[data-instabasket]').forEach((el) => el.remove());
-  document.querySelectorAll('[data-instabasket-done]').forEach((el) => delete el.dataset.instabasketDone);
+  document.querySelectorAll('[data-keepkeep]').forEach((el) => el.remove());
+  document.querySelectorAll('[data-keepkeep-done]').forEach((el) => delete el.dataset.keepkeepDone);
 
   new MutationObserver(scheduleScan).observe(document.documentElement, { childList: true, subtree: true });
   addEventListener('scroll', scheduleScan, { capture: true, passive: true });

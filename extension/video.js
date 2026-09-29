@@ -76,7 +76,7 @@
 
   function build() {
     host = document.createElement('div');
-    host.id = 'instabasket-video';
+    host.id = 'keepkeep-video';
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="bar">

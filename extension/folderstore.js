@@ -3,6 +3,7 @@
 // the folder window (folder.js) and the download helper (offscreen.js) can read it.
 var FolderStore = (() => {
   const open = () => new Promise((resolve, reject) => {
+    // Original name, kept so a folder chosen before the rename isn't lost.
     const req = indexedDB.open('instabasket', 1);
     req.onupgradeneeded = () => req.result.createObjectStore('kv');
     req.onsuccess = () => resolve(req.result);

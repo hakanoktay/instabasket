@@ -1,4 +1,4 @@
-# InstaBasket
+# KeepKeep
 
 A Chrome extension that lets you drag Instagram profiles and posts into a "basket".
 
@@ -21,10 +21,10 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 **Download** saves every photo and video of a post in the highest resolution Instagram offers. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
 
-The first time you download, InstaBasket asks where to save:
+The first time you download, KeepKeep asks where to save:
 
 - **Choose a folder** – files are written straight into that folder, each as a separate file, with no save window and no ZIP (existing files are never overwritten). If Chrome later wants the access confirmed again, the same window asks once.
-- **Use the Downloads folder** – files go to `Downloads/InstaBasket/`; an album is saved as one ZIP so there's at most one "Save as" window.
+- **Use the Downloads folder** – files go to `Downloads/KeepKeep/`; an album is saved as one ZIP so there's at most one "Save as" window.
 
 You can change this any time with the download button in the popup's header.
 

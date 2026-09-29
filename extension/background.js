@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 //
 // Files are fetched by the hidden helper page (offscreen.js), which reports
 // progress. They're written straight into the folder the user picked, or –
-// without one – saved in Downloads/InstaBasket/, an album packed into a single
+// without one – saved in Downloads/KeepKeep/, an album packed into a single
 // ZIP so there's one download (and at most one "Save as" window) per post.
 
 const jobs = new Map(); // job id → tab id, for progress messages
@@ -52,7 +52,7 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
     const built = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'build', job, files, zipName: safeName(zipName), mtime });
     if (!built || built.error) throw new Error(built?.error || 'build failed');
     const id = await chrome.downloads.download({
-      url: built.url, filename: `InstaBasket/${built.filename}`, conflictAction: 'uniquify', saveAs: false,
+      url: built.url, filename: `KeepKeep/${built.filename}`, conflictAction: 'uniquify', saveAs: false,
     });
     releaseWhenDone(id, built.url);
     return { ok: true, mode: 'downloads', filename: built.filename, size: built.size };
@@ -62,7 +62,7 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
 }
 
 // Where this download goes: the folder the user picked ('folder') or
-// Downloads/InstaBasket ('downloads'). The first time – or when Chrome wants
+// Downloads/KeepKeep ('downloads'). The first time – or when Chrome wants
 // the folder access confirmed again – the folder window asks, and the download
 // waits for the answer.
 async function downloadTarget(job, tabId) {

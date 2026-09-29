@@ -1,7 +1,7 @@
 // The card in the top-right corner of Instagram: the drop target while dragging,
 // then the result of adding (with the list picker) or removing (with undo).
 // Styled after Instagram's own menus and buttons, in light and dark mode.
-var InstaBasketPanel = (() => {
+var KeepKeepPanel = (() => {
   const RESULT_MS = 8000; // how long the card stays after adding (paused while hovered)
   const SHORT_MS = 2500; // errors and "removed"
   const SEARCH_FROM = 7; // show a search field when there are this many lists
@@ -133,7 +133,7 @@ var InstaBasketPanel = (() => {
 
   function build() {
     host = document.createElement('div');
-    host.id = 'instabasket-host';
+    host.id = 'keepkeep-host';
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="card">
@@ -269,7 +269,7 @@ var InstaBasketPanel = (() => {
   async function showResult(result, onRemove) {
     const { recordKey } = result;
     const [record, lists, all] = await Promise.all([
-      InstaBasket.get(recordKey), InstaBasket.getLists(recordKey[0]), chrome.storage.local.get(null),
+      KeepKeep.get(recordKey), KeepKeep.getLists(recordKey[0]), chrome.storage.local.get(null),
     ]);
     if (!record) return showError('Something went wrong');
     const isProfile = recordKey.startsWith('p:');
@@ -341,7 +341,7 @@ var InstaBasketPanel = (() => {
         e.stopPropagation();
         if (e.key === 'Escape') return renderBoxes();
         if (e.key !== 'Enter' || !input.value.trim()) return;
-        const list = await InstaBasket.createList(input.value, current.recordKey[0]);
+        const list = await KeepKeep.createList(input.value, current.recordKey[0]);
         current.lists.push(list);
         els.searchInput.value = '';
         els.search.hidden = current.lists.length < SEARCH_FROM;
@@ -363,7 +363,7 @@ var InstaBasketPanel = (() => {
     current.counts[listId] = (current.counts[listId] || 0) + (on ? 1 : -1);
     renderBoxes();
     startTimer(RESULT_MS); // interacting keeps the card open
-    await InstaBasket.setInList(current.recordKey, listId, on);
+    await KeepKeep.setInList(current.recordKey, listId, on);
   }
 
   // 1–9 toggle the first nine lists while the picker is open.
@@ -451,7 +451,7 @@ var InstaBasketPanel = (() => {
   function dlMount() {
     if (!dlHost) {
       dlHost = document.createElement('div');
-      dlHost.id = 'instabasket-downloads';
+      dlHost.id = 'keepkeep-downloads';
       const root = dlHost.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>${DL_STYLE}</style><div class="stack"></div>`;
       dlStack = root.querySelector('.stack');
@@ -538,7 +538,7 @@ var InstaBasketPanel = (() => {
         const n = res.filenames.length;
         setText(j.header, `Saved to “${res.folder}”`, n === 1 ? res.filenames[0] : `${n} files`);
       } else {
-        setText(j.header, 'Saved', `Downloads/InstaBasket/${res.filename}`);
+        setText(j.header, 'Saved', `Downloads/KeepKeep/${res.filename}`);
       }
       markDone(j.header);
       dismiss(job, 4000);

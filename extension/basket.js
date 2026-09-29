@@ -11,7 +11,7 @@
 //                    'm' (media lists) – the two tabs have separate lists. Records refer to lists by id.
 //
 // Saving media never saves its owner as a profile; the two are independent.
-var InstaBasket = (() => {
+var KeepKeep = (() => {
   const BASE = 'https://www.instagram.com/';
   const USERNAME = /^[A-Za-z0-9._]{1,30}$/;
   // Paths that look like usernames but are Instagram's own pages.

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "InstaBasket",
-  "version": "0.6.1",
-  "description": "Drag Instagram profiles and posts into a basket.",
+  "name": "KeepKeep",
+  "version": "0.7.0",
+  "description": "Keep profiles and posts you find on Instagram in lists, download them in full quality, and skip through videos.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -24,7 +24,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "InstaBasket",
+    "default_title": "KeepKeep",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

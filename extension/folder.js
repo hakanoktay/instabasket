@@ -1,4 +1,4 @@
-// The "Where should InstaBasket save downloads?" window. Opened by the
+// The "Where should KeepKeep save downloads?" window. Opened by the
 // background script on the first download (or when Chrome needs the folder
 // access confirmed again), and from the download button in the popup.
 // Reports the outcome back so a waiting download can continue.
@@ -14,7 +14,7 @@ async function done(result) {
 
 async function chooseFolder() {
   try {
-    const dir = await showDirectoryPicker({ id: 'instabasket', mode: 'readwrite', startIn: 'downloads' });
+    const dir = await showDirectoryPicker({ id: 'keepkeep', mode: 'readwrite', startIn: 'downloads' });
     // Ask right away, so Chrome's "Allow on every visit" option can be picked now.
     if ((await dir.requestPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('permission');
     await FolderStore.set(dir);
@@ -52,6 +52,6 @@ $('#allow').addEventListener('click', async () => {
     // Opened from the popup: show the current setting.
     $('#current').hidden = false;
     $('#ask').hidden = true;
-    $('.where').textContent = downloadMode === 'folder' && name ? `“${name}”` : 'Downloads/InstaBasket (albums as ZIP)';
+    $('.where').textContent = downloadMode === 'folder' && name ? `“${name}”` : 'Downloads/KeepKeep (albums as ZIP)';
   }
 })();

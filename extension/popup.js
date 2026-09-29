@@ -48,11 +48,11 @@ function avatar(username, size) {
   const cls = 'avatar' + (size === 'tiny' ? ' tiny' : size ? ' small' : '');
   const pic = state.users[username]?.pic;
   const img = pic ? el('img', { class: cls, src: pic, alt: '' }) : el('span', { class: cls }, (username || '?')[0]);
-  return el('a', { class: 'avatar-link', href: InstaBasket.profileUrl(username), target: '_blank', title: `Open @${username} on Instagram` }, img);
+  return el('a', { class: 'avatar-link', href: KeepKeep.profileUrl(username), target: '_blank', title: `Open @${username} on Instagram` }, img);
 }
 
 function profileLink(username) {
-  return el('a', { href: InstaBasket.profileUrl(username), target: '_blank' }, '@' + username);
+  return el('a', { href: KeepKeep.profileUrl(username), target: '_blank' }, '@' + username);
 }
 
 const inActiveList = (record) => !activeList || record.lists?.includes(activeList);
@@ -138,7 +138,7 @@ $('#new-list-form').addEventListener('submit', async (e) => {
   const name = $('#new-list-form input').value.trim();
   if (!name) return;
   closeNewList();
-  const list = await InstaBasket.createList(name, tabKind());
+  const list = await KeepKeep.createList(name, tabKind());
   activeList = list.id;
 });
 $('#new-list-form .cancel').addEventListener('click', closeNewList);
@@ -176,14 +176,14 @@ for (const b of document.querySelectorAll('#list-footer .cancel')) b.addEventLis
 $('#list-footer .rename-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('#list-footer .rename-form input').value.trim();
-  if (name) await InstaBasket.renameList(activeList, name);
+  if (name) await KeepKeep.renameList(activeList, name);
   renderFooter('view');
 });
 $('#list-footer .rename-form input').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); renderFooter('view'); } });
 $('#list-footer .confirm-delete').addEventListener('click', async () => {
   const id = activeList;
   activeList = null;
-  await InstaBasket.deleteList(id);
+  await KeepKeep.deleteList(id);
 });
 
 // ---- List picker ----
@@ -209,8 +209,8 @@ function renderPicker() {
   const input = el('input', { placeholder: 'New list…', maxlength: 40 });
   input.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter' && input.value.trim()) {
-      const list = await InstaBasket.createList(input.value, kind);
-      await InstaBasket.setInList(picker.recordKey, list.id, true);
+      const list = await KeepKeep.createList(input.value, kind);
+      await KeepKeep.setInList(picker.recordKey, list.id, true);
     } else if (e.key === 'Escape') {
       closePicker();
     }
@@ -220,7 +220,7 @@ function renderPicker() {
     el('div', { class: 'title' }, 'Lists'),
     ...lists.map((list) => {
       const check = el('input', { type: 'checkbox', checked: !!record.lists?.includes(list.id) });
-      check.addEventListener('change', () => InstaBasket.setInList(picker.recordKey, list.id, check.checked));
+      check.addEventListener('change', () => KeepKeep.setInList(picker.recordKey, list.id, check.checked));
       return el('label', {}, el('span', { class: 'name' }, list.name), check);
     }),
     lists.length ? null : el('div', { class: 'none' }, 'No lists yet. Type a name to create one.'),
@@ -273,7 +273,7 @@ function renderProfiles() {
       el('button', {
         class: 'icon-btn remove',
         title: 'Remove profile (their media is kept)',
-        onclick: async () => { if (confirm(`Remove @${p.username} from profiles?`)) await InstaBasket.removeProfile(p.username); },
+        onclick: async () => { if (confirm(`Remove @${p.username} from profiles?`)) await KeepKeep.removeProfile(p.username); },
       }, icon('trash')),
     );
   }));
@@ -314,7 +314,7 @@ function mediaCard(m, savedProfiles) {
         // A real link, so right-click → "Open link in new tab" opens the profile;
         // a normal click filters to this user's media.
         ? el('a', {
-          class: 'owner', href: InstaBasket.profileUrl(m.username), target: '_blank', title: `Show only @${m.username}`,
+          class: 'owner', href: KeepKeep.profileUrl(m.username), target: '_blank', title: `Show only @${m.username}`,
           onclick: (e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey) return;
             e.preventDefault();
@@ -325,7 +325,7 @@ function mediaCard(m, savedProfiles) {
         : el('span', { class: 'owner unknown' }, 'Owner not found'),
       m.username ? profileToggle(m.username, savedProfiles.has(m.username)) : null,
       el('button', {
-        class: 'icon-btn remove', title: 'Delete from basket', onclick: () => InstaBasket.removeMedia(m.key),
+        class: 'icon-btn remove', title: 'Delete from basket', onclick: () => KeepKeep.removeMedia(m.key),
       }, icon('trash'))),
   );
 }
@@ -337,13 +337,13 @@ function profileToggle(username, saved) {
     class: 'icon-btn profile-toggle' + (saved ? ' saved' : ''),
     title: saved ? `@${username} is in Profiles · click to remove` : `Add @${username} to Profiles`,
     onclick: () => (saved
-      ? InstaBasket.removeProfile(username)
-      : InstaBasket.saveProfile({ username, addedAt: Date.now(), lists: [] })),
+      ? KeepKeep.removeProfile(username)
+      : KeepKeep.saveProfile({ username, addedAt: Date.now(), lists: [] })),
   }, icon(saved ? 'personCheck' : 'personAdd'), saved ? icon('personRemove') : null);
 }
 
 async function render() {
-  state = await InstaBasket.load();
+  state = await KeepKeep.load();
   if (activeList && !state.lists.some((l) => l.id === activeList)) activeList = null;
   $('#profiles-count').textContent = `(${state.profiles.length})`;
   $('#media-count').textContent = `(${state.media.length})`;
@@ -374,7 +374,7 @@ $('#filter button').addEventListener('click', () => { filterUser = null; renderM
 // If the active tab is an Instagram profile or post, add it with one click (no dragging needed).
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url || !InstaBasket.parse(tab.url)) return;
+  if (!tab?.url || !KeepKeep.parse(tab.url)) return;
   const button = $('#add-current');
   button.hidden = false;
   button.addEventListener('click', async () => {
