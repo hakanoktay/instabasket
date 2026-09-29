@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "KeepKeep",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Keep profiles and posts you find on Instagram in lists, download them in full quality, and skip through videos.",
   "icons": {
     "16": "icons/icon16.png",
@@ -51,9 +51,12 @@
         "https://instagram.com/*"
       ],
       "js": [
-        "stories.js"
+        "veil.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "css": [
+        "veil.css"
+      ]
     },
     {
       "matches": [

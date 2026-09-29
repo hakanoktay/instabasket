@@ -459,14 +459,23 @@ async function renderSettings() {
   $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
 }
 $('#anon-stories').addEventListener('change', (e) => chrome.storage.local.set({ anonStories: e.target.checked }));
-// Like a private window: while stories are watched anonymously, the header says so.
-async function renderAnonChip() {
+// Like a private window: the mask button in the header switches anonymous
+// stories on and off, and a purple band shows while it's on.
+async function renderAnon() {
   const { anonStories } = await chrome.storage.local.get('anonStories');
-  $('#anon-chip').hidden = anonStories !== true;
+  const onNow = anonStories === true;
+  $('#anon-toggle').classList.toggle('on', onNow);
+  $('#anon-toggle').title = onNow ? 'Stop watching stories anonymously' : 'Watch stories anonymously';
+  $('#anon-band').hidden = !onNow;
+  $('#anon-stories').checked = onNow;
 }
-$('#anon-chip').addEventListener('click', () => openSettings(true));
-chrome.storage.onChanged.addListener((changes) => changes.anonStories && renderAnonChip());
-renderAnonChip();
+$('#anon-toggle').addEventListener('click', async () => {
+  const { anonStories } = await chrome.storage.local.get('anonStories');
+  chrome.storage.local.set({ anonStories: anonStories !== true });
+});
+$('#anon-band button').addEventListener('click', () => chrome.storage.local.set({ anonStories: false }));
+chrome.storage.onChanged.addListener((changes) => changes.anonStories && renderAnon());
+renderAnon();
 for (const input of document.querySelectorAll('input[name=photo-size]')) {
   input.addEventListener('change', () => chrome.storage.local.set({ photoSize: input.value }));
 }

@@ -1,0 +1,85 @@
+/* KeepKeep "veil": how Instagram looks while stories are watched anonymously.
+   Everything here is inert unless veil.js sets data-keepkeep-anon-stories="1"
+   on <html>. Instagram (Meta) takes its colours from CSS variables declared on
+   <html> and again on nested .__fb-light-mode / .__fb-dark-mode containers;
+   these rules win over both, so the whole interface shifts at once: Instagram
+   blue becomes KeepKeep purple, white a faint lilac. Photos and videos are
+   never touched. */
+
+html[data-keepkeep-anon-stories="1"],
+html[data-keepkeep-anon-stories="1"].__fb-light-mode,
+html[data-keepkeep-anon-stories="1"] .__fb-light-mode {
+  --accent: #8119B5;
+  --blue-4: 170, 86, 213;
+  --blue-5: 129, 25, 181;
+  --blue-6: 105, 20, 148;
+  --blue-7: 87, 16, 124;
+  --blue-link: #450B62;
+  --blue-primary: rgb(129, 25, 181);
+  --base-blue: #8119B5;
+  --badge-background-color-blue: #8119B5;
+  --disabled-button-background: rgba(129, 25, 181, 0.3);
+  --chat-outgoing-message-bubble-background-color: #8119B5;
+  --buttonSendBackgroundColor: #8119B5;
+  --primary-button-background: #8119B5;
+  --primary-button-pressed: #6A139A;
+  --ig-primary-button: 129, 25, 181;
+  --ig-primary-button-hover: 105, 20, 148;
+  --ig-link: 69, 11, 98;
+  --ig-primary-background: 253, 250, 254;
+  --card-background: #FDFAFE;
+}
+
+html[data-keepkeep-anon-stories="1"].__fb-dark-mode,
+html[data-keepkeep-anon-stories="1"] .__fb-dark-mode {
+  --accent: #AA56D5;
+  --blue-4: 192, 127, 224;
+  --blue-5: 170, 86, 213;
+  --blue-6: 150, 66, 196;
+  --blue-link: #C07FE0;
+  --blue-primary: rgb(170, 86, 213);
+  --base-blue: #AA56D5;
+  --badge-background-color-blue: #AA56D5;
+  --disabled-button-background: rgba(170, 86, 213, 0.3);
+  --chat-outgoing-message-bubble-background-color: #8119B5;
+  --buttonSendBackgroundColor: #AA56D5;
+  --primary-button-background: #8119B5;
+  --ig-primary-button: 170, 86, 213;
+  --ig-primary-button-hover: 192, 127, 224;
+  --ig-link: 192, 127, 224;
+  --ig-primary-background: 11, 5, 15;
+  --card-background: #0B050F;
+}
+
+/* Story rings (Instagram draws them on a canvas around the avatar): the
+   rainbow turns into KeepKeep's purple – "purple ring = watched anonymously".
+   The filter animates, so the rings flow from rainbow to purple on switching. */
+canvas[data-kk-ring] { transition: filter 0.6s ease; }
+html[data-keepkeep-anon-stories="1"] canvas[data-kk-ring] {
+  filter: grayscale(1) sepia(1) hue-rotate(238deg) saturate(3.2) brightness(0.92);
+}
+
+/* A small mask badge on the avatars of the stories tray. */
+html[data-keepkeep-anon-stories="1"] [data-kk-ring-host="badge"]::after {
+  content: ""; position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; z-index: 2; pointer-events: none;
+  border-radius: 50%; box-shadow: 0 0 0 2px rgb(var(--ig-primary-background, 255, 255, 255));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-5 -5 34 34' fill='none' stroke='white' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 10.5l1.7-5a1 1 0 0 1 1.3-.6l3.5 1.3 3.5-1.3a1 1 0 0 1 1.3.6l1.7 5z' fill='white'/%3E%3Cpath d='M2.5 10.5h19'/%3E%3Ccircle cx='7.5' cy='16' r='2.6'/%3E%3Ccircle cx='16.5' cy='16' r='2.6'/%3E%3Cpath d='M10.1 16c1.3-.9 2.5-.9 3.8 0'/%3E%3C/svg%3E"), linear-gradient(135deg, #8119B5, #450B62);
+  background-size: 100% 100%;
+  animation: kk-badge-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+[data-kk-ring-host="relative"], [data-kk-ring-host="badge"] { position: relative; }
+@keyframes kk-badge-in { from { transform: scale(0.3); opacity: 0; } }
+
+/* Story viewer: the dark stage behind the story turns deep purple, and the
+   progress bars fill in lilac. The story itself is untouched. */
+html[data-keepkeep-anon-stories="1"] [data-kk-stage] {
+  background: radial-gradient(ellipse at 50% 45%, #2E0B42 0%, #1A0626 45%, #0B0310 100%) !important;
+}
+html[data-keepkeep-anon-stories="1"] [data-kk-bar] {
+  filter: brightness(0.78) sepia(1) hue-rotate(238deg) saturate(4.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  canvas[data-kk-ring] { transition: none; }
+  html[data-keepkeep-anon-stories="1"] [data-kk-ring-host="badge"]::after { animation: none; }
+}

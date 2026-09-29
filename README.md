@@ -19,7 +19,9 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 ### Watching stories anonymously
 
-Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner. Like a private window, the mode shows while it's on: a thin brand line along the top of Instagram, a brand frame with an **Anonymous** badge in Stories, and an **Anonymous** chip in the popup's header.
+Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner. Switch it with the mask button in the popup's header or in the settings (⚙).
+
+Like a private window, Instagram "wears the veil" while it's on (`extension/veil.js`, `extension/veil.css`): Instagram's blue turns KeepKeep purple and white a faint lilac, story rings turn purple (with a mask badge in the stories tray), a mask capsule sits top right, and in the story viewer the stage turns deep purple with a pill naming whose story you watch. Focusing the reply box or pointing at a reaction shows a heads-up, since the owner would see those. The toolbar icon gets a mask too.
 
 ### Downloading
 

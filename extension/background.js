@@ -105,3 +105,15 @@ async function thumbnail(url, size) {
   }
   return 'data:image/jpeg;base64,' + btoa(binary);
 }
+
+// ---- Anonymous stories: a masked toolbar icon, like a private window ----
+
+async function showAnonIcon() {
+  const { anonStories } = await chrome.storage.local.get('anonStories');
+  const name = anonStories === true ? 'anon' : 'icon';
+  await chrome.action.setIcon({ path: Object.fromEntries([16, 32, 48, 128].map((s) => [s, `icons/${name}${s}.png`])) });
+  await chrome.action.setTitle({ title: anonStories === true ? 'KeepKeep – watching stories anonymously' : 'KeepKeep' });
+}
+chrome.storage.onChanged.addListener((changes, area) => area === 'local' && changes.anonStories && showAnonIcon());
+chrome.runtime.onStartup.addListener(showAnonIcon);
+chrome.runtime.onInstalled.addListener(showAnonIcon);
