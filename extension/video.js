@@ -33,6 +33,8 @@
       opacity: 0; transition: opacity 0.2s;
     }
     .bar.shown { display: block; }
+    /* Mounted inside Instagram's player: scrolls with the post, no lag. */
+    .bar.inside { position: absolute; }
     .bar.visible { opacity: 1; }
     /* Play / pause: same look as Instagram's mute button, placed just left of it. */
     .play {
@@ -124,8 +126,36 @@
     els.track.addEventListener('pointerup', endDrag);
     els.track.addEventListener('pointercancel', endDrag);
 
-    document.documentElement.appendChild(host);
     return o;
+  }
+
+  // Where the overlay lives: inside the video's player (the largest positioned
+  // ancestor that is still about the video's size), so it scrolls with the
+  // post exactly like Instagram's own buttons – a floating overlay moved from
+  // script always trails the page's scrolling by a frame. Without such a
+  // player, it floats over the page.
+  function playerOf(video) {
+    const r = video.getBoundingClientRect();
+    let player = null;
+    for (let el = video.parentElement; el && el !== document.body; el = el.parentElement) {
+      const b = el.getBoundingClientRect();
+      if (Math.abs(b.width - r.width) > 40 || Math.abs(b.height - r.height) > 120) break;
+      if (getComputedStyle(el).position !== 'static') player = el;
+    }
+    return player;
+  }
+
+  function mount(o) {
+    const player = playerOf(o.video);
+    const parent = player || document.documentElement;
+    if (o.host.parentElement !== parent) {
+      Object.assign(o.host.style, player
+        ? { position: 'absolute', left: '0', top: '0', width: '0', height: '0', zIndex: '2147483646' }
+        : { position: '', left: '', top: '', width: '', height: '', zIndex: '' });
+      parent.appendChild(o.host);
+    }
+    o.player = player;
+    o.bar.classList.toggle('inside', !!player);
   }
 
   const fmt = (s) => {
@@ -187,10 +217,21 @@
 
   function place(o) {
     const r = o.video.getBoundingClientRect();
-    // Cover the visible part of the video (it may be scrolled partly off screen).
-    const top = Math.max(r.top, 0);
-    const bottom = Math.min(r.bottom, innerHeight);
-    Object.assign(o.bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
+    let top;
+    if (o.player?.isConnected) {
+      // Inside the player: the whole video, in the player's coordinates.
+      const p = o.player.getBoundingClientRect();
+      top = r.top;
+      Object.assign(o.bar.style, {
+        left: `${r.left - p.left - o.player.clientLeft}px`, top: `${r.top - p.top - o.player.clientTop}px`,
+        width: `${r.width}px`, height: `${r.height}px`,
+      });
+    } else {
+      // Floating: cover the visible part of the video (it may be scrolled partly off screen).
+      top = Math.max(r.top, 0);
+      const bottom = Math.min(r.bottom, innerHeight);
+      Object.assign(o.bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
+    }
 
     // Play / pause: same size as Instagram's mute button and just left of it,
     // vertically centred on it. Without a mute button, where it would be.
@@ -199,8 +240,9 @@
     const gap = 8;
     const muteLeft = mute ? mute.left : r.right - 12 - 28;
     const muteMid = mute ? mute.top + mute.height / 2 : r.bottom - 12 - 14;
-    // Hidden while the bottom of the video is scrolled off screen.
-    o.els.play.style.display = r.bottom > innerHeight ? 'none' : '';
+    // Floating, it's hidden while the bottom of the video is off screen;
+    // inside the player it simply scrolls away with the video.
+    o.els.play.style.display = !o.player && r.bottom > innerHeight ? 'none' : '';
     Object.assign(o.els.play.style, {
       width: `${size}px`, height: `${size}px`,
       left: `${muteLeft - gap - size - r.left}px`, top: `${muteMid - size / 2 - top}px`,
@@ -266,6 +308,7 @@
       lastScan = now;
       const visible = new Set(candidates());
       for (const v of visible) if (!overlays.has(v)) overlays.set(v, createOverlay(v));
+      for (const o of overlays.values()) mount(o);
       for (const [v, o] of overlays) {
         if (!visible.has(v) && !o.dragging) {
           o.host.remove();
