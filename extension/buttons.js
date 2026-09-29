@@ -616,9 +616,11 @@
       storyBar = document.createElement('div');
       storyBar.dataset.keepkeep = 'story-bar';
       Object.assign(storyBar.style, {
-        position: 'fixed', zIndex: '2147483645', display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px',
-        borderRadius: '999px', background: 'rgba(16, 4, 24, 0.55)', backdropFilter: 'blur(10px)',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.25)', opacity: '0', pointerEvents: 'none', transition: 'opacity 0.18s',
+        // Above everything (KeepKeep's own layers included) and on a solid
+        // enough backing to stay readable over any story or text, at any zoom.
+        position: 'fixed', zIndex: '2147483647', display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px',
+        borderRadius: '999px', background: 'rgba(16, 4, 24, 0.85)', backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.14)', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)', opacity: '0', pointerEvents: 'none', transition: 'opacity 0.18s',
         top: '-200px', left: '-200px',
       });
       const profileTarget = async () => {

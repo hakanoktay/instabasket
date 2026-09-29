@@ -71,7 +71,7 @@
     /* In Instagram's own style: its title and sentence, just saying the opposite. */
     .gate { position: fixed; z-index: 2147483646; display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; pointer-events: none; animation: fade 0.25s ease-out both; }
-    .gate b { font-weight: 700; }
+    .gate b { font-weight: 700; color: #b96ee3; } /* KeepKeep purple, light tone for the dark viewer */
     .gate .t { margin-top: 6px; opacity: 0.85; }
     .gate .t .who { font-weight: 600; opacity: 1; }
     .gate-badge { position: fixed; z-index: 2147483646; display: grid; place-items: center; border-radius: 50%; pointer-events: none;
