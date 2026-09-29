@@ -1,17 +1,17 @@
 // Video controls for Instagram, whose web player can't skip forward or back:
-// over the video under the mouse, a thin scrubber along the bottom edge and a
-// play / pause button next to Instagram's own mute button, plus keyboard
-// shortcuts for that video (← / → skip 5 s, Space / K play or pause).
+// on every video on screen, a thin scrubber along the bottom edge and a play /
+// pause button next to Instagram's own mute button, always visible; plus
+// keyboard shortcuts for the video under the mouse (← / → skip 5 s, Space / K
+// play or pause).
 //
 // Not shown in Stories, which have their own progress bar and timing.
 //
-// It's one floating overlay that follows whichever video the mouse is over,
-// rather than elements inserted into Instagram's player: Instagram covers its
+// Each video gets a floating overlay that follows it, rather than elements
+// inserted into Instagram's player: Instagram covers its
 // videos with its own layers and re-creates video elements often, so nothing
 // is added to its markup at all.
 (() => {
   const SKIP = 5; // seconds
-  const IDLE_HIDE_MS = 2500; // hide after the mouse stops moving over the video
   const MIN_SIZE = 150; // ignore small videos (avatars, previews)
 
   const ICONS = {
@@ -70,62 +70,62 @@
   `;
 
 
-  let host, bar, els;
-  let video = null; // the video the bar is on
-  let hideTimer, raf, dragging = false, lastMouse = null;
+  // One overlay (scrubber + play/pause) per video on screen, always visible.
+  const overlays = new Map(); // <video> → overlay
+  let lastMouse = null;
 
-  function build() {
-    host = document.createElement('div');
-    host.id = 'keepkeep-video';
+  function createOverlay(video) {
+    const host = document.createElement('div');
+    host.className = 'keepkeep-video';
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
-      <div class="bar">
+      <div class="bar shown visible">
         <button class="play" title="Play / pause (Space or K)"></button>
         <div class="track"><div class="rail"></div><div class="buffered"></div><div class="played"></div><div class="knob"></div><div class="hover-time"></div></div>
       </div>`;
-    bar = root.querySelector('.bar');
-    els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play']
+    const bar = root.querySelector('.bar');
+    const els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play']
       .map((c) => [c, root.querySelector('.' + c)]));
+    const o = { video, host, bar, els, dragging: false, mute: { at: 0, rect: null } };
 
     // Nothing here should reach Instagram (e.g. its click-to-pause).
     for (const type of ['click', 'mousedown', 'pointerdown', 'pointerup', 'dblclick', 'touchstart']) {
       bar.addEventListener(type, (e) => e.stopPropagation());
     }
-    els.play.addEventListener('click', () => togglePlay());
+    els.play.addEventListener('click', () => togglePlay(video));
 
     // Scrubbing: click or drag anywhere on the track.
-    const seekTo = (e) => {
-      if (!video || !isFinite(video.duration)) return;
+    const fraction = (e) => {
       const r = els.track.getBoundingClientRect();
-      video.currentTime = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1) * video.duration;
-      update();
+      return Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+    };
+    const seekTo = (e) => {
+      if (!isFinite(video.duration)) return;
+      video.currentTime = fraction(e) * video.duration;
+      update(o);
     };
     els.track.addEventListener('pointerdown', (e) => {
-      dragging = true;
+      o.dragging = true;
       els.track.classList.add('dragging');
       els.track.setPointerCapture(e.pointerId);
       seekTo(e);
     });
     els.track.addEventListener('pointermove', (e) => {
-      showHoverTime(e);
-      if (dragging) seekTo(e);
+      if (isFinite(video.duration)) {
+        els['hover-time'].style.left = `${fraction(e) * 100}%`;
+        els['hover-time'].textContent = fmt(fraction(e) * video.duration);
+      }
+      if (o.dragging) seekTo(e);
     });
     const endDrag = () => {
-      dragging = false;
+      o.dragging = false;
       els.track.classList.remove('dragging');
     };
     els.track.addEventListener('pointerup', endDrag);
     els.track.addEventListener('pointercancel', endDrag);
 
     document.documentElement.appendChild(host);
-  }
-
-  function showHoverTime(e) {
-    if (!video || !isFinite(video.duration)) return;
-    const r = els.track.getBoundingClientRect();
-    const f = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
-    els['hover-time'].style.left = `${f * 100}%`;
-    els['hover-time'].textContent = fmt(f * video.duration);
+    return o;
   }
 
   const fmt = (s) => {
@@ -134,20 +134,21 @@
     return `${m}:${String(s % 60).padStart(2, '0')}`;
   };
 
-  function togglePlay(v = video) {
-    if (!v) return;
+  function togglePlay(v) {
     if (v.paused) v.play().catch(() => {});
     else v.pause();
-    update();
+    const o = overlays.get(v);
+    if (o) update(o);
   }
 
-  function skip(seconds, v = video) {
-    if (!v || !isFinite(v.duration)) return;
+  function skip(seconds, v) {
+    if (!isFinite(v.duration)) return;
     v.currentTime = Math.min(Math.max(v.currentTime + seconds, 0), v.duration - 0.1);
-    update();
+    const o = overlays.get(v);
+    if (o) update(o);
   }
 
-  // ---- Which video, and keeping the bar on it ----
+  // ---- Which videos, and keeping each overlay on its video ----
 
   function candidates() {
     // Stories have their own progress bar and timing; skipping would break them.
@@ -165,23 +166,42 @@
     }) || null;
   }
 
-  function place() {
-    if (!video || !video.isConnected) return hide(true);
+  // Whether another layer covers the video: the element on top at the video's
+  // centre should be the video or part of its own player (Instagram's overlay
+  // layers), not something from elsewhere on the page.
+  function isCovered(video) {
     const r = video.getBoundingClientRect();
-    if (r.width < MIN_SIZE || r.bottom <= 0 || r.top >= innerHeight) return hide(true);
+    const x = r.left + r.width / 2;
+    const y = Math.min(Math.max(r.top + r.height / 2, 1), innerHeight - 1);
+    const top = document.elementsFromPoint(x, y).find((el) => !el.classList?.contains('keepkeep-video') && !el.closest?.('.keepkeep-video'));
+    if (!top || top === video || video.contains(top)) return false;
+    // The player: the largest ancestor that is still about the video's size.
+    let player = video;
+    for (let el = video.parentElement; el && el !== document.body; el = el.parentElement) {
+      const b = el.getBoundingClientRect();
+      if (Math.abs(b.width - r.width) > 40 || Math.abs(b.height - r.height) > 120) break;
+      player = el;
+    }
+    return !player.contains(top);
+  }
+
+  function place(o) {
+    const r = o.video.getBoundingClientRect();
     // Cover the visible part of the video (it may be scrolled partly off screen).
     const top = Math.max(r.top, 0);
     const bottom = Math.min(r.bottom, innerHeight);
-    Object.assign(bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
+    Object.assign(o.bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
 
     // Play / pause: same size as Instagram's mute button and just left of it,
     // vertically centred on it. Without a mute button, where it would be.
-    const mute = muteButton(r);
+    const mute = muteButton(o, r);
     const size = mute ? Math.round(Math.min(Math.max(mute.height, 24), 40)) : 28;
     const gap = 8;
     const muteLeft = mute ? mute.left : r.right - 12 - 28;
     const muteMid = mute ? mute.top + mute.height / 2 : r.bottom - 12 - 14;
-    Object.assign(els.play.style, {
+    // Hidden while the bottom of the video is scrolled off screen.
+    o.els.play.style.display = r.bottom > innerHeight ? 'none' : '';
+    Object.assign(o.els.play.style, {
       width: `${size}px`, height: `${size}px`,
       left: `${muteLeft - gap - size - r.left}px`, top: `${muteMid - size / 2 - top}px`,
     });
@@ -190,66 +210,27 @@
   // Instagram's mute button: the small round icon button in the video's
   // bottom-right corner. Looked up by position (it has no stable markers);
   // re-checked at most a few times a second.
-  let muteCache = { at: 0, video: null, rect: null };
-  function muteButton(r) {
-    if (muteCache.video === video && performance.now() - muteCache.at < 400) return muteCache.rect;
+  function muteButton(o, r) {
+    if (performance.now() - o.mute.at < 400) return o.mute.rect;
     let rect = null;
-    for (const el of document.elementsFromPoint(r.right - 26, r.bottom - 26)) {
-      if (el === video || el.id === 'keepkeep-video') continue;
-      const target = el.closest('[role="button"], button') || (el.querySelector?.('svg') ? el : null);
-      if (!target) continue;
-      const b = target.getBoundingClientRect();
-      if (b.width >= 16 && b.width <= 60 && b.height >= 16 && b.height <= 60 && b.right <= r.right + 1 && b.bottom <= r.bottom + 1) {
-        rect = b;
-        break;
+    if (r.bottom <= innerHeight) {
+      for (const el of document.elementsFromPoint(r.right - 26, r.bottom - 26)) {
+        if (el === o.video || el.classList?.contains('keepkeep-video')) continue;
+        const target = el.closest('[role="button"], button') || (el.querySelector?.('svg') ? el : null);
+        if (!target) continue;
+        const b = target.getBoundingClientRect();
+        if (b.width >= 16 && b.width <= 60 && b.height >= 16 && b.height <= 60 && b.right <= r.right + 1 && b.bottom <= r.bottom + 1) {
+          rect = b;
+          break;
+        }
       }
     }
-    muteCache = { at: performance.now(), video, rect };
+    o.mute = { at: performance.now(), rect };
     return rect;
   }
 
-  function show(v) {
-    if (!host) build();
-    if (video !== v) {
-      video = v;
-      delete els.play.dataset.state;
-      update();
-    }
-    bar.classList.add('shown');
-    place();
-    requestAnimationFrame(() => bar.classList.add('visible'));
-    loop();
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => { if (!dragging && !bar.matches(':hover')) hide(); else show(video); }, IDLE_HIDE_MS);
-  }
-
-  function hide(now) {
-    if (!bar) return;
-    clearTimeout(hideTimer);
-    bar.classList.remove('visible');
-    const done = () => {
-      if (bar.classList.contains('visible')) return;
-      bar.classList.remove('shown');
-      cancelAnimationFrame(raf);
-      raf = null;
-    };
-    if (now) done();
-    else setTimeout(done, 200);
-  }
-
-  // While shown, keep the bar in place and the time up to date.
-  function loop() {
-    if (raf) return;
-    const tick = () => {
-      place();
-      update();
-      raf = bar.classList.contains('shown') ? requestAnimationFrame(tick) : null;
-    };
-    raf = requestAnimationFrame(tick);
-  }
-
-  function update() {
-    if (!video || !els) return;
+  function update(o) {
+    const { video, bar, els } = o;
     const d = video.duration;
     const seekable = isFinite(d) && d > 0;
     bar.classList.toggle('no-seek', !seekable);
@@ -270,21 +251,36 @@
     els.buffered.style.width = `${(buffered / d) * 100}%`;
   }
 
-  // Mouse over a video (Instagram's layers on top of it don't matter: the
-  // position is checked against the video's own box).
-  let moveQueued = false;
-  addEventListener('mousemove', (e) => {
-    lastMouse = { x: e.clientX, y: e.clientY };
-    if (moveQueued) return;
-    moveQueued = true;
-    requestAnimationFrame(() => {
-      moveQueued = false;
-      const v = videoAt(lastMouse.x, lastMouse.y);
-      if (v) show(v);
-      else if (video && !dragging && !(bar && bar.matches(':hover'))) hide();
-    });
-  }, { passive: true, capture: true });
-  document.addEventListener('mouseleave', () => { if (!dragging) hide(); });
+  // Every frame: keep each overlay on its video and up to date; a few times a
+  // second, pick up videos that appeared and drop ones that are gone.
+  let lastScan = 0;
+  function tick(now) {
+    if (now - lastScan > 250) {
+      lastScan = now;
+      const visible = new Set(candidates());
+      for (const v of visible) if (!overlays.has(v)) overlays.set(v, createOverlay(v));
+      for (const [v, o] of overlays) {
+        if (!visible.has(v) && !o.dragging) {
+          o.host.remove();
+          overlays.delete(v);
+          continue;
+        }
+        // Hidden while something else is on top of the video, e.g. Instagram's
+        // post popup over a video in the feed behind it.
+        o.host.style.display = isCovered(v) && !o.dragging ? 'none' : '';
+      }
+    }
+    for (const o of overlays.values()) {
+      place(o);
+      update(o);
+    }
+    requestAnimationFrame(tick);
+  }
+  // Remove overlays left by a previous copy of the extension (after an update).
+  document.querySelectorAll('.keepkeep-video, #keepkeep-video').forEach((el) => el.remove());
+  requestAnimationFrame(tick);
+
+  addEventListener('mousemove', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; }, { passive: true, capture: true });
 
   // Keyboard: ← / → skip, Space / K play or pause.
   addEventListener('keydown', (e) => {
@@ -303,6 +299,5 @@
     if (key === 'ArrowLeft') skip(-SKIP, v);
     else if (key === 'ArrowRight') skip(SKIP, v);
     else togglePlay(v);
-    show(v);
   }, true);
 })();
