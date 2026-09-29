@@ -705,9 +705,16 @@
     }
   }
 
+  // Throttled, not debounced: a scan runs at most SCAN_DELAY after the first
+  // change. Instagram can keep the page busy non-stop (a playing video, a
+  // scrolling song title), and a debounce then never let a scan run – posts
+  // arriving meanwhile got no buttons.
   function scheduleScan() {
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(scan, SCAN_DELAY);
+    if (scanTimer) return;
+    scanTimer = setTimeout(() => {
+      scanTimer = null;
+      scan();
+    }, SCAN_DELAY);
   }
 
   // Instagram is a single-page app: posts load while scrolling and navigation
@@ -719,6 +726,9 @@
 
   new MutationObserver(scheduleScan).observe(document.documentElement, { childList: true, subtree: true });
   addEventListener('scroll', scheduleScan, { capture: true, passive: true });
+  // Some changes don't touch the DOM at all – closing the story viewer only
+  // makes the feed behind it visible again – so also look every second.
+  setInterval(() => document.visibilityState === 'visible' && scheduleScan(), 1000);
   chrome.storage.onChanged.addListener(() => buttons.forEach(refresh));
   scan();
 })();
