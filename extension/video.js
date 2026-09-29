@@ -3,7 +3,9 @@
 // video under the mouse, plus keyboard shortcuts for that video (← / → skip
 // 5 s, Space / K play or pause).
 //
-// It's one floating bar that follows whichever video the mouse is over,
+// Not shown in Stories, which have their own progress bar and timing.
+//
+// It's one floating overlay that follows whichever video the mouse is over,
 // rather than elements inserted into Instagram's player: Instagram covers its
 // videos with its own layers and re-creates video elements often, so nothing
 // is added to its markup at all.
@@ -12,7 +14,6 @@
   const SPEEDS = [1, 1.25, 1.5, 2, 0.5, 0.75];
   const IDLE_HIDE_MS = 2500; // hide after the mouse stops moving over the video
   const MIN_SIZE = 150; // ignore small videos (avatars, previews)
-  const RIGHT_GAP = 52; // leave Instagram's mute button (bottom right) uncovered
 
   const ICONS = {
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
@@ -21,55 +22,64 @@
     forward: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 3.5v4h-4"/><text x="11.7" y="15.6" font-size="8" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system, Segoe UI, Roboto, sans-serif">5</text></svg>',
   };
 
+  // Instagram lays its own text and buttons (username, Follow, caption, "more",
+  // mute) over the bottom of videos, especially in small windows. So nothing of
+  // ours sits there except a thin scrubber on the very bottom edge; the other
+  // controls are a compact pill in the top-left corner, and everything else
+  // lets clicks through to Instagram.
   const STYLE = `
     :host { all: initial; }
     * { box-sizing: border-box; }
     .bar {
-      position: fixed; z-index: 2147483646; display: none; flex-direction: column; justify-content: flex-end;
-      padding: 28px 12px 8px; pointer-events: none; color: #fff;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.25) 60%, transparent);
+      position: fixed; z-index: 2147483646; display: none; pointer-events: none; color: #fff;
       font: 600 12px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       opacity: 0; transition: opacity 0.2s;
     }
-    .bar.shown { display: flex; }
+    .bar.shown { display: block; }
     .bar.visible { opacity: 1; }
-    .bar > * { pointer-events: auto; }
-    .row { display: flex; align-items: center; gap: 2px; }
+    .pill {
+      position: absolute; top: 10px; left: 10px; display: flex; align-items: center; gap: 1px; padding: 3px 4px;
+      border-radius: 20px; background: rgba(20, 8, 28, 0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25); pointer-events: auto;
+      transform: translateY(-4px); transition: transform 0.2s;
+    }
+    .bar.visible .pill { transform: none; }
     button {
-      display: grid; place-items: center; width: 32px; height: 32px; padding: 6px; border: none; border-radius: 50%;
+      display: grid; place-items: center; width: 30px; height: 30px; padding: 6px; border: none; border-radius: 50%;
       background: none; color: inherit; cursor: pointer; font: inherit;
     }
-    button:hover { background: rgba(255, 255, 255, 0.15); }
+    button:hover { background: rgba(255, 255, 255, 0.16); }
     button svg { width: 100%; height: 100%; display: block; }
-    .time { margin-left: 6px; font-variant-numeric: tabular-nums; text-shadow: 0 0 2px rgba(0, 0, 0, 0.5); white-space: nowrap; }
-    .spacer { flex: 1; }
-    .speed { width: auto; min-width: 40px; height: 26px; padding: 0 8px; border-radius: 13px; background: rgba(255, 255, 255, 0.15); }
-    .speed:hover { background: rgba(255, 255, 255, 0.28); }
+    .time { margin: 0 6px 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .speed { width: auto; min-width: 38px; height: 24px; padding: 0 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.14); }
+    .speed:hover { background: rgba(255, 255, 255, 0.26); }
     .speed.changed { background: #aa56d5; color: #fff; }
-    /* Scrubber */
-    .track { position: relative; height: 16px; margin-bottom: 2px; cursor: pointer; touch-action: none; }
+    /* Scrubber: a thin line on the very bottom edge, thicker on hover. */
+    .track { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; cursor: pointer; touch-action: none; pointer-events: auto; }
     .rail, .buffered, .played {
-      position: absolute; left: 0; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; transition: height 0.12s, margin 0.12s;
+      position: absolute; left: 0; bottom: 0; height: 3px; transition: height 0.12s;
     }
-    .rail { right: 0; background: rgba(255, 255, 255, 0.3); }
-    .buffered { background: rgba(255, 255, 255, 0.45); }
-    /* Played part in the brand's light purple (readable on any video). */
+    .rail { right: 0; background: rgba(255, 255, 255, 0.28); }
+    .buffered { background: rgba(255, 255, 255, 0.42); }
+    /* Played part in the brand's purple (readable on any video). */
     .played { background: linear-gradient(90deg, #8119b5, #aa56d5); }
     .track:hover .rail, .track:hover .buffered, .track:hover .played, .track.dragging .rail, .track.dragging .buffered, .track.dragging .played {
-      height: 5px; margin-top: -2.5px;
+      height: 6px;
     }
     .knob {
-      position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%;
-      background: #fff; box-shadow: 0 0 3px rgba(0, 0, 0, 0.4); transform: scale(0); transition: transform 0.12s;
+      position: absolute; bottom: -3.5px; width: 13px; height: 13px; margin-left: -6.5px; border-radius: 50%;
+      background: #fff; box-shadow: 0 0 0 3px rgba(170, 86, 213, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+      transform: scale(0); transition: transform 0.12s;
     }
     .track:hover .knob, .track.dragging .knob { transform: scale(1); }
     .hover-time {
-      position: absolute; bottom: 18px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.75);
-      transform: translateX(-50%); display: none; font-variant-numeric: tabular-nums;
+      position: absolute; bottom: 14px; padding: 2px 6px; border-radius: 4px; background: rgba(20, 8, 28, 0.8);
+      transform: translateX(-50%); display: none; font-variant-numeric: tabular-nums; white-space: nowrap;
     }
     .track:hover .hover-time, .track.dragging .hover-time { display: block; }
     .no-seek .track, .no-seek .skip { display: none; }
   `;
+
 
   let host, bar, els;
   let video = null; // the video the bar is on
@@ -81,15 +91,14 @@
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="bar">
-        <div class="track"><div class="rail"></div><div class="buffered"></div><div class="played"></div><div class="knob"></div><div class="hover-time"></div></div>
-        <div class="row">
+        <div class="pill">
           <button class="play" title="Play / pause (Space or K)"></button>
           <button class="skip back" title="Back 5 seconds (←)">${ICONS.back}</button>
           <button class="skip forward" title="Forward 5 seconds (→)">${ICONS.forward}</button>
           <span class="time"></span>
-          <span class="spacer"></span>
           <button class="speed" title="Playback speed">1×</button>
         </div>
+        <div class="track"><div class="rail"></div><div class="buffered"></div><div class="played"></div><div class="knob"></div><div class="hover-time"></div></div>
       </div>`;
     bar = root.querySelector('.bar');
     els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play', 'back', 'forward', 'time', 'speed']
@@ -166,6 +175,8 @@
   // ---- Which video, and keeping the bar on it ----
 
   function candidates() {
+    // Stories have their own progress bar and timing; skipping would break them.
+    if (location.pathname.startsWith('/stories/')) return [];
     return [...document.querySelectorAll('video')].filter((v) => {
       const r = v.getBoundingClientRect();
       return r.width >= MIN_SIZE && r.height >= MIN_SIZE && r.bottom > 0 && r.top < innerHeight;
@@ -183,13 +194,10 @@
     if (!video || !video.isConnected) return hide(true);
     const r = video.getBoundingClientRect();
     if (r.width < MIN_SIZE || r.bottom <= 0 || r.top >= innerHeight) return hide(true);
-    // Only the visible part of the video counts (it may be scrolled partly off screen).
+    // Cover the visible part of the video (it may be scrolled partly off screen).
+    const top = Math.max(r.top, 0);
     const bottom = Math.min(r.bottom, innerHeight);
-    const height = Math.min(110, bottom - Math.max(r.top, 0));
-    Object.assign(bar.style, {
-      left: `${r.left}px`, width: `${r.width}px`, top: `${bottom - height}px`, height: `${height}px`,
-      paddingRight: `${RIGHT_GAP}px`,
-    });
+    Object.assign(bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
   }
 
   function show(v) {

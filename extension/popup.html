@@ -7,12 +7,16 @@
 <body>
   <header>
     <h1><img class="logo" src="icons/logo.svg" alt="">KeepKeep</h1>
+    <!-- Act on the post / profile open in the current tab. -->
     <div class="header-actions">
-      <button id="add-current" class="btn primary" hidden>+ Add this page</button>
-      <button id="download-settings" class="icon-btn" title="Where downloads are saved"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v12M7 10.5l5 5 5-5"/><path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg></span></button>
+      <div class="page-actions" hidden>
+        <button class="icon-btn page-btn" data-action="profile" hidden></button>
+        <button class="icon-btn page-btn" data-action="media" hidden></button>
+        <button class="icon-btn page-btn" data-action="download" hidden></button>
+      </div>
+      <button id="settings" class="icon-btn" title="Download settings"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span></button>
     </div>
   </header>
-  <p id="add-result" hidden></p>
 
   <nav>
     <button class="tab" data-tab="profiles">Profiles <span id="profiles-count"></span></button>

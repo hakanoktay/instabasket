@@ -13,6 +13,9 @@ const ICONS = {
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>',
   personAdd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
   personCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4" fill="currentColor"/><path d="M3 21a7 7 0 0 1 12.5-4.3" fill="currentColor"/><path d="M15.5 18l2.5 2.5 4.5-5"/></svg>',
+  mediaAdd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="13" height="13" rx="3"/><circle cx="6.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/><path d="M2.5 13.5l3.5-3.5 5.5 5.5"/><path d="M19 14.5v7M15.5 18h7"/></svg>',
+  mediaCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5 2h7a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4H5a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4zM6.5 5.8a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM3 13.3v.2A1.5 1.5 0 0 0 4.5 15h6.3l-4.8-4.8z"/><path d="M15.5 18.5l2.5 2.5 4.5-5"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v12M7 10.5l5 5 5-5"/><path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg>',
   personRemove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M16 17h6"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
 };
@@ -350,6 +353,7 @@ async function render() {
   renderLists();
   renderProfiles();
   renderMedia();
+  renderPageActions();
   if (picker) {
     // Buttons were re-rendered; re-anchor the picker to the new one.
     const [kind, key] = [picker.recordKey.slice(0, 1), picker.recordKey.slice(2)];
@@ -371,29 +375,69 @@ for (const b of document.querySelectorAll('.tab')) {
 }
 $('#filter button').addEventListener('click', () => { filterUser = null; renderMedia(); });
 
-// If the active tab is an Instagram profile or post, add it with one click (no dragging needed).
-(async () => {
+// ---- Header: act on the post / profile open in the current tab ----
+// Same icons and states as the buttons on Instagram: brand colour to add,
+// green when saved (hover → red, click removes), Download for posts.
+
+let page = null; // { tabId, info: { profile, media } }
+
+const PAGE_ICONS = {
+  profile: ['personAdd', 'personCheck', 'personRemove'],
+  media: ['mediaAdd', 'mediaCheck', 'trash'],
+};
+
+async function loadPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !KeepKeep.parse(tab.url)) return;
-  const button = $('#add-current');
-  button.hidden = false;
-  button.addEventListener('click', async () => {
-    button.disabled = true;
-    button.textContent = 'Adding…';
-    let result;
-    try {
-      result = await chrome.tabs.sendMessage(tab.id, { type: 'add' });
-    } catch {
-      result = { text: 'Reload the Instagram tab and try again' };
-    }
-    $('#add-result').hidden = false;
-    $('#add-result').textContent = result?.text || '';
-    button.textContent = '+ Add this page';
-    button.disabled = false;
-  });
-})();
+  let info = null;
+  try {
+    info = await chrome.tabs.sendMessage(tab.id, { type: 'page-info' });
+  } catch {} // Instagram tab opened before the extension was (re)loaded
+  if (!info) return;
+  page = { tabId: tab.id, info };
+  renderPageActions();
+}
 
-$('#download-settings').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'open-folder-settings' }));
+function renderPageActions() {
+  if (!page) return;
+  const { profile, media } = page.info;
+  $('.page-actions').hidden = !profile && !media;
+  for (const b of document.querySelectorAll('.page-btn')) {
+    const action = b.dataset.action;
+    const available = action === 'profile' ? !!profile : !!media;
+    b.hidden = !available;
+    if (!available) continue;
+    if (action === 'download') {
+      b.replaceChildren(icon('download'));
+      b.title = 'Download this post (best quality)';
+      continue;
+    }
+    const saved = action === 'profile'
+      ? state.profiles.some((p) => p.username === profile)
+      : state.media.some((m) => m.key === media.key);
+    const [add, check, remove] = PAGE_ICONS[action];
+    b.classList.toggle('saved', saved);
+    b.replaceChildren(icon(saved ? check : add), saved ? icon(remove) : '');
+    b.title = action === 'profile'
+      ? (saved ? `@${profile} is in Profiles · click to remove` : `Add @${profile} to Profiles`)
+      : (saved ? 'This post is in Media · click to remove' : 'Add this post to Media');
+  }
+}
+
+for (const b of document.querySelectorAll('.page-btn')) {
+  b.addEventListener('click', async () => {
+    if (!page || b.classList.contains('busy')) return;
+    b.classList.add('busy');
+    try {
+      await chrome.tabs.sendMessage(page.tabId, { type: 'page-action', action: b.dataset.action, info: page.info });
+    } finally {
+      b.classList.remove('busy');
+    }
+  });
+}
+
+$('#settings').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'open-folder-settings' }));
+loadPage();
 
 chrome.storage.onChanged.addListener(render);
 selectTab('profiles');

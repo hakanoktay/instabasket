@@ -6,7 +6,7 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 
 - While on `instagram.com`, drag the URL from the address bar (or a profile/post link on the page) over the page.
 - A card appears in the top-right corner; drop the link on it.
-- Instead of dragging, you can also click the extension icon and use **+ Add this page**.
+- Or use the icons at the top of the extension's popup: **Profile**, **Media** and **Download** act on the post or profile open in the current tab (⚙ opens the download settings).
 
 There are also **🧺 Add to basket** buttons on Instagram itself:
 
@@ -32,7 +32,7 @@ While downloading, balloons on the right show the overall progress and each phot
 
 ### Video controls
 
-Move the mouse over a video (feed, post page, post popup or Reels) to get a control bar at its bottom: a scrubber to click or drag to any point, play / pause, 5 seconds back / forward and playback speed (0.5×–2×). While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
+Move the mouse over a video (feed, post page, post popup or Reels) to get controls: a compact pill in the top-left corner with play / pause, 5 seconds back / forward, the time and playback speed (0.5×–2×), and a thin scrubber along the bottom edge to click or drag to any point. Instagram's own username, Follow button and caption at the bottom of the video stay clickable. (Not shown in Stories.) While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
 
 ### After adding
 

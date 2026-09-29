@@ -143,12 +143,40 @@ var KeepKeepDrop = (() => {
     if (msg?.type === 'dl-waiting') KeepKeepPanel.downloads.waiting(msg.job);
   });
 
-  // The popup's "Add this page" button.
+  // The popup's Profile / Media / Download icons act on what's open in this tab.
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.type !== 'add') return;
-    run(location.href).then(sendResponse);
-    return true;
+    if (msg?.type === 'page-info') {
+      pageInfo().then(sendResponse, () => sendResponse(null));
+      return true;
+    }
+    if (msg?.type === 'page-action') {
+      pageAction(msg).then(() => sendResponse({ ok: true }), (e) => sendResponse({ error: String(e?.message || e) }));
+      return true;
+    }
   });
+
+  // The profile and/or post open in this tab: { profile, media: { key, code, url } }.
+  async function pageInfo() {
+    const item = KeepKeep.parse(location.href);
+    if (!item) return {};
+    if (item.kind === 'profile') return { profile: item.username };
+    let username = item.username;
+    if (!username && item.code) username = (await InstaApi.media(item.code).catch(() => ({}))).username || null;
+    return { profile: username || null, media: { key: item.key, code: item.code, url: item.url } };
+  }
+
+  // Adds, or removes if already saved; downloads the post.
+  async function pageAction({ action, info }) {
+    if (action === 'profile' && info.profile) {
+      const key = 'p:' + info.profile;
+      return (await KeepKeep.get(key)) ? remove(key) : run(KeepKeep.profileUrl(info.profile));
+    }
+    if (action === 'media' && info.media) {
+      const key = 'm:' + info.media.key;
+      return (await KeepKeep.get(key)) ? remove(key) : run(info.media.url);
+    }
+    if (action === 'download' && info.media?.code) return download(info.media.code);
+  }
 
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 

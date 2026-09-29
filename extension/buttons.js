@@ -87,19 +87,25 @@
     .overlay .label { display: none; }
 
     /* Reels viewer: icon with a caption, like Instagram's own icon column. */
-    .reel { flex-direction: column; color: inherit; font-weight: 400; font-size: 12px; padding: 4px; }
+    /* Reels column and post action bars: our icons in the brand colour. */
+    .reel { flex-direction: column; color: var(--brand); font-weight: 400; font-size: 12px; padding: 4px; }
     .reel .view { flex-direction: column; gap: 6px; }
     .reel .view svg { width: 24px; height: 24px; }
     .reel:hover { opacity: 0.7; }
     .reel.saved:hover { color: var(--red); opacity: 1; }
 
     /* A post's action bar (like, comment, share … save): icons only, 24px, like Instagram's. */
-    .action { color: inherit; padding: 8px; }
+    .action { color: var(--brand); padding: 8px; }
     .action .view svg { width: 24px; height: 24px; }
     .action .label { display: none; }
     .action:hover { opacity: 0.5; }
     .action.saved:hover { color: var(--red); opacity: 1; }
   `;
+
+  function isLightColor(color) {
+    const [r, g, b] = (color.match(/\d+(\.\d+)?/g) || [0, 0, 0]).map(Number);
+    return 0.299 * r + 0.587 * g + 0.114 * b > 150;
+  }
 
   const storageKey = (item) => (item.kind === 'profile' ? 'p:' + item.username : 'm:' + item.key);
 
@@ -116,7 +122,7 @@
     const label = opts.label || 'Add to basket';
     const savedLabel = opts.savedLabel || 'In basket';
     root.innerHTML = `<style>${STYLE}</style>
-      <button class="${variant}${KeepKeepPanel.isDarkPage() && variant !== 'reel' && variant !== 'action' ? ' dark' : ''}">
+      <button class="${variant}${(opts.dark ?? KeepKeepPanel.isDarkPage()) ? ' dark' : ''}">
         <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
         <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
@@ -152,7 +158,7 @@
     host.dataset.keepkeep = variant;
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
-      <button class="${variant}" title="${opts.title}">
+      <button class="${variant}${(opts.dark ?? KeepKeepPanel.isDarkPage()) ? ' dark' : ''}" title="${opts.title}">
         <span class="view add">${ICONS[opts.icon]}<span class="label">${opts.label}</span></span>
       </button>`;
     const button = root.querySelector('button');
@@ -289,13 +295,14 @@
     if (getComputedStyle(saveItem).position === 'static') saveItem.style.position = 'relative';
     Object.assign(group.style, {
       position: 'absolute', right: '100%', top: '50%', transform: 'translateY(-50%)',
-      display: 'inline-flex', alignItems: 'center', color: getComputedStyle(save).color, whiteSpace: 'nowrap',
+      display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
     });
+    const dark = isLightColor(getComputedStyle(save).color); // light icons → dark background
     group.append(
-      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket' }),
-      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket' }),
+      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark }),
+      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket', dark }),
       makeCommandButton('action', () => KeepKeepDrop.download(item.code), {
-        icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)',
+        icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)', dark,
       }),
     );
     saveItem.appendChild(group);
@@ -476,20 +483,20 @@
         return username && { url: KeepKeep.profileUrl(username), key: 'p:' + username };
       };
 
-      // Match the colour of Instagram's own icons (white on the dark Reels page).
-      const color = getComputedStyle(found.first.querySelector('svg') || found.first).color;
+      // Instagram's own icons are white on a dark background: use the brand's light tone there.
+      const dark = isLightColor(getComputedStyle(found.first.querySelector('svg') || found.first).color);
       for (const [icon, label, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
         const title = icon === 'profile' ? 'Add this profile to basket' : 'Add this reel to basket';
-        const host = makeButton('reel', target, { icon, label, savedLabel: label, title });
-        Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
+        const host = makeButton('reel', target, { icon, label, savedLabel: label, title, dark });
+        Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0' });
         column.insertBefore(host, found.first);
       }
       const downloadButton = makeCommandButton('reel', async () => {
         const media = reelMedia(column, memory);
         if (media?.code) await KeepKeepDrop.download(media.code);
         else KeepKeepPanel.showError("Couldn't tell which reel this is");
-      }, { icon: 'download', label: 'Download', title: 'Download this reel (best quality)' });
-      Object.assign(downloadButton.style, { display: 'flex', justifyContent: 'center', padding: '6px 0', color });
+      }, { icon: 'download', label: 'Download', title: 'Download this reel (best quality)', dark });
+      Object.assign(downloadButton.style, { display: 'flex', justifyContent: 'center', padding: '6px 0' });
       column.insertBefore(downloadButton, found.first);
     }
   }

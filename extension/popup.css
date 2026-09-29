@@ -51,9 +51,20 @@ body::before {
   background: linear-gradient(90deg, #450b62, #8119b5 40%, #aa56d5);
 }
 .header-actions { display: flex; align-items: center; gap: 4px; }
+/* Profile / Media / Download for the open post: brand colour, green when saved (hover → red). */
+.page-actions { display: flex; align-items: center; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--divider); }
+.page-actions .page-btn { width: 36px; height: 36px; color: var(--brand); }
+.page-actions .page-btn .i { width: 22px; height: 22px; }
+.page-actions .page-btn:hover { background: var(--brand-tint); color: var(--brand); }
+.page-actions .page-btn.saved { color: var(--green); }
+.page-actions .page-btn .i + .i { display: none; }
+.page-actions .page-btn.saved:hover { color: var(--red); background: rgba(237, 73, 86, 0.08); }
+.page-actions .page-btn.saved:hover .i:first-child { display: none; }
+.page-actions .page-btn.saved:hover .i + .i { display: inline-block; }
+.page-actions .page-btn.busy { opacity: 0.5; cursor: progress; }
+#settings { color: var(--muted); }
 h1 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; margin: 0; }
 h1 .logo { width: 24px; height: 24px; display: block; }
-#add-result { margin: -4px 0 8px; color: var(--muted); font-size: 12px; }
 
 /* Tabs, like the POSTS / REELS / TAGGED tabs on a profile */
 nav { display: flex; border-top: 1px solid var(--divider); margin-bottom: 12px; }
