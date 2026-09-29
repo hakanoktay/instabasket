@@ -68,11 +68,16 @@
     .curtain.up { animation: veil-up 0.6s cubic-bezier(0.4, 0, 0.6, 1) both; }
 
     /* Instagram's "View as …? … will be able to see that you viewed their story" gate. */
-    .gate { position: fixed; z-index: 2147483646; display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-      border-radius: 16px; animation: pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-    .gate .i { width: 30px; height: 30px; flex: none; }
-    .gate b { display: block; font-size: 15px; line-height: 19px; }
-    .gate span.t { display: block; font-size: 13px; line-height: 17px; opacity: 0.9; margin-top: 2px; }
+    /* In Instagram's own style: its title and sentence, just saying the opposite. */
+    .gate { position: fixed; z-index: 2147483646; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; pointer-events: none; animation: fade 0.25s ease-out both; }
+    .gate b { font-weight: 700; }
+    .gate .t { margin-top: 6px; opacity: 0.85; }
+    .gate .t .who { font-weight: 600; opacity: 1; }
+    .gate-badge { position: fixed; z-index: 2147483646; display: grid; place-items: center; border-radius: 50%; pointer-events: none;
+      box-shadow: 0 0 0 3px #0d0f12; animation: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .gate-badge svg { width: 62%; height: 62%; }
+    @keyframes fade { from { opacity: 0; } }
     .gate-btn { position: fixed; z-index: 2147483646; display: flex; align-items: center; justify-content: center; gap: 8px;
       height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer; color: #fff;
       font-family: inherit; font-size: 15px; font-weight: 600; animation: pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -295,7 +300,7 @@
         texts.push(t);
         area = area ? { top: Math.min(area.top, r.top), bottom: Math.max(area.bottom, r.bottom), left: Math.min(area.left, r.left), right: Math.max(area.right, r.right) } : { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
       }
-      if (area && text.toLowerCase().includes(who.toLowerCase())) return { button, buttonRect: b, area, texts };
+      if (area && text.toLowerCase().includes(who.toLowerCase())) return { button, buttonRect: b, area, texts, avatar: a };
     }
     return null;
   }
@@ -307,6 +312,7 @@
     if (!gate) {
       card?.remove();
       btn?.remove();
+      find('gate-badge')?.remove();
       return;
     }
     const who = owner();
@@ -316,18 +322,39 @@
       btn?.remove();
       let c = card;
       if (!c) {
-        c = el('gate grad', `<span class="i">${MASK}</span><span><b>Anonymous mode is on</b><span class="t"></span></span>`);
+        c = el('gate', '<b>Watching anonymously</b><span class="t"></span>');
         layer().append(c);
+        // Instagram's own type sizes: its title, then its sentence.
+        const styles = gate.texts.map((t) => getComputedStyle(t)).sort((x, y) => parseFloat(y.fontSize) - parseFloat(x.fontSize));
+        const [title, sentence] = [styles[0], styles[styles.length - 1]];
+        Object.assign(c.querySelector('b').style, { fontSize: title.fontSize, lineHeight: title.lineHeight, fontFamily: title.fontFamily });
+        Object.assign(c.querySelector('.t').style, { fontSize: sentence.fontSize, lineHeight: sentence.lineHeight, fontFamily: sentence.fontFamily });
+        c.style.color = title.color;
       }
-      c.querySelector('.t').textContent = `@${who} won't see that you viewed their story.`;
-      const width = Math.min(420, Math.max(260, gate.area.right - gate.area.left + 24));
-      const cx = (gate.area.left + gate.area.right) / 2;
+      const line = c.querySelector('.t');
+      if (line.dataset.who !== who) {
+        line.dataset.who = who;
+        line.replaceChildren(Object.assign(document.createElement('span'), { className: 'who', textContent: who }), " won't see that you viewed their story.");
+      }
       Object.assign(c.style, {
-        left: `${Math.round(cx - width / 2)}px`, width: `${Math.round(width)}px`,
-        top: `${Math.round((gate.area.top + gate.area.bottom) / 2 - c.offsetHeight / 2)}px`,
+        left: `${Math.round(gate.area.left - 20)}px`, width: `${Math.round(gate.area.right - gate.area.left + 40)}px`,
+        top: `${Math.round(gate.area.top)}px`, height: `${Math.round(gate.area.bottom - gate.area.top)}px`,
+      });
+      // A mask badge on the viewer's picture, like the stories tray.
+      let badge = find('gate-badge');
+      if (!badge) {
+        badge = el('gate-badge grad', MASK);
+        badge.style.color = '#fff';
+        layer().append(badge);
+      }
+      const size = Math.round(gate.avatar.width * 0.3);
+      Object.assign(badge.style, {
+        width: `${size}px`, height: `${size}px`,
+        left: `${Math.round(gate.avatar.right - size * 0.85)}px`, top: `${Math.round(gate.avatar.bottom - size * 0.85)}px`,
       });
     } else {
       card?.remove();
+      find('gate-badge')?.remove();
       let b = btn;
       if (!b) {
         b = el('gate-btn grad', `<span class="i">${MASK}</span>View anonymously`, 'button');
