@@ -38,7 +38,7 @@ input { font: inherit; color: var(--text); }
 header { display: flex; align-items: center; justify-content: space-between; height: 56px; }
 .header-actions { display: flex; align-items: center; gap: 4px; }
 h1 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; margin: 0; }
-h1 .i { width: 22px; height: 22px; }
+h1 .logo { width: 24px; height: 24px; display: block; }
 #add-result { margin: -4px 0 8px; color: var(--muted); font-size: 12px; }
 
 /* Tabs, like the POSTS / REELS / TAGGED tabs on a profile */
