@@ -142,14 +142,6 @@ var KeepKeepDrop = (() => {
     if (msg?.type === 'dl-progress') KeepKeepPanel.downloads.progress(msg.job, msg.index, msg.loaded, msg.total, msg.done);
   });
 
-  // First download: ask in the page where downloads should go.
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.type !== 'ask-download-target') return;
-    KeepKeepPanel.downloads.waiting(msg.job);
-    KeepKeepPanel.askDownloadTarget({ reauthName: msg.reauthName }).then(sendResponse);
-    return true;
-  });
-
   // The popup's Profile / Media / Download icons act on what's open in this tab.
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === 'page-info') {
@@ -188,9 +180,9 @@ var KeepKeepDrop = (() => {
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
   // Downloads every photo / video of a post in the highest quality, named
-  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into the folder the user
-  // picked or, without one, Downloads/KeepKeep (albums as one ZIP). Progress
-  // is shown as balloons on the right.
+  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into Downloads/KeepKeep
+  // (an album as separate files, or one ZIP if chosen in the settings).
+  // Progress is shown as balloons on the right.
   async function download(code) {
     const job = Math.random().toString(36).slice(2);
     const ui = KeepKeepPanel.downloads;
@@ -210,10 +202,6 @@ var KeepKeepDrop = (() => {
         type: 'download', job, zipName: `${base}.zip`, mtime: post.takenAt ? post.takenAt * 1000 : Date.now(),
         files: files.map(({ url, filename }) => ({ url, filename })),
       });
-      if (res?.cancelled) {
-        ui.cancel(job);
-        return false;
-      }
       if (!res?.ok) throw new Error(res?.error || 'failed');
       ui.finish(job, res);
       return true;

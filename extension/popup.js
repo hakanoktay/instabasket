@@ -451,44 +451,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function renderSettings() {
-  const { downloadMode } = await chrome.storage.local.get('downloadMode');
-  const folder = await FolderStore.state().catch(() => ({ state: 'none' }));
-  const hasFolder = folder.state !== 'none';
-  $('#opt-folder input').checked = downloadMode === 'folder' && hasFolder;
-  $('#opt-zip input').checked = !$('#opt-folder input').checked && downloadMode === 'zip';
-  $('#opt-folder .folder-line').hidden = !hasFolder;
-  $('#opt-folder .folder-name').textContent = folder.name || '';
-  $('#choose-folder').textContent = hasFolder ? 'Change folder…' : 'Choose folder…';
-  const needsAllow = downloadMode === 'folder' && folder.state === 'prompt';
-  $('#opt-folder .warn').hidden = !needsAllow;
-  $('#allow-folder').hidden = !needsAllow;
+  const { albumMode } = await chrome.storage.local.get('albumMode');
+  $('#opt-zip input').checked = albumMode === 'zip';
+  $('#opt-files input').checked = albumMode !== 'zip';
   $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
 }
-
-// Picking a folder happens in a small window (the popup closes when Chrome's
-// folder picker opens).
-$('#choose-folder').addEventListener('click', (e) => {
-  e.preventDefault();
-  chrome.runtime.sendMessage({ type: 'pick-folder', mode: 'pick' });
-});
-$('#allow-folder').addEventListener('click', (e) => {
-  e.preventDefault();
-  chrome.runtime.sendMessage({ type: 'pick-folder', mode: 'allow' });
-});
-$('#opt-zip input').addEventListener('change', async () => {
-  await chrome.storage.local.set({ downloadMode: 'zip' });
-  renderSettings();
-});
-$('#opt-folder input').addEventListener('change', async () => {
-  const folder = await FolderStore.state().catch(() => ({ state: 'none' }));
-  if (folder.state === 'none') {
-    $('#opt-folder input').checked = false;
-    chrome.runtime.sendMessage({ type: 'pick-folder', mode: 'pick' });
-    return;
-  }
-  await chrome.storage.local.set({ downloadMode: 'folder' });
-  renderSettings();
-});
+for (const input of document.querySelectorAll('input[name=album-mode]')) {
+  input.addEventListener('change', () => chrome.storage.local.set({ albumMode: input.value }));
+}
 loadPage();
 
 chrome.storage.onChanged.addListener(render);

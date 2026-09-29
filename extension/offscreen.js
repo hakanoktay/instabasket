@@ -1,8 +1,7 @@
 // Hidden helper page for downloads. It fetches a post's files (reporting
-// progress) and either
-//   - writes them straight into the folder the user picked (folder.js), or
-//   - packs several into one ZIP and hands back a blob: URL for chrome.downloads
-//     (the background service worker can't turn large data into a URL itself).
+// progress), optionally packs them into one ZIP, and hands back blob: URLs for
+// chrome.downloads (the background service worker can't turn large data into
+// a URL itself).
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.target !== 'offscreen') return;
@@ -10,69 +9,26 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     build(msg).then(sendResponse, (e) => sendResponse({ error: String(e?.message || e) }));
     return true;
   }
-  if (msg.type === 'folder-state') {
-    FolderStore.state().then(sendResponse, () => sendResponse({ state: 'none' }));
-    return true;
-  }
-  if (msg.type === 'save-to-folder') {
-    saveToFolder(msg).then(sendResponse, (e) => sendResponse({ error: String(e?.message || e) }));
-    return true;
-  }
   if (msg.type === 'revoke') URL.revokeObjectURL(msg.url);
 });
 
-async function build({ job, files, zipName, mtime }) {
+async function build({ job, files, zip: asZip, zipName, mtime }) {
   const parts = [];
   for (let i = 0; i < files.length; i++) {
     parts.push(await fetchWithProgress(files[i].url, (loaded, total, done) =>
       chrome.runtime.sendMessage({ type: 'dl-progress', job, index: i, loaded, total, done })));
   }
-  const single = files.length === 1;
-  const blob = single
-    ? new Blob([parts[0]], { type: parts[0].mediaType })
-    : zip(files.map((f, i) => ({ name: f.filename, data: parts[i] })), new Date(mtime || Date.now()));
-  return { url: URL.createObjectURL(blob), filename: single ? files[0].filename : zipName, size: blob.size };
-}
-
-// Streams each file into the chosen folder as it arrives (nothing is held in
-// memory). Existing files are never overwritten: "name (1).jpg" etc.
-async function saveToFolder({ job, files }) {
-  const dir = await FolderStore.get();
-  if (!dir || (await dir.queryPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('no folder access');
-  const names = [];
-  for (let i = 0; i < files.length; i++) {
-    const name = await freeName(dir, files[i].filename);
-    const writable = await (await dir.getFileHandle(name, { create: true })).createWritable();
-    try {
-      await fetchWithProgress(files[i].url, (loaded, total, done) =>
-        chrome.runtime.sendMessage({ type: 'dl-progress', job, index: i, loaded, total, done }), (chunk) => writable.write(chunk));
-      await writable.close();
-    } catch (e) {
-      await writable.abort().catch(() => {});
-      await dir.removeEntry(name).catch(() => {});
-      throw e;
-    }
-    names.push(name);
+  if (asZip) {
+    const blob = zip(files.map((f, i) => ({ name: f.filename, data: parts[i] })), new Date(mtime || Date.now()));
+    return { outputs: [{ url: URL.createObjectURL(blob), filename: zipName }] };
   }
-  return { folder: dir.name, filenames: names };
+  return {
+    outputs: files.map((f, i) => ({ url: URL.createObjectURL(new Blob([parts[i]], { type: parts[i].mediaType })), filename: f.filename })),
+  };
 }
 
-async function freeName(dir, name) {
-  const dot = name.lastIndexOf('.');
-  const [stem, ext] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ''];
-  for (let n = 0; ; n++) {
-    const candidate = n ? `${stem} (${n})${ext}` : name;
-    try {
-      await dir.getFileHandle(candidate); // exists
-    } catch {
-      return candidate;
-    }
-  }
-}
-
-// Fetches a file, reporting progress. With `sink`, each chunk is handed over
-// as it arrives; without, the whole file is returned.
-async function fetchWithProgress(url, onProgress, sink) {
+// Fetches a file, reporting progress, and returns its bytes.
+async function fetchWithProgress(url, onProgress) {
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
   // An error page or message instead of the file (e.g. an expired link) must
@@ -87,8 +43,7 @@ async function fetchWithProgress(url, onProgress, sink) {
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    if (sink) await sink(value);
-    else chunks.push(value);
+    chunks.push(value);
     loaded += value.length;
     if (performance.now() - last > 120) { // don't flood the page with messages
       last = performance.now();
@@ -96,7 +51,6 @@ async function fetchWithProgress(url, onProgress, sink) {
     }
   }
   onProgress(loaded, loaded, true);
-  if (sink) return null;
   if (loaded === 0) throw new Error('empty file');
   const data = new Uint8Array(loaded);
   data.mediaType = type;

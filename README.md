@@ -21,12 +21,7 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 **Download** saves every photo and video of a post in the highest resolution Instagram offers. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
 
-The first time you download, KeepKeep asks right in the page where to save:
-
-- **Choose a folder** – files are written straight into that folder, each as a separate file, with no save window and no ZIP (existing files are never overwritten). Picking the folder opens a small window once: Chrome only lets extensions open the folder picker from their own page.
-- **Use the Downloads folder** – files go to `Downloads/KeepKeep/`; an album is saved as one ZIP so there's at most one "Save as" window.
-
-Change it any time in the popup: ⚙ slides in the settings.
+Files go straight to `Downloads/KeepKeep/` – no questions, no windows. An album is saved as separate files, or as one ZIP if you pick that in the popup's settings (⚙). To save somewhere else, change Chrome's download location (Settings → Downloads → Location). If Chrome's "Ask where to save each file" is on, Chrome shows its save window for every file.
 
 While downloading, balloons on the right show the overall progress and each photo / video with its thumbnail, size and progress; they disappear a few seconds after it's saved.
 

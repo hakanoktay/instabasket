@@ -120,24 +120,6 @@ var KeepKeepPanel = (() => {
     .box.new input { width: 100%; border: none; outline: none; background: none; font: inherit; font-weight: 600; color: var(--text); text-align: center; }
     .empty { grid-column: 1 / -1; color: var(--muted); text-align: center; padding: 8px 0; font-size: 12px; }
 
-    /* Where to save downloads: two large options, asked on the first download */
-    .choices { display: flex; flex-direction: column; gap: 8px; padding: 4px 12px 14px; }
-    .choice {
-      display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 12px 14px; text-align: left;
-      border: none; border-radius: 10px; background: var(--secondary); color: var(--text); cursor: pointer;
-      animation: box-in 0.28s ease-out both;
-    }
-    .choice:nth-child(2) { animation-delay: 60ms; }
-    .choice:hover { background: var(--secondary-hover); }
-    .choice b { font-weight: 600; }
-    .choice span { color: var(--muted); font-size: 12px; line-height: 16px; }
-    .choice.primary { background: linear-gradient(135deg, #8119b5 0%, #6a139a 55%, #450b62 100%); color: #fff; box-shadow: 0 2px 8px rgba(69, 11, 98, 0.3); }
-    .choice.primary:hover { filter: brightness(1.1); }
-    .choice.primary span { color: rgba(255, 255, 255, 0.85); }
-    .card.asking .picker, .card.asking .progress { display: none; }
-    .card.asking .title { white-space: normal; line-height: 19px; }
-    @keyframes box-in { from { opacity: 0; transform: translateY(6px); } }
-
     /* Countdown until the card closes; pauses on hover */
     .progress { height: 3px; background: transparent; flex: none; }
     .bar { height: 100%; background: linear-gradient(90deg, #450b62, #8119b5 50%, #aa56d5); transform-origin: left; }
@@ -167,7 +149,6 @@ var KeepKeepPanel = (() => {
           <div class="action"></div>
           <button class="close" title="Close">${ICONS.close}</button>
         </div>
-        <div class="choices" hidden></div>
         <div class="picker"><div class="picker-inner">
           <div class="picker-top"><span class="label">Add to a list</span><span class="hint"></span></div>
           <label class="search" hidden><span class="i">${ICONS.search}</span><input placeholder="Search lists"></label>
@@ -176,7 +157,7 @@ var KeepKeepPanel = (() => {
         <div class="progress"><div class="bar"></div></div>
       </div>`;
     card = root.querySelector('.card');
-    els = Object.fromEntries(['thumb-slot', 'title', 'sub', 'action', 'picker', 'search', 'grid', 'bar', 'hint', 'choices']
+    els = Object.fromEntries(['thumb-slot', 'title', 'sub', 'action', 'picker', 'search', 'grid', 'bar', 'hint']
       .map((c) => [c, root.querySelector('.' + c)]));
     els.searchInput = els.search.querySelector('input');
 
@@ -203,7 +184,6 @@ var KeepKeepPanel = (() => {
     if (!host) build();
     if (!host.isConnected) document.documentElement.appendChild(host);
     card.className = `card ${state}${isDarkPage() ? ' dark' : ''}`;
-    if (state !== 'asking') els.choices.hidden = true;
     stopTimer();
     setKeys(false);
   }
@@ -211,52 +191,7 @@ var KeepKeepPanel = (() => {
   function hide() {
     current = null;
     setKeys(false);
-    if (pendingChoice) {
-      const resolve = pendingChoice;
-      pendingChoice = null;
-      resolve('closed');
-    }
     host?.remove();
-  }
-
-  // ---- Where to save downloads (asked in the page on the first download) ----
-  // Resolves 'zip' (Downloads folder), 'folder' (choose a folder), 'allow'
-  // (confirm access to the folder chosen before) or 'closed'.
-  let pendingChoice = null;
-  function askDownloadTarget({ reauthName } = {}) {
-    mount('asking');
-    setThumb(null);
-    els.choices.hidden = false;
-    closePicker();
-    const option = (cls, title, text, value) => {
-      const b = document.createElement('button');
-      b.className = 'choice ' + cls;
-      b.append(Object.assign(document.createElement('b'), { textContent: title }));
-      if (text) b.append(Object.assign(document.createElement('span'), { textContent: text }));
-      b.addEventListener('click', () => {
-        const resolve = pendingChoice;
-        pendingChoice = null;
-        els.choices.hidden = true;
-        resolve?.(value);
-      });
-      return b;
-    };
-    if (reauthName) {
-      setHead('Allow access again', `Chrome wants you to confirm access to “${reauthName}”.`);
-      els.choices.replaceChildren(
-        option('primary', `Allow access to “${reauthName}”`, 'Opens a small window to confirm.', 'allow'),
-        option('', 'Use the Downloads folder instead', 'Albums are saved as one ZIP file.', 'zip'),
-      );
-    } else {
-      setHead('Where should KeepKeep save downloads?', 'You can change this later in the settings.');
-      els.choices.replaceChildren(
-        option('primary', 'Choose a folder', 'Photos and videos are saved there directly, as separate files. No save window, no ZIP.', 'folder'),
-        option('', 'Use the Downloads folder', 'Saved to Downloads/KeepKeep. Albums are saved as one ZIP file.', 'zip'),
-      );
-    }
-    return new Promise((resolve) => {
-      pendingChoice = resolve;
-    });
   }
 
   function startTimer(ms) {
@@ -596,33 +531,14 @@ var KeepKeepPanel = (() => {
       j.header.querySelector('.bar').style.width = `${Math.round(all * 100)}%`;
     },
 
-    // Waiting for the user to pick where downloads go (folder window).
-    waiting(job) {
-      const j = dlJobs.get(job);
-      if (j) setText(j.header, 'Choose where to save', 'Waiting for your choice');
-    },
-
     finish(job, res) {
       const j = dlJobs.get(job);
       if (!j) return;
       j.items.forEach((it) => it.done || markDone(it.el));
-      if (res.mode === 'folder') {
-        const n = res.filenames.length;
-        setText(j.header, `Saved to “${res.folder}”`, n === 1 ? res.filenames[0] : `${n} files`);
-      } else {
-        setText(j.header, 'Saved', `Downloads/KeepKeep/${res.filename}`);
-      }
+      const n = res.filenames.length;
+      setText(j.header, 'Saved to Downloads/KeepKeep', n === 1 ? res.filenames[0] : `${n} files`);
       markDone(j.header);
       dismiss(job, 4000);
-    },
-
-    // The user cancelled where-to-save: nothing was downloaded.
-    cancel(job) {
-      const j = dlJobs.get(job);
-      if (!j) return;
-      j.header.querySelector('.state').innerHTML = '';
-      setText(j.header, 'Download cancelled', '');
-      dismiss(job, 1500);
     },
 
     fail(job, text) {
@@ -651,5 +567,5 @@ var KeepKeepPanel = (() => {
     }, after);
   }
 
-  return { isDarkPage, showDrop, isDropping, showBusy, showInfo, showError, showResult, showRemoved, hide, askDownloadTarget, downloads };
+  return { isDarkPage, showDrop, isDropping, showBusy, showInfo, showError, showResult, showRemoved, hide, downloads };
 })();
