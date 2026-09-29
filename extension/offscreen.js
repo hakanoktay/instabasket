@@ -29,7 +29,7 @@ async function build({ job, files, zipName, mtime }) {
   }
   const single = files.length === 1;
   const blob = single
-    ? new Blob([parts[0]])
+    ? new Blob([parts[0]], { type: parts[0].mediaType })
     : zip(files.map((f, i) => ({ name: f.filename, data: parts[i] })), new Date(mtime || Date.now()));
   return { url: URL.createObjectURL(blob), filename: single ? files[0].filename : zipName, size: blob.size };
 }
@@ -75,6 +75,10 @@ async function freeName(dir, name) {
 async function fetchWithProgress(url, onProgress, sink) {
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+  // An error page or message instead of the file (e.g. an expired link) must
+  // never be saved under a photo / video name.
+  const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  if (!/^(image|video)\/|^application\/octet-stream$/.test(type)) throw new Error(`not a photo or video (${type || 'unknown type'})`);
   const total = +res.headers.get('content-length') || 0;
   const reader = res.body.getReader();
   const chunks = [];
@@ -93,7 +97,9 @@ async function fetchWithProgress(url, onProgress, sink) {
   }
   onProgress(loaded, loaded, true);
   if (sink) return null;
+  if (loaded === 0) throw new Error('empty file');
   const data = new Uint8Array(loaded);
+  data.mediaType = type;
   let offset = 0;
   for (const c of chunks) {
     data.set(c, offset);

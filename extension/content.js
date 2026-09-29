@@ -210,6 +210,10 @@ var KeepKeepDrop = (() => {
         type: 'download', job, zipName: `${base}.zip`, mtime: post.takenAt ? post.takenAt * 1000 : Date.now(),
         files: files.map(({ url, filename }) => ({ url, filename })),
       });
+      if (res?.cancelled) {
+        ui.cancel(job);
+        return false;
+      }
       if (!res?.ok) throw new Error(res?.error || 'failed');
       ui.finish(job, res);
       return true;

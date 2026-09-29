@@ -616,6 +616,15 @@ var KeepKeepPanel = (() => {
       dismiss(job, 4000);
     },
 
+    // The user cancelled where-to-save: nothing was downloaded.
+    cancel(job) {
+      const j = dlJobs.get(job);
+      if (!j) return;
+      j.header.querySelector('.state').innerHTML = '';
+      setText(j.header, 'Download cancelled', '');
+      dismiss(job, 1500);
+    },
+
     fail(job, text) {
       const j = dlJobs.get(job);
       if (!j) return;

@@ -46,7 +46,9 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
   jobs.set(job, tabId);
   try {
     await ensureHelper();
-    if ((await downloadTarget(job, tabId)) === 'folder') {
+    const target = await downloadTarget(job, tabId);
+    if (target === 'cancel') return { cancelled: true };
+    if (target === 'folder') {
       const saved = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'save-to-folder', job, files });
       if (saved && !saved.error) return { ok: true, mode: 'folder', folder: saved.folder, filenames: saved.filenames };
       // Folder no longer usable (moved, deleted, access withdrawn): fall back to Downloads.
@@ -63,8 +65,8 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
   }
 }
 
-// Where this download goes: the folder the user picked ('folder') or
-// Downloads/KeepKeep ('downloads'). The first time – or when Chrome wants
+// Where this download goes: the folder the user picked ('folder'),
+// Downloads/KeepKeep ('downloads'), or nowhere ('cancel'). The first time – or when Chrome wants
 // the folder access confirmed again – the folder window asks, and the download
 // waits for the answer.
 async function downloadTarget(job, tabId) {
@@ -75,20 +77,23 @@ async function downloadTarget(job, tabId) {
   // Ask at most once per browser session (the service worker itself restarts often).
   const { askedFolder } = await chrome.storage.session.get('askedFolder');
   if (askedFolder) return 'downloads';
-  await chrome.storage.session.set({ askedFolder: true });
   // The question is shown in the Instagram page itself. Only picking a folder
   // needs a window: Chrome lets an extension open the folder picker from its
   // own page only (from inside a website, the website would get the access).
   const reauthName = downloadMode === 'folder' && folder?.state === 'prompt' ? folder.name : null;
   const choice = await chrome.tabs.sendMessage(tabId, { type: 'ask-download-target', job, reauthName }).catch(() => 'closed');
+  // Cancel (or closing the question) cancels this download; it asks again next time.
   if (choice === 'zip') {
     await chrome.storage.local.set({ downloadMode: 'zip' });
+    await chrome.storage.session.set({ askedFolder: true });
     return 'downloads';
   }
   if (choice === 'folder' || choice === 'allow') {
-    return (await askForFolder(choice === 'allow' ? 'allow' : 'pick')) === 'folder' ? 'folder' : 'downloads';
+    if ((await askForFolder(choice === 'allow' ? 'allow' : 'pick')) !== 'folder') return 'cancel';
+    await chrome.storage.session.set({ askedFolder: true });
+    return 'folder';
   }
-  return 'downloads';
+  return 'cancel';
 }
 
 const folderRequests = new Map(); // request id → resolve
@@ -101,7 +106,7 @@ function askForFolder(mode = 'pick') {
     const win = await chrome.windows.create({
       url: `folder.html?request=${request}&mode=${mode}`, type: 'popup', width: 400, height: 300, focused: true,
     });
-    // Closing the window without choosing: use Downloads for this time.
+    // Closing the window without choosing cancels.
     const onClose = (id) => {
       if (id !== win.id) return;
       chrome.windows.onRemoved.removeListener(onClose);
