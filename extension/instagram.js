@@ -92,20 +92,6 @@ var InstaApi = (() => {
     }
   }
 
-  // The listed sizes stop at 1080–1440 px. The CDN address carries the
-  // resizing step in its `stp` parameter; without it the CDN serves the
-  // uploaded original (e.g. 3072 × 4096). The listed size stays as a fallback.
-  function fullSize(url) {
-    try {
-      const u = new URL(url);
-      if (!u.searchParams.has('stp')) return url;
-      u.searchParams.delete('stp');
-      return u.toString();
-    } catch {
-      return url;
-    }
-  }
-
   // Every photo / video of a post (all items of an album), each in the highest
   // resolution Instagram offers, plus the owner and publish time for file names.
   async function mediaFiles(code) {
@@ -116,10 +102,7 @@ var InstaApi = (() => {
     const files = parts.map((m) => {
       const thumb = pick(m.image_versions2?.candidates, 150); // small preview (a video's cover)
       if (m.video_versions?.length) return { url: largest(m.video_versions).url, kind: 'video', thumb };
-      if (m.image_versions2?.candidates?.length) {
-        const url = largest(m.image_versions2.candidates).url;
-        return { url: fullSize(url), fallback: url, kind: 'image', thumb };
-      }
+      if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image', thumb };
       return null;
     }).filter(Boolean);
     const cover = item.image_versions2 || item.carousel_media?.[0]?.image_versions2;

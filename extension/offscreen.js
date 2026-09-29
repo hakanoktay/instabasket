@@ -14,12 +14,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 async function build({ job, files }) {
   const parts = [];
   for (let i = 0; i < files.length; i++) {
-    const report = (loaded, total, done) => chrome.runtime.sendMessage({ type: 'dl-progress', job, index: i, loaded, total, done });
-    // The full-size address first; if the CDN refuses it, the listed size.
-    parts.push(await fetchWithProgress(files[i].url, report).catch((e) => {
-      if (!files[i].fallback) throw e;
-      return fetchWithProgress(files[i].fallback, report);
-    }));
+    parts.push(await fetchWithProgress(files[i].url, (loaded, total, done) =>
+      chrome.runtime.sendMessage({ type: 'dl-progress', job, index: i, loaded, total, done })));
   }
   return {
     outputs: files.map((f, i) => ({ url: URL.createObjectURL(new Blob([parts[i]], { type: parts[i].mediaType })), filename: f.filename })),
