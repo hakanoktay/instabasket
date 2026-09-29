@@ -67,6 +67,17 @@
     .curtain.down { animation: veil-down 0.75s cubic-bezier(0.3, 0.7, 0.2, 1) both; }
     .curtain.up { animation: veil-up 0.6s cubic-bezier(0.4, 0, 0.6, 1) both; }
 
+    /* Instagram's "View as …? … will be able to see that you viewed their story" gate. */
+    .gate { position: fixed; z-index: 2147483646; display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      border-radius: 16px; animation: pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .gate .i { width: 30px; height: 30px; flex: none; }
+    .gate b { display: block; font-size: 15px; line-height: 19px; }
+    .gate span.t { display: block; font-size: 13px; line-height: 17px; opacity: 0.9; margin-top: 2px; }
+    .gate-btn { position: fixed; z-index: 2147483646; display: flex; align-items: center; justify-content: center; gap: 8px;
+      height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer; color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; animation: pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .gate-btn:hover { filter: brightness(1.12); }
+    .gate-btn .i { width: 20px; height: 20px; }
     @keyframes pop { from { opacity: 0; transform: scale(0.85); } }
     @keyframes drop { from { opacity: 0; transform: translateY(-6px); } }
     @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
@@ -237,6 +248,107 @@
 
   // ---- Switching ----
 
+  // ---- Instagram's "View as …?" gate ----
+  //
+  // Opening a story from a link, Instagram first asks "View as <you>? <owner>
+  // will be able to see that you viewed their story." With anonymous stories
+  // on that isn't so, and a KeepKeep card says so over Instagram's text. With
+  // it off, a "View anonymously" button under Instagram's turns it on and
+  // opens the story. The gate is recognised by its shape, not its (localised)
+  // wording: a round picture in the middle of the story, a button under it,
+  // and the owner's username in the text between them.
+
+  function isRound(el, size) {
+    if (!el) return false;
+    const br = getComputedStyle(el).borderTopLeftRadius;
+    return br.endsWith('%') ? parseFloat(br) >= 40 : parseFloat(br) >= size * 0.4;
+  }
+
+  function findGate() {
+    const who = owner();
+    if (!who) return null;
+    const imgs = [...document.querySelectorAll('img')].filter((i) => {
+      const r = i.getBoundingClientRect();
+      return r.width >= 70 && r.width <= 240 && Math.abs(r.width - r.height) < 4 && Math.abs(r.left + r.width / 2 - innerWidth / 2) < 60
+        && (isRound(i, r.width) || isRound(i.parentElement, r.width) || isRound(i.parentElement?.parentElement, r.width));
+    });
+    for (const img of imgs) {
+      const a = img.getBoundingClientRect();
+      const buttons = [...document.querySelectorAll('div[role="button"], button')].filter((b) => {
+        if (b.closest('#keepkeep-veil')) return false;
+        const r = b.getBoundingClientRect();
+        return r.top > a.bottom && r.top - a.bottom < 320 && r.width >= 80 && r.width <= 320 && r.height >= 28 && r.height <= 70
+          && Math.abs(r.left + r.width / 2 - (a.left + a.width / 2)) < 40 && b.textContent.trim().length < 40;
+      }).sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top);
+      const button = buttons[0];
+      if (!button) continue;
+      const b = button.getBoundingClientRect();
+      // The text between them must name the story's owner.
+      let text = '';
+      let area = null;
+      const texts = [];
+      for (const t of document.querySelectorAll('span, div, h1, h2, h3, p')) {
+        if (t.children.length > 2) continue;
+        const r = t.getBoundingClientRect();
+        if (r.top < a.bottom - 1 || r.bottom > b.top + 1 || !r.height || Math.abs(r.left + r.width / 2 - (a.left + a.width / 2)) > 60) continue;
+        text += ' ' + t.textContent;
+        texts.push(t);
+        area = area ? { top: Math.min(area.top, r.top), bottom: Math.max(area.bottom, r.bottom), left: Math.min(area.left, r.left), right: Math.max(area.right, r.right) } : { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      }
+      if (area && text.toLowerCase().includes(who.toLowerCase())) return { button, buttonRect: b, area, texts };
+    }
+    return null;
+  }
+
+  function renderGate() {
+    const gate = inStories() ? findGate() : null;
+    const card = find('gate');
+    const btn = find('gate-btn');
+    if (!gate) {
+      card?.remove();
+      btn?.remove();
+      return;
+    }
+    const who = owner();
+    // veil.css hides Instagram's own text under the card while anonymous.
+    for (const t of gate.texts) t.dataset.kkGateText = '';
+    if (on) {
+      btn?.remove();
+      let c = card;
+      if (!c) {
+        c = el('gate grad', `<span class="i">${MASK}</span><span><b>Anonymous mode is on</b><span class="t"></span></span>`);
+        layer().append(c);
+      }
+      c.querySelector('.t').textContent = `@${who} won't see that you viewed their story.`;
+      const width = Math.min(420, Math.max(260, gate.area.right - gate.area.left + 24));
+      const cx = (gate.area.left + gate.area.right) / 2;
+      Object.assign(c.style, {
+        left: `${Math.round(cx - width / 2)}px`, width: `${Math.round(width)}px`,
+        top: `${Math.round((gate.area.top + gate.area.bottom) / 2 - c.offsetHeight / 2)}px`,
+      });
+    } else {
+      card?.remove();
+      let b = btn;
+      if (!b) {
+        b = el('gate-btn grad', `<span class="i">${MASK}</span>View anonymously`, 'button');
+        b.title = 'Turn on anonymous stories and view – the owner won\'t see you';
+        b.addEventListener('click', () => {
+          const g = findGate();
+          // Switch at once (stories-main.js reads this attribute), then store it.
+          html.dataset.keepkeepAnonStories = '1';
+          chrome.storage.local.set({ anonStories: true });
+          b.remove();
+          g?.button.click();
+        });
+        layer().append(b);
+      }
+      const r = gate.buttonRect;
+      Object.assign(b.style, {
+        left: `${Math.round(r.left + r.width / 2 - b.offsetWidth / 2)}px`, top: `${Math.round(r.bottom + 12)}px`,
+      });
+    }
+  }
+
   function curtain(dir) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const c = el(`curtain ${dir}`);
@@ -272,5 +384,6 @@
       scan();
     }
     if (on) render();
+    renderGate();
   }, 400);
 })();

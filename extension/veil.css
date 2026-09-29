@@ -79,6 +79,10 @@ html[data-keepkeep-anon-stories="1"] [data-kk-bar] {
   filter: brightness(0.78) sepia(1) hue-rotate(238deg) saturate(4.5);
 }
 
+/* The "… will be able to see that you viewed their story" text under
+   KeepKeep's "Anonymous mode is on" card. */
+html[data-keepkeep-anon-stories="1"] [data-kk-gate-text] { visibility: hidden; }
+
 @media (prefers-reduced-motion: reduce) {
   canvas[data-kk-ring] { transition: none; }
   html[data-keepkeep-anon-stories="1"] [data-kk-ring-host="badge"]::after { animation: none; }
