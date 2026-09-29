@@ -451,15 +451,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function renderSettings() {
-  const { albumMode, chromeAsks } = await chrome.storage.local.get(['albumMode', 'chromeAsks']);
-  $('#opt-zip input').checked = albumMode === 'zip';
-  $('#opt-files input').checked = albumMode !== 'zip';
-  $('#chrome-asks').hidden = chromeAsks !== true;
   $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
-}
-$('#open-chrome-downloads').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://settings/downloads' }));
-for (const input of document.querySelectorAll('input[name=album-mode]')) {
-  input.addEventListener('change', () => chrome.storage.local.set({ albumMode: input.value }));
 }
 loadPage();
 

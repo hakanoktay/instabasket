@@ -442,9 +442,6 @@ var KeepKeepPanel = (() => {
     .pct { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
     .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: linear-gradient(90deg, #450b62, #8119b5 50%, #aa56d5); transition: width 0.2s; }
     .done .bar { background: var(--green); }
-    .link { all: unset; color: var(--brand); font-weight: 600; cursor: pointer; }
-    .link:hover { text-decoration: underline; }
-    .state .icon { width: 20px; height: 20px; color: var(--brand); }
     svg { display: block; width: 100%; height: 100%; }
   `;
   const DL_ICONS = {
@@ -539,17 +536,6 @@ var KeepKeepPanel = (() => {
       if (!j) return;
       j.items.forEach((it) => it.done || markDone(it.el));
       const n = res.filenames.length;
-      if (res.chromeAsks) {
-        // Chrome's own save window is open (its "Ask where to save each file"
-        // setting); point to where it can be turned off.
-        setText(j.header, 'Chrome is asking where to save', null);
-        const link = Object.assign(el('button', 'link'), { textContent: 'Turn it off in Chrome settings' });
-        link.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'open-download-settings' }).catch(() => {}));
-        j.header.querySelector('.sub').replaceChildren(link);
-        j.header.querySelector('.state').innerHTML = `<div class="icon">${DL_ICONS.download}</div>`;
-        dismiss(job, 10000);
-        return;
-      }
       setText(j.header, 'Saved to Downloads/KeepKeep', n === 1 ? res.filenames[0] : `${n} files`);
       markDone(j.header);
       dismiss(job, 4000);

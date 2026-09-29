@@ -180,8 +180,8 @@ var KeepKeepDrop = (() => {
   setTimeout(() => fillMissing().catch(() => {}), 3000);
 
   // Downloads every photo / video of a post in the highest quality, named
-  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into Downloads/KeepKeep
-  // (an album as separate files, or one ZIP if chosen in the settings).
+  // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into Downloads/KeepKeep,
+  // each as its own file.
   // Progress is shown as balloons on the right.
   async function download(code) {
     const job = Math.random().toString(36).slice(2);
@@ -199,7 +199,7 @@ var KeepKeepDrop = (() => {
       }));
       ui.items(job, { username: post.username, files });
       const res = await chrome.runtime.sendMessage({
-        type: 'download', job, zipName: `${base}.zip`, mtime: post.takenAt ? post.takenAt * 1000 : Date.now(),
+        type: 'download', job,
         files: files.map(({ url, filename }) => ({ url, filename })),
       });
       if (!res?.ok) throw new Error(res?.error || 'failed');
