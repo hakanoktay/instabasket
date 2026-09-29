@@ -103,8 +103,15 @@ function askForFolder(mode = 'pick') {
   const request = Math.random().toString(36).slice(2);
   return new Promise(async (resolve) => {
     folderRequests.set(request, resolve);
+    // Centred over the browser window the user is looking at.
+    const width = 400, height = 300;
+    const at = await chrome.windows.getLastFocused().catch(() => null);
+    const pos = at?.width ? {
+      left: Math.round(at.left + (at.width - width) / 2),
+      top: Math.round(at.top + (at.height - height) / 2),
+    } : {};
     const win = await chrome.windows.create({
-      url: `folder.html?request=${request}&mode=${mode}`, type: 'popup', width: 400, height: 300, focused: true,
+      url: `folder.html?request=${request}&mode=${mode}`, type: 'popup', width, height, focused: true, ...pos,
     });
     // Closing the window without choosing cancels.
     const onClose = (id) => {
