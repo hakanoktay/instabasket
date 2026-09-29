@@ -451,12 +451,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function renderSettings() {
-  const { photoSize } = await chrome.storage.local.get('photoSize');
+  const { photoSize, anonStories } = await chrome.storage.local.get(['photoSize', 'anonStories']);
+  $('#anon-stories').checked = anonStories === true;
   for (const input of document.querySelectorAll('input[name=photo-size]')) {
     input.checked = input.value === (photoSize === 'standard' ? 'standard' : 'original');
   }
   $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
 }
+$('#anon-stories').addEventListener('change', (e) => chrome.storage.local.set({ anonStories: e.target.checked }));
 for (const input of document.querySelectorAll('input[name=photo-size]')) {
   input.addEventListener('change', () => chrome.storage.local.set({ photoSize: input.value }));
 }

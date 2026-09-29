@@ -17,6 +17,10 @@ There are also **🧺 Add to basket** buttons on Instagram itself:
 
 Once an item is saved its button shows **✓ In basket**. Hovering it turns it into a red **Remove** (like "Following" → "Unfollow" on Instagram); clicking removes the item, and the corner card offers **Undo** for a few seconds.
 
+### Watching stories anonymously
+
+Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner.
+
 ### Downloading
 
 **Download** saves every photo and video of a post in the highest resolution Instagram offers. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.

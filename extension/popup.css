@@ -265,6 +265,24 @@ body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2
 .setting-option .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .setting-option .desc { color: var(--muted); font-size: 12px; line-height: 16px; }
 .settings-body h2:not(:first-child) { margin-top: 20px; }
+.setting-toggle {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--line); transition: border-color 0.15s, background 0.15s;
+}
+.setting-toggle:hover { background: var(--hover); }
+.setting-toggle:has(input:checked) { border-color: var(--brand); background: var(--brand-tint); }
+.setting-toggle .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.setting-toggle .desc { color: var(--muted); font-size: 12px; line-height: 16px; }
+.setting-toggle input {
+  appearance: none; flex: none; position: relative; width: 36px; height: 20px; margin: 0; border-radius: 10px;
+  background: var(--line); cursor: pointer; transition: background 0.15s;
+}
+.setting-toggle input::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); transition: transform 0.15s;
+}
+.setting-toggle input:checked { background: var(--brand); }
+.setting-toggle input:checked::after { transform: translateX(16px); }
 .settings-footer {
   display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 10px;
   border-top: 1px solid var(--divider); color: var(--muted); font-size: 12px;
