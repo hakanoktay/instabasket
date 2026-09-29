@@ -234,14 +234,17 @@ ul.profiles li:hover { background: var(--hover); }
 .btn.danger-fill { background: var(--red); color: #fff; }
 .btn.danger-fill:hover { background: #d93a47; }
 
-/* ---- Two views: the lists, and Settings sliding in from the right ---- */
+/* ---- Two pages: the lists, and Settings. Only one is ever shown; the other is
+   display:none so it can't widen the popup (Chrome sizes it to its content). ---- */
+html { overflow: hidden; }
 .pane {
   position: absolute; inset: 0; padding: 0 16px 12px; display: flex; flex-direction: column; background: var(--bg);
-  transition: transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.34s;
 }
-#settings-view { transform: translateX(100%); }
-body.settings-open #main-view { transform: translateX(-28%); opacity: 0; pointer-events: none; }
-body.settings-open #settings-view { transform: none; box-shadow: -8px 0 24px rgba(0, 0, 0, 0.06); }
+#settings-view, body.settings-open #main-view { display: none; }
+body.settings-open #settings-view { display: flex; animation: pane-in-right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes pane-in-right { from { opacity: 0; transform: translateX(24px); } }
+@keyframes pane-in-left { from { opacity: 0; transform: translateX(-24px); } }
 
 .settings-header { justify-content: flex-start; gap: 4px; }
 .settings-header h1 { font-size: 16px; }

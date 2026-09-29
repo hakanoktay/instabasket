@@ -440,6 +440,7 @@ for (const b of document.querySelectorAll('.page-btn')) {
 
 function openSettings(open) {
   document.body.classList.toggle('settings-open', open);
+  document.body.classList.toggle('settings-closing', !open);
   $('#settings-view').setAttribute('aria-hidden', String(!open));
   if (open) renderSettings();
 }
