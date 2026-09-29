@@ -102,6 +102,14 @@
     .action:hover { opacity: 0.5; }
     .action.saved:hover { color: var(--red); opacity: 1; }
 
+    /* Story viewer: small icons in a dark pill on the story. */
+    .story { color: #e2bff4; padding: 6px; border-radius: 50%; }
+    .story .view svg { width: 16px; height: 16px; }
+    .story .label { display: none; }
+    .story:hover { background: rgba(255, 255, 255, 0.16); }
+    .story.saved .done { color: #7ee04a; }
+    .story.saved:hover .rm { color: #ff6b76; }
+
   `;
 
   function isLightColor(color) {
@@ -505,20 +513,54 @@
 
   // ---- Story viewer (/stories/<username>/<id>/) ----
   //
-  // One column for the story on screen: Profile, Media and Download with
-  // captions, like the Reels column, just outside the story's right edge and
-  // level with its top, so nothing covers the story. In a window too narrow
-  // for that, it moves onto the story's top right on a translucent backing.
-  // The story is found by its shape (a tall card in the middle of the
-  // window); what the buttons act on comes from the address bar, which
-  // Instagram updates as stories advance. Highlights have no owner or item in
-  // the address, so they get no bar.
+  // Profile, Media and Download for the story on screen: a small vertical pill
+  // on the story's right edge, centred, shown while the pointer is over the
+  // story. The story is found by its shape (a tall card in the middle of the
+  // window). The story item comes from the address bar, or – when Instagram
+  // hasn't put its id there yet (the first story opened) – from the picture on
+  // screen, whose CDN address carries the id in ig_cache_key. Highlights have
+  // no owner in the address, so they get no pill.
 
   let storyBar = null;
+  let storyCardRect = null;
+  let storyCardSeen = 0;
+  let pointer = { x: -1, y: -1 };
+  addEventListener('mousemove', (e) => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true, capture: true });
+
+  // The id of the story on screen, read from its picture's CDN address.
+  function storyIdOnScreen() {
+    const card = storyCardRect;
+    if (!card) return null;
+    let best = null;
+    let bestArea = 0;
+    for (const el of document.querySelectorAll('img[src*="ig_cache_key"], video[poster*="ig_cache_key"]')) {
+      const r = el.getBoundingClientRect();
+      const area = r.width * r.height;
+      if (area < bestArea || r.right < card.left || r.left > card.right || r.bottom < card.top || r.top > card.bottom) continue;
+      best = el;
+      bestArea = area;
+    }
+    const src = best && (best.getAttribute('src') || best.getAttribute('poster'));
+    const keyParam = src && new URL(src, location.href).searchParams.get('ig_cache_key');
+    if (!keyParam) return null;
+    try {
+      const id = atob(keyParam.split('.')[0]);
+      return /^\d+$/.test(id) ? id : null;
+    } catch {
+      return null;
+    }
+  }
 
   const currentStory = () => {
     const item = KeepKeep.parse(location.href);
-    return item?.key?.startsWith('story:') ? item : null;
+    if (item?.key?.startsWith('story:')) return item;
+    const m = location.pathname.match(/^\/stories\/([A-Za-z0-9._]{1,30})\/?$/);
+    if (!m || m[1] === 'highlights') return null;
+    const username = m[1].toLowerCase();
+    const id = storyIdOnScreen();
+    return id
+      ? { kind: 'media', key: 'story:' + id, code: null, type: 'story', username, url: `https://www.instagram.com/stories/${username}/${id}/` }
+      : { kind: 'media', key: null, username };
   };
 
   function storyCard() {
@@ -526,9 +568,9 @@
     let bestArea = 0;
     for (const e of document.querySelectorAll('body div, body section')) {
       const r = e.getBoundingClientRect();
-      if (r.height < innerHeight * 0.6 || r.width < 200) continue;
+      if (r.height < innerHeight * 0.55 || r.width < 200) continue;
       const ratio = r.width / r.height;
-      if (ratio < 0.45 || ratio > 0.7 || Math.abs(r.left + r.width / 2 - innerWidth / 2) > 80) continue;
+      if (ratio < 0.4 || ratio > 0.75 || Math.abs(r.left + r.width / 2 - innerWidth / 2) > 120) continue;
       if (r.width * r.height > bestArea) {
         best = r;
         bestArea = r.width * r.height;
@@ -540,22 +582,28 @@
   function placeStoryBar() {
     if (!storyBar) return;
     const card = storyCard();
-    if (!card || !currentStory()) {
-      storyBar.style.display = 'none';
+    // While stories change the card can vanish for a moment: keep the last
+    // position instead of hiding (no flicker).
+    if (card) {
+      storyCardRect = card;
+      storyCardSeen = Date.now();
+    } else if (Date.now() - storyCardSeen > 1500) {
+      storyCardRect = null;
+    }
+    const r = storyCardRect;
+    const story = r && currentStory();
+    if (!r || !story?.username) {
+      storyBar.style.opacity = '0';
+      storyBar.style.pointerEvents = 'none';
       return;
     }
-    storyBar.style.display = 'flex';
-    const width = storyBar.offsetWidth;
-    const outside = card.right + 16 + width <= innerWidth - 8;
-    Object.assign(storyBar.style, outside ? {
-      top: `${Math.round(card.top + 12)}px`,
-      left: `${Math.round(card.right + 16)}px`,
-      background: 'none', backdropFilter: 'none',
-    } : {
-      top: `${Math.round(card.top + Math.min(110, card.height * 0.12))}px`,
-      left: `${Math.round(card.right - 10 - width)}px`,
-      background: 'rgba(20, 6, 28, 0.5)', backdropFilter: 'blur(8px)',
-    });
+    const h = storyBar.offsetHeight;
+    storyBar.style.top = `${Math.round(r.top + r.height / 2 - h / 2)}px`;
+    storyBar.style.left = `${Math.round(r.right - 12 - storyBar.offsetWidth)}px`;
+    const over = (x, y, b) => x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+    const show = over(pointer.x, pointer.y, r) || over(pointer.x, pointer.y, storyBar.getBoundingClientRect());
+    storyBar.style.opacity = show ? '1' : '0';
+    storyBar.style.pointerEvents = show ? 'auto' : 'none';
   }
 
   function addStoryButtons() {
@@ -568,8 +616,10 @@
       storyBar = document.createElement('div');
       storyBar.dataset.keepkeep = 'story-bar';
       Object.assign(storyBar.style, {
-        position: 'fixed', zIndex: '2147483645', display: 'none', flexDirection: 'column', gap: '10px', padding: '8px 4px',
-        borderRadius: '14px',
+        position: 'fixed', zIndex: '2147483645', display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px',
+        borderRadius: '999px', background: 'rgba(16, 4, 24, 0.55)', backdropFilter: 'blur(10px)',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.25)', opacity: '0', pointerEvents: 'none', transition: 'opacity 0.18s',
+        top: '-200px', left: '-200px',
       });
       const profileTarget = async () => {
         const s = currentStory();
@@ -577,14 +627,13 @@
       };
       const mediaTarget = async () => {
         const s = currentStory();
-        return s && { url: s.url, key: storageKey(s) };
+        return s?.key && { url: s.url, key: storageKey(s) };
       };
       storyBar.append(
-        makeButton('reel', profileTarget, { icon: 'profile', label: 'Profile', savedLabel: 'Profile', title: 'Add this profile to basket', dark: true }),
-        makeButton('reel', mediaTarget, { icon: 'media', label: 'Media', savedLabel: 'Media', title: 'Add this story to Media', dark: true }),
-        makeCommandButton('reel', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download this story (D)', dark: true }),
+        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark: true }),
+        makeButton('story', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this story to Media', dark: true }),
+        makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download this story (D)', dark: true }),
       );
-      for (const host of storyBar.children) Object.assign(host.style, { display: 'flex', justifyContent: 'center' });
       document.body.appendChild(storyBar);
     }
     placeStoryBar();
@@ -592,7 +641,7 @@
 
   async function downloadCurrentStory() {
     const s = currentStory();
-    if (s) await KeepKeepDrop.downloadStory(s.key.slice(6));
+    if (s?.key) await KeepKeepDrop.downloadStory(s.key.slice(6));
     else KeepKeepPanel.showError("Couldn't tell which story this is");
   }
 
@@ -601,18 +650,25 @@
     if (e.key !== 'd' && e.key !== 'D') return;
     if (e.metaKey || e.ctrlKey || e.altKey || !location.pathname.startsWith('/stories/')) return;
     if (e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
-    if (!currentStory()) return;
+    if (!currentStory()?.key) return;
     e.preventDefault();
     e.stopPropagation();
     downloadCurrentStory();
   }, true);
   // The story card moves and resizes as stories change; keep the bar on it.
-  // Moving to the next story changes only the address, so check it here too.
+  // Moving to the next story changes only the address (or the picture), so
+  // check here too and refresh the saved states when the story changes.
+  let lastStoryKey = null;
   setInterval(() => {
     if (!storyBar) return;
     placeStoryBar();
+    const key = currentStory()?.key || null;
+    if (key !== lastStoryKey) {
+      lastStoryKey = key;
+      buttons.forEach(refresh);
+    }
     if (location.href !== lastHref) scheduleScan();
-  }, 300);
+  }, 200);
 
   function scan() {
     for (const entry of buttons) if (!entry.host.isConnected) buttons.delete(entry);

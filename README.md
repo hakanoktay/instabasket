@@ -19,7 +19,7 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 ### Stories
 
-While a story is open, a column just right of it (like the Reels column) has **Profile** (add the owner), **Media** (add the story) and **Download** (save the story on screen as `<username>_<YYMMDDHHmm>_story.jpg/.mp4`); **D** downloads it too. None of these marks the story as seen.
+While the pointer is over a story, a small pill on its right edge has **Profile** (add the owner), **Media** (add the story) and **Download** (save the story on screen as `<username>_<YYMMDDHHmm>_story.jpg/.mp4`); **D** downloads it too. None of these marks the story as seen.
 
 ### Watching stories anonymously
 
