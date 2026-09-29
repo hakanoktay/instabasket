@@ -194,13 +194,13 @@ var KeepKeepDrop = (() => {
       const base = `${post.username || 'instagram'}_${stamp}`;
       const many = post.files.length > 1;
       const files = post.files.map((f, i) => ({
-        url: f.url, kind: f.kind, thumb: f.thumb,
+        url: f.url, fallback: f.fallback, kind: f.kind, thumb: f.thumb,
         filename: `${base}${many ? `_${i + 1}` : ''}.${extension(f)}`,
       }));
       ui.items(job, { username: post.username, files });
       const res = await chrome.runtime.sendMessage({
         type: 'download', job,
-        files: files.map(({ url, filename }) => ({ url, filename })),
+        files: files.map(({ url, fallback, filename }) => ({ url, fallback, filename })),
       });
       if (!res?.ok) throw new Error(res?.error || 'failed');
       ui.finish(job, res);
