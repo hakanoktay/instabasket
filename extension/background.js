@@ -49,7 +49,12 @@ async function startDownload({ job, files, zipName, mtime }, tabId) {
     const target = await downloadTarget(job, tabId);
     if (target === 'cancel') return { cancelled: true };
     if (target === 'folder') {
-      const saved = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'save-to-folder', job, files });
+      let saved;
+      try {
+        saved = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'save-to-folder', job, files });
+      } finally {
+        closeFolderWindow(job);
+      }
       if (saved && !saved.error) return { ok: true, mode: 'folder', folder: saved.folder, filenames: saved.filenames };
       // Folder no longer usable (moved, deleted, access withdrawn): fall back to Downloads.
     }
@@ -74,9 +79,9 @@ async function downloadTarget(job, tabId) {
   if (downloadMode === 'zip') return 'downloads';
   const folder = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'folder-state' }).catch(() => null);
   if (downloadMode === 'folder' && folder?.state === 'granted') return 'folder';
-  // Ask at most once per browser session (the service worker itself restarts often).
-  const { askedFolder } = await chrome.storage.session.get('askedFolder');
-  if (askedFolder) return 'downloads';
+  // Never quietly fall back to Downloads when a folder was chosen: Chrome forgets
+  // a first-time folder access once no KeepKeep page is open, and wants it
+  // confirmed again ("Allow on every visit" keeps it for good).
   // The question is shown in the Instagram page itself. Only picking a folder
   // needs a window: Chrome lets an extension open the folder picker from its
   // own page only (from inside a website, the website would get the access).
@@ -85,21 +90,27 @@ async function downloadTarget(job, tabId) {
   // Cancel (or closing the question) cancels this download; it asks again next time.
   if (choice === 'zip') {
     await chrome.storage.local.set({ downloadMode: 'zip' });
-    await chrome.storage.session.set({ askedFolder: true });
     return 'downloads';
   }
   if (choice === 'folder' || choice === 'allow') {
-    if ((await askForFolder(choice === 'allow' ? 'allow' : 'pick')) !== 'folder') return 'cancel';
-    await chrome.storage.session.set({ askedFolder: true });
-    return 'folder';
+    // The window stays open (showing "Saving…") until the files are written:
+    // a newly granted access only lasts while a KeepKeep page is open.
+    return (await askForFolder(choice === 'allow' ? 'allow' : 'pick', job)) === 'folder' ? 'folder' : 'cancel';
   }
   return 'cancel';
 }
 
 const folderRequests = new Map(); // request id → resolve
+const folderWindows = new Map(); // download job → folder window id, closed when saved
+function closeFolderWindow(job) {
+  const id = folderWindows.get(job);
+  folderWindows.delete(job);
+  if (id != null) chrome.windows.remove(id).catch(() => {});
+}
 // A small window with just the folder picker button ('pick') or the button to
-// confirm access to the folder chosen before ('allow').
-function askForFolder(mode = 'pick') {
+// confirm access to the folder chosen before ('allow'). With a download `job`
+// it stays open until closeFolderWindow(job).
+function askForFolder(mode = 'pick', job = null) {
   const request = Math.random().toString(36).slice(2);
   return new Promise(async (resolve) => {
     folderRequests.set(request, resolve);
@@ -111,12 +122,14 @@ function askForFolder(mode = 'pick') {
       top: Math.round(at.top + (at.height - height) / 2),
     } : {};
     const win = await chrome.windows.create({
-      url: `folder.html?request=${request}&mode=${mode}`, type: 'popup', width, height, focused: true, ...pos,
+      url: `folder.html?request=${request}&mode=${mode}${job ? '&wait=1' : ''}`, type: 'popup', width, height, focused: true, ...pos,
     });
+    if (job) folderWindows.set(job, win.id);
     // Closing the window without choosing cancels.
     const onClose = (id) => {
       if (id !== win.id) return;
       chrome.windows.onRemoved.removeListener(onClose);
+      if (job && folderWindows.get(job) === id) folderWindows.delete(job);
       folderRequests.get(request)?.('closed');
       folderRequests.delete(request);
     };

@@ -13,8 +13,17 @@ const request = params.get('request');
 const mode = params.get('mode') || 'pick';
 
 async function done(result) {
+  // Waiting download: stay open while it saves (the background closes this
+  // window), since the access just granted lasts only while this page is open.
+  if (result === 'folder' && params.get('wait')) {
+    $('#title').textContent = 'Saving…';
+    $('#text').textContent = 'This window closes when your download is saved.';
+    $('#go').hidden = true;
+    $('#cancel').hidden = true;
+    $('#error').hidden = true;
+  }
   await chrome.runtime.sendMessage({ type: 'folder-result', request, result }).catch(() => {});
-  window.close();
+  if (!(result === 'folder' && params.get('wait'))) window.close();
 }
 
 function showError(text) {
