@@ -32,7 +32,7 @@ While downloading, balloons on the right show the overall progress and each phot
 
 ### Video controls
 
-Move the mouse over a video (feed, post page, post popup or Reels) to get controls: a compact pill in the top-left corner with play / pause, 5 seconds back / forward, the time and playback speed (0.5×–2×), and a thin scrubber along the bottom edge to click or drag to any point. Instagram's own username, Follow button and caption at the bottom of the video stay clickable. (Not shown in Stories.) While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
+Move the mouse over a video (feed, post page, post popup or Reels) to get a thin scrubber along its bottom edge (click or drag to any point; hover shows the time there) and a play / pause button next to Instagram's mute button. Instagram's own username, Follow button and caption stay clickable. (Not shown in Stories.) While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
 
 ### After adding
 

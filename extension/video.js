@@ -1,7 +1,7 @@
 // Video controls for Instagram, whose web player can't skip forward or back:
-// a control bar with a scrubber, play/pause, ±5 s and speed, shown over the
-// video under the mouse, plus keyboard shortcuts for that video (← / → skip
-// 5 s, Space / K play or pause).
+// over the video under the mouse, a thin scrubber along the bottom edge and a
+// play / pause button next to Instagram's own mute button, plus keyboard
+// shortcuts for that video (← / → skip 5 s, Space / K play or pause).
 //
 // Not shown in Stories, which have their own progress bar and timing.
 //
@@ -11,22 +11,19 @@
 // is added to its markup at all.
 (() => {
   const SKIP = 5; // seconds
-  const SPEEDS = [1, 1.25, 1.5, 2, 0.5, 0.75];
   const IDLE_HIDE_MS = 2500; // hide after the mouse stops moving over the video
   const MIN_SIZE = 150; // ignore small videos (avatars, previews)
 
   const ICONS = {
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>',
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 3.5v4h4"/><text x="12.3" y="15.6" font-size="8" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system, Segoe UI, Roboto, sans-serif">5</text></svg>',
-    forward: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 3.5v4h-4"/><text x="11.7" y="15.6" font-size="8" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system, Segoe UI, Roboto, sans-serif">5</text></svg>',
   };
 
   // Instagram lays its own text and buttons (username, Follow, caption, "more",
-  // mute) over the bottom of videos, especially in small windows. So nothing of
-  // ours sits there except a thin scrubber on the very bottom edge; the other
-  // controls are a compact pill in the top-left corner, and everything else
-  // lets clicks through to Instagram.
+  // mute) over the bottom of videos, especially in small windows. So only two
+  // things of ours sit on the video: a thin scrubber on the very bottom edge
+  // and a play / pause button styled like Instagram's mute button, just left of
+  // it. Everything else lets clicks through to Instagram.
   const STYLE = `
     :host { all: initial; }
     * { box-sizing: border-box; }
@@ -37,23 +34,15 @@
     }
     .bar.shown { display: block; }
     .bar.visible { opacity: 1; }
-    .pill {
-      position: absolute; top: 10px; left: 10px; display: flex; align-items: center; gap: 1px; padding: 3px 4px;
-      border-radius: 20px; background: rgba(20, 8, 28, 0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25); pointer-events: auto;
-      transform: translateY(-4px); transition: transform 0.2s;
+    /* Play / pause: same look as Instagram's mute button, placed just left of it. */
+    .play {
+      position: absolute; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: none;
+      border-radius: 50%; background: rgba(38, 38, 38, 0.8); color: #fff; cursor: pointer; pointer-events: auto;
+      transition: background 0.12s, transform 0.12s;
     }
-    .bar.visible .pill { transform: none; }
-    button {
-      display: grid; place-items: center; width: 30px; height: 30px; padding: 6px; border: none; border-radius: 50%;
-      background: none; color: inherit; cursor: pointer; font: inherit;
-    }
-    button:hover { background: rgba(255, 255, 255, 0.16); }
-    button svg { width: 100%; height: 100%; display: block; }
-    .time { margin: 0 6px 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .speed { width: auto; min-width: 38px; height: 24px; padding: 0 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.14); }
-    .speed:hover { background: rgba(255, 255, 255, 0.26); }
-    .speed.changed { background: #aa56d5; color: #fff; }
+    .play:hover { background: rgba(38, 38, 38, 0.95); }
+    .play:active { transform: scale(0.92); }
+    .play svg { width: 43%; height: 43%; display: block; }
     /* Scrubber: a thin line on the very bottom edge, thicker on hover. */
     .track { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; cursor: pointer; touch-action: none; pointer-events: auto; }
     .rail, .buffered, .played {
@@ -77,7 +66,7 @@
       transform: translateX(-50%); display: none; font-variant-numeric: tabular-nums; white-space: nowrap;
     }
     .track:hover .hover-time, .track.dragging .hover-time { display: block; }
-    .no-seek .track, .no-seek .skip { display: none; }
+    .no-seek .track { display: none; }
   `;
 
 
@@ -91,17 +80,11 @@
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="bar">
-        <div class="pill">
-          <button class="play" title="Play / pause (Space or K)"></button>
-          <button class="skip back" title="Back 5 seconds (←)">${ICONS.back}</button>
-          <button class="skip forward" title="Forward 5 seconds (→)">${ICONS.forward}</button>
-          <span class="time"></span>
-          <button class="speed" title="Playback speed">1×</button>
-        </div>
+        <button class="play" title="Play / pause (Space or K)"></button>
         <div class="track"><div class="rail"></div><div class="buffered"></div><div class="played"></div><div class="knob"></div><div class="hover-time"></div></div>
       </div>`;
     bar = root.querySelector('.bar');
-    els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play', 'back', 'forward', 'time', 'speed']
+    els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play']
       .map((c) => [c, root.querySelector('.' + c)]));
 
     // Nothing here should reach Instagram (e.g. its click-to-pause).
@@ -109,14 +92,6 @@
       bar.addEventListener(type, (e) => e.stopPropagation());
     }
     els.play.addEventListener('click', () => togglePlay());
-    els.back.addEventListener('click', () => skip(-SKIP));
-    els.forward.addEventListener('click', () => skip(SKIP));
-    els.speed.addEventListener('click', () => {
-      if (!video) return;
-      const next = SPEEDS[(SPEEDS.indexOf(video.playbackRate) + 1) % SPEEDS.length] || 1;
-      video.playbackRate = next;
-      update();
-    });
 
     // Scrubbing: click or drag anywhere on the track.
     const seekTo = (e) => {
@@ -198,6 +173,39 @@
     const top = Math.max(r.top, 0);
     const bottom = Math.min(r.bottom, innerHeight);
     Object.assign(bar.style, { left: `${r.left}px`, width: `${r.width}px`, top: `${top}px`, height: `${bottom - top}px` });
+
+    // Play / pause: same size as Instagram's mute button and just left of it,
+    // vertically centred on it. Without a mute button, where it would be.
+    const mute = muteButton(r);
+    const size = mute ? Math.round(Math.min(Math.max(mute.height, 24), 40)) : 28;
+    const gap = 8;
+    const muteLeft = mute ? mute.left : r.right - 12 - 28;
+    const muteMid = mute ? mute.top + mute.height / 2 : r.bottom - 12 - 14;
+    Object.assign(els.play.style, {
+      width: `${size}px`, height: `${size}px`,
+      left: `${muteLeft - gap - size - r.left}px`, top: `${muteMid - size / 2 - top}px`,
+    });
+  }
+
+  // Instagram's mute button: the small round icon button in the video's
+  // bottom-right corner. Looked up by position (it has no stable markers);
+  // re-checked at most a few times a second.
+  let muteCache = { at: 0, video: null, rect: null };
+  function muteButton(r) {
+    if (muteCache.video === video && performance.now() - muteCache.at < 400) return muteCache.rect;
+    let rect = null;
+    for (const el of document.elementsFromPoint(r.right - 26, r.bottom - 26)) {
+      if (el === video || el.id === 'keepkeep-video') continue;
+      const target = el.closest('[role="button"], button') || (el.querySelector?.('svg') ? el : null);
+      if (!target) continue;
+      const b = target.getBoundingClientRect();
+      if (b.width >= 16 && b.width <= 60 && b.height >= 16 && b.height <= 60 && b.right <= r.right + 1 && b.bottom <= r.bottom + 1) {
+        rect = b;
+        break;
+      }
+    }
+    muteCache = { at: performance.now(), video, rect };
+    return rect;
   }
 
   function show(v) {
@@ -251,12 +259,7 @@
       els.play.innerHTML = ICONS[state];
       els.play.title = video.paused ? 'Play (Space or K)' : 'Pause (Space or K)';
     }
-    els.speed.textContent = `${video.playbackRate}×`;
-    els.speed.classList.toggle('changed', video.playbackRate !== 1);
-    if (!seekable) {
-      els.time.textContent = fmt(video.currentTime);
-      return;
-    }
+    if (!seekable) return;
     const f = video.currentTime / d;
     els.played.style.width = `${f * 100}%`;
     els.knob.style.left = `${f * 100}%`;
@@ -265,7 +268,6 @@
       if (video.buffered.start(i) <= video.currentTime) buffered = Math.max(buffered, video.buffered.end(i));
     }
     els.buffered.style.width = `${(buffered / d) * 100}%`;
-    els.time.textContent = `${fmt(video.currentTime)} / ${fmt(d)}`;
   }
 
   // Mouse over a video (Instagram's layers on top of it don't matter: the
