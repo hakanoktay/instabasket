@@ -31,18 +31,24 @@
   };
 
 
-  // Instagram's colours: blue for actions, red for destructive ones, grey
-  // secondary buttons. A saved button shows its state; hovering it turns it
-  // into "Remove" (like "Following" → "Unfollow").
+  // KeepKeep's brand purple for our own buttons, green for saved, red for
+  // remove; icons in Instagram's own rows stay in Instagram's colour. A saved
+  // button shows its state; hovering it turns it into "Remove" (like
+  // "Following" → "Unfollow").
   const STYLE = `
     :host { all: initial; }
     button {
-      --blue: #0095f6; --red: #ed4956; --green: #58c322; /* Instagram's success green */ --text: #000; --muted: #737373; --secondary: #efefef; --secondary-hover: #dbdbdb;
+      /* KeepKeep brand (#8119B5, deep #450B62; #AA56D5 on dark), Instagram's success green and delete red. */
+      --brand: #8119b5; --brand-tint: rgba(129, 25, 181, 0.1); --brand-tint-strong: rgba(129, 25, 181, 0.18);
+      --red: #ed4956; --green: #58c322; --text: #000; --muted: #737373; --secondary: #efefef; --secondary-hover: #dbdbdb;
       position: relative; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;
       font: 600 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       border: none; background: none; padding: 0; color: var(--text);
     }
-    button.dark { --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --secondary-hover: #262626; }
+    button.dark {
+      --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --secondary-hover: #262626;
+      --brand: #aa56d5; --brand-tint: rgba(170, 86, 213, 0.16); --brand-tint-strong: rgba(170, 86, 213, 0.26);
+    }
     button.busy { opacity: 0.5; cursor: progress; }
     .view { display: inline-flex; align-items: center; gap: 6px; }
     .view svg { width: 16px; height: 16px; flex: none; }
@@ -52,27 +58,29 @@
     .saved:hover .done { display: none; }
     .saved:hover .rm { display: inline-flex; }
 
-    /* Next to a post's date: a text button, like Instagram's blue "Follow" links. */
-    .inline { margin-left: 10px; font-size: 12px; vertical-align: middle; color: var(--blue); }
+    /* Next to a post's date (fallback): a text button in the brand colour. */
+    .inline { margin-left: 10px; font-size: 12px; vertical-align: middle; color: var(--brand); }
     .inline .view svg { width: 14px; height: 14px; }
-    .inline:hover { color: var(--text); }
+    .inline:hover { opacity: 0.75; }
     .inline.saved { color: var(--green); }
     .inline.saved:hover { color: var(--red); }
 
-    /* Profile header: a grey secondary button, like "Message". */
-    .header { height: 32px; padding: 0 16px; border-radius: 8px; background: var(--secondary); }
-    .header:hover { background: var(--secondary-hover); }
-    .header.saved:hover { color: var(--red); }
+    /* Profile header: shaped like Instagram's "Message" button, in a light brand tint. */
+    .header { height: 32px; padding: 0 16px; border-radius: 8px; background: var(--brand-tint); color: var(--brand); transition: background 0.12s; }
+    .header:hover { background: var(--brand-tint-strong); }
+    .header.saved { background: var(--secondary); }
+    .header.saved:hover { background: var(--secondary-hover); color: var(--red); }
 
     /* Thumbnails: a round icon button in the corner, shown on hover. */
     .overlay {
       position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; justify-content: center;
-      border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; backdrop-filter: blur(4px);
+      border-radius: 50%; background: linear-gradient(135deg, rgba(129, 25, 181, 0.92), rgba(69, 11, 98, 0.92)); color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       opacity: 0; transform: scale(0.9); transition: opacity 0.15s, transform 0.15s, background 0.15s;
     }
     .overlay .view svg { width: 18px; height: 18px; }
     :host-context(a:hover) .overlay, .overlay.saved, .overlay.busy { opacity: 1; transform: none; }
-    .overlay:hover { background: rgba(0, 0, 0, 0.8); }
+    .overlay:hover { background: linear-gradient(135deg, #8f2bc4, #55127a); }
     .overlay.saved { background: var(--green); }
     .overlay.saved .done { color: #fff; }
     .overlay.saved:hover { background: var(--red); }

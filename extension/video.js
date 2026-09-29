@@ -45,7 +45,7 @@
     .spacer { flex: 1; }
     .speed { width: auto; min-width: 40px; height: 26px; padding: 0 8px; border-radius: 13px; background: rgba(255, 255, 255, 0.15); }
     .speed:hover { background: rgba(255, 255, 255, 0.28); }
-    .speed.changed { background: #fff; color: #000; }
+    .speed.changed { background: #aa56d5; color: #fff; }
     /* Scrubber */
     .track { position: relative; height: 16px; margin-bottom: 2px; cursor: pointer; touch-action: none; }
     .rail, .buffered, .played {
@@ -53,7 +53,8 @@
     }
     .rail { right: 0; background: rgba(255, 255, 255, 0.3); }
     .buffered { background: rgba(255, 255, 255, 0.45); }
-    .played { background: #fff; }
+    /* Played part in the brand's light purple (readable on any video). */
+    .played { background: linear-gradient(90deg, #8119b5, #aa56d5); }
     .track:hover .rail, .track:hover .buffered, .track:hover .played, .track.dragging .rail, .track.dragging .buffered, .track.dragging .played {
       height: 5px; margin-top: -2.5px;
     }

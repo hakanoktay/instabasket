@@ -7,6 +7,9 @@ var KeepKeepPanel = (() => {
   const SEARCH_FROM = 7; // show a search field when there are this many lists
   let host, card, els, onDrop, keyHandler, current;
 
+  // The KeepKeep logo, inline (pages can't load extension files without extra permissions).
+  const LOGO = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="kk-logo" x1="486.4" y1="0" x2="-14.9" y2="908.9" gradientUnits="userSpaceOnUse"><stop offset="0.365" stop-color="#8119B5"/><stop offset="0.849" stop-color="#450B62"/></linearGradient></defs><rect width="1024" height="1024" rx="220" fill="url(#kk-logo)"/><path fill="#fff" d="M518.609 839.484H194V701.984H256.5V355.5H194V218H506.109V355.5H456.5V496.906L559.625 355.5V218H802.984V355.5H749.078L625.25 505.891V511.359C667.438 511.359 700.51 518.651 724.469 533.234C748.427 547.557 760.406 572.557 760.406 608.234V671.516C760.406 679.589 762.62 686.75 767.047 693C771.734 698.99 778.115 701.984 786.188 701.984H830.719V839.484H687.75C600.25 839.484 556.5 799.51 556.5 719.562V651.594C556.5 638.312 552.203 625.292 543.609 612.531C535.016 599.51 524.859 593 513.141 593H456.5V701.984H518.609V839.484Z"/></svg>';
+
   const ICONS = {
     basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -21,8 +24,9 @@ var KeepKeepPanel = (() => {
     [hidden] { display: none !important; }
     .card {
       --bg: #fff; --elevated: #fafafa; --text: #000; --muted: #737373; --line: #dbdbdb;
-      --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2;
-      --red: #ed4956; --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      --secondary: #efefef; --secondary-hover: #e4dde9;
+      --brand: #8119b5; --brand-hover: #450b62; --brand-tint: rgba(129, 25, 181, 0.07);
+      --red: #ed4956; --shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(129, 25, 181, 0.06);
       position: fixed; top: 16px; right: 16px; z-index: 2147483647; width: 340px;
       max-height: calc(100vh - 32px); display: flex; flex-direction: column;
       background: var(--bg); color: var(--text); border-radius: 12px; box-shadow: var(--shadow);
@@ -32,6 +36,7 @@ var KeepKeepPanel = (() => {
     .card.dark {
       --bg: #262626; --elevated: #363636; --text: #f5f5f5; --muted: #a8a8a8; --line: #363636;
       --secondary: #363636; --secondary-hover: #4a4a4a; --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      --brand: #aa56d5; --brand-hover: #c07fe0; --brand-tint: rgba(170, 86, 213, 0.14);
     }
     @keyframes in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
     svg { display: block; width: 100%; height: 100%; }
@@ -45,14 +50,14 @@ var KeepKeepPanel = (() => {
     .drop .icon { width: 36px; height: 36px; margin: 0 auto 8px; color: var(--text); }
     .card.dropping .drop { display: block; }
     .card.dropping .head, .card.dropping .picker, .card.dropping .progress { display: none; }
-    .card.over .drop { border-color: var(--blue); border-style: solid; background: var(--elevated); color: var(--blue); }
-    .card.over .drop .icon { color: var(--blue); }
+    .card.over .drop { border-color: var(--brand); border-style: solid; background: var(--brand-tint); color: var(--brand); }
+    .card.over .drop .icon { color: var(--brand); }
 
     /* Result row */
     .head { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; }
     .thumb { flex: none; width: 44px; height: 44px; border-radius: 4px; object-fit: cover; background: var(--secondary); }
     .thumb.round { border-radius: 50%; }
-    .thumb.icon { padding: 10px; color: var(--text); }
+    .thumb.icon { padding: 0; background: none; }
     .text { flex: 1; min-width: 0; }
     .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
@@ -66,7 +71,7 @@ var KeepKeepPanel = (() => {
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .text-btn { border: none; background: none; padding: 4px 6px; font-weight: 600; color: var(--blue); }
+    .text-btn { border: none; background: none; padding: 4px 6px; font-weight: 600; color: var(--brand); }
     .text-btn:hover { color: var(--text); }
     .text-btn.danger { color: var(--red); }
     .close { flex: none; width: 28px; height: 28px; padding: 6px; border: none; background: none; border-radius: 50%; color: var(--muted); }
@@ -107,9 +112,9 @@ var KeepKeepPanel = (() => {
     .box .key {
       position: absolute; top: 6px; right: 8px; font-size: 10px; line-height: 1; color: var(--muted); display: none;
     }
-    /* Selected like accounts in Instagram's share dialog: a filled blue circle with a white check. */
-    .box.on { border-color: var(--muted); }
-    .box.on .tick { background: var(--blue); border-color: var(--blue); color: #fff; }
+    /* Selected: brand border and tint, with a filled circle and white check. */
+    .box.on { border-color: var(--brand); background: var(--brand-tint); }
+    .box.on .tick { background: var(--brand); border-color: var(--brand); color: #fff; }
     .box.new { align-items: center; justify-content: center; flex-direction: row; gap: 6px; padding: 10px; border-style: dashed; color: var(--muted); font-weight: 600; }
     .box.new .i { width: 18px; height: 18px; }
     .box.new input { width: 100%; border: none; outline: none; background: none; font: inherit; font-weight: 600; color: var(--text); text-align: center; }
@@ -117,7 +122,7 @@ var KeepKeepPanel = (() => {
 
     /* Countdown until the card closes; pauses on hover */
     .progress { height: 3px; background: transparent; flex: none; }
-    .bar { height: 100%; background: var(--muted); opacity: 0.5; transform-origin: left; }
+    .bar { height: 100%; background: linear-gradient(90deg, #450b62, #8119b5 50%, #aa56d5); transform-origin: left; }
     .bar:not(.run) { visibility: hidden; }
     .bar.run { animation: countdown var(--ms) linear forwards; }
     .card:hover .bar.run, .card:focus-within .bar.run { animation-play-state: paused; }
@@ -204,12 +209,12 @@ var KeepKeepPanel = (() => {
     const slot = els['thumb-slot'];
     if (src) {
       const img = Object.assign(document.createElement('img'), { className: 'thumb' + (round ? ' round' : ''), src });
-      img.onerror = () => setThumb(null, round); // expired or blocked image: show the basket instead
+      img.onerror = () => setThumb(null, round); // expired or blocked image: show the logo instead
       slot.replaceChildren(img);
     } else {
       const div = document.createElement('div');
       div.className = 'thumb icon' + (round ? ' round' : '');
-      div.innerHTML = ICONS.basket;
+      div.innerHTML = LOGO;
       slot.replaceChildren(div);
     }
   }
@@ -404,13 +409,13 @@ var KeepKeepPanel = (() => {
     :host { all: initial; }
     * { box-sizing: border-box; }
     .stack {
-      --bg: #fff; --text: #000; --muted: #737373; --secondary: #efefef; --blue: #0095f6; --green: #58c322; --red: #ed4956;
+      --bg: #fff; --text: #000; --muted: #737373; --secondary: #efefef; --brand: #8119b5; --green: #58c322; --red: #ed4956;
       --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       position: fixed; top: 16px; right: 16px; z-index: 2147483646; width: 320px; max-height: calc(100vh - 32px);
       display: flex; flex-direction: column; gap: 8px; overflow-y: auto; scrollbar-width: none; pointer-events: none;
       font: 400 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text);
     }
-    .stack.dark { --bg: #262626; --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
+    .stack.dark { --bg: #262626; --text: #f5f5f5; --muted: #a8a8a8; --secondary: #363636; --brand: #aa56d5; --shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
     .bubble {
       position: relative; flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; overflow: hidden;
       background: var(--bg); border-radius: 12px; box-shadow: var(--shadow); pointer-events: auto;
@@ -422,6 +427,8 @@ var KeepKeepPanel = (() => {
     @keyframes slide-out { to { opacity: 0; transform: translateX(40px); } }
     .thumb { flex: none; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--secondary); display: grid; place-items: center; color: var(--muted); }
     .item .thumb { width: 36px; height: 36px; }
+    .thumb.logo { background: none; }
+    .thumb.logo svg { width: 100%; height: 100%; }
     .thumb svg { width: 20px; height: 20px; }
     .text { flex: 1; min-width: 0; }
     .name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -433,7 +440,7 @@ var KeepKeepPanel = (() => {
     .done-mark { width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; padding: 4px; animation: pop 0.25s ease-out; }
     @keyframes pop { from { transform: scale(0.4); opacity: 0; } }
     .pct { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--blue); transition: width 0.2s; }
+    .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: linear-gradient(90deg, #450b62, #8119b5 50%, #aa56d5); transition: width 0.2s; }
     .done .bar { background: var(--green); }
     svg { display: block; width: 100%; height: 100%; }
   `;
@@ -463,8 +470,8 @@ var KeepKeepPanel = (() => {
   function bubble(cls, thumb, name, sub, delay = 0) {
     const b = el('div', `bubble ${cls}`);
     b.style.animationDelay = `${delay}ms`;
-    const t = thumb ? Object.assign(el('img', 'thumb'), { src: thumb }) : el('div', 'thumb', DL_ICONS.download);
-    if (thumb) t.onerror = () => t.replaceWith(el('div', 'thumb', DL_ICONS.download));
+    const t = thumb ? Object.assign(el('img', 'thumb'), { src: thumb }) : el('div', 'thumb logo', LOGO);
+    if (thumb) t.onerror = () => t.replaceWith(el('div', 'thumb logo', LOGO));
     b.append(t, el('div', 'text'), el('div', 'state', '<div class="spin"></div>'), el('div', 'bar'));
     b.querySelector('.text').append(Object.assign(el('div', 'name'), { textContent: name }), Object.assign(el('div', 'sub'), { textContent: sub }));
     return b;

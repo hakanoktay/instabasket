@@ -1,16 +1,24 @@
-/* Instagram's web design tokens: system font, blue for actions, grey
-   secondary buttons, red for destructive actions, 8px radii. */
+/* KeepKeep brand on Instagram-like foundations (system font, grey secondary
+   buttons, 8px radii). Brand: #8119B5 for actions and selection, #450B62 for
+   hover/pressed and gradient depth, #AA56D5 in dark mode (the main purple is
+   too dark to read on black). Green (saved) and red (delete) keep their meaning. */
 :root {
-  --bg: #fff; --elevated: #fff; --hover: #fafafa; --text: #000; --muted: #737373; --line: #dbdbdb; --divider: #efefef;
-  --secondary: #efefef; --secondary-hover: #dbdbdb; --blue: #0095f6; --blue-hover: #1877f2; --red: #ed4956; --green: #58c322;
+  --bg: #fff; --elevated: #fff; --hover: #faf7fc; --text: #000; --muted: #737373; --line: #dbdbdb; --divider: #efefef;
+  --secondary: #efefef; --secondary-hover: #e4dde9; --red: #ed4956; --green: #58c322;
+  --brand: #8119b5; --brand-hover: #450b62; --brand-tint: rgba(129, 25, 181, 0.08); --brand-tint-strong: rgba(129, 25, 181, 0.14);
+  --brand-gradient: linear-gradient(135deg, #8119b5 0%, #6a139a 55%, #450b62 100%);
+  --on-brand: #fff;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000; --elevated: #262626; --hover: #121212; --text: #f5f5f5; --muted: #a8a8a8; --line: #363636; --divider: #262626;
-    --secondary: #363636; --secondary-hover: #262626; --shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    --bg: #000; --elevated: #262626; --hover: #140c19; --text: #f5f5f5; --muted: #a8a8a8; --line: #363636; --divider: #262626;
+    --secondary: #363636; --secondary-hover: #2e2334;
+    --brand: #aa56d5; --brand-hover: #c07fe0; --brand-tint: rgba(170, 86, 213, 0.14); --brand-tint-strong: rgba(170, 86, 213, 0.24);
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   }
 }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 /* Fixed-height layout: header, tabs, lists and footer stay put; only the content scrolls. */
@@ -28,14 +36,20 @@ input { font: inherit; color: var(--text); }
 /* Buttons */
 .btn { height: 32px; padding: 0 16px; border-radius: 8px; font-weight: 600; background: var(--secondary); }
 .btn:hover { background: var(--secondary-hover); }
-.btn.primary { background: var(--blue); color: #fff; }
-.btn.primary:hover { background: var(--blue-hover); }
+.btn.primary { background: var(--brand-gradient); color: var(--on-brand); box-shadow: 0 1px 2px rgba(69, 11, 98, 0.3); }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.primary:active { filter: brightness(0.95); }
 .btn:disabled { opacity: 0.5; cursor: default; }
-.text-btn { font-weight: 600; color: var(--blue); }
-.text-btn:hover { color: var(--text); }
+.text-btn { font-weight: 600; color: var(--brand); }
+.text-btn:hover { color: var(--brand-hover); }
 .text-btn.danger { color: var(--red); }
 
 header { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+/* A thin brand stripe along the top edge of the popup. */
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 20;
+  background: linear-gradient(90deg, #450b62, #8119b5 40%, #aa56d5);
+}
 .header-actions { display: flex; align-items: center; gap: 4px; }
 h1 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; margin: 0; }
 h1 .logo { width: 24px; height: 24px; display: block; }
@@ -47,7 +61,8 @@ nav { display: flex; border-top: 1px solid var(--divider); margin-bottom: 12px; 
   flex: 1; height: 44px; margin-top: -1px; border-top: 1px solid transparent;
   font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
 }
-.tab.active { color: var(--text); border-top-color: var(--text); }
+.tab.active { color: var(--text); border-top-color: var(--brand); }
+.tab.active span { color: var(--brand); }
 .tab span { font-weight: 400; letter-spacing: 0; }
 
 /* List chips: a sideways-scrolling row with arrow buttons at the ends and a
@@ -73,16 +88,19 @@ nav { display: flex; border-top: 1px solid var(--divider); margin-bottom: 12px; 
   font-weight: 600; white-space: nowrap;
 }
 .chip:hover { background: var(--secondary-hover); }
-.chip.active { background: var(--text); color: var(--bg); }
+.chip.active { background: var(--brand-gradient); color: var(--on-brand); }
+.chip.active .n { opacity: 0.85; }
 .chip .n { font-weight: 400; opacity: 0.7; }
-.chip.add { width: 32px; padding: 0; display: grid; place-items: center; }
+.chip.add { width: 32px; padding: 0; display: grid; place-items: center; color: var(--brand); background: var(--brand-tint); }
+.chip.add:hover { background: var(--brand-tint-strong); }
 .chip.add .i { width: 16px; height: 16px; }
 #new-list-form { display: flex; gap: 8px; flex: 1; animation: pop 0.14s ease-out; }
 #lists.creating .chips-wrap, #lists.creating #new-list { display: none; }
 #new-list-form input, #list-footer input {
   flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: none; outline: none;
-  border-radius: 8px; background: var(--secondary);
+  border-radius: 8px; background: var(--secondary); box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow 0.12s;
 }
+#new-list-form input:focus, #list-footer input:focus { box-shadow: inset 0 0 0 1.5px var(--brand); background: var(--bg); }
 
 /* Content */
 section { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; margin-right: -8px; padding-right: 8px; }
@@ -102,18 +120,20 @@ ul.profiles li:hover { background: var(--hover); }
 .who a { color: var(--text); font-weight: 600; text-decoration: none; }
 .who a:hover { color: var(--muted); }
 .who .name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.count-link { color: var(--blue); font-size: 12px; font-weight: 600; }
+.count-link { color: var(--brand); font-size: 12px; font-weight: 600; }
 .count-link:disabled { color: var(--muted); font-weight: 400; cursor: default; }
 .icon-btn { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
 .icon-btn .i { width: 18px; height: 18px; }
 .icon-btn:hover { background: var(--secondary); color: var(--text); }
 .icon-btn.remove:hover { color: var(--red); }
-.list-btn.on { color: var(--text); }
+.list-btn.on { color: var(--brand); }
 
 #filter {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
-  height: 36px; padding: 0 6px 0 12px; border-radius: 8px; background: var(--secondary); font-weight: 600;
+  height: 36px; padding: 0 6px 0 12px; border-radius: 8px; background: var(--brand-tint); color: var(--brand); font-weight: 600;
 }
+#filter .icon-btn { color: var(--brand); }
+#filter .icon-btn:hover { background: var(--brand-tint-strong); }
 
 /* Media: a 2-column grid of cards */
 .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; padding-bottom: 4px; }
@@ -134,8 +154,8 @@ ul.profiles li:hover { background: var(--hover); }
 .card-foot .icon-btn { width: 28px; height: 28px; flex: none; }
 .card-foot .icon-btn .i { width: 16px; height: 16px; }
 /* Profile toggle: + person → green person with check → red "remove" on hover */
-.profile-toggle { color: var(--blue); }
-.profile-toggle:hover { color: var(--blue-hover); }
+.profile-toggle { color: var(--brand); }
+.profile-toggle:hover { color: var(--brand-hover); background: var(--brand-tint); }
 .profile-toggle.saved { color: var(--green); }
 .profile-toggle .i + .i { display: none; }
 .profile-toggle.saved:hover { color: var(--red); }
@@ -175,7 +195,7 @@ ul.profiles li:hover { background: var(--hover); }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
 #picker .title { font-weight: 600; padding: 4px 8px 8px; }
 #picker label { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
-#picker label:hover { background: var(--hover); }
+#picker label:hover { background: var(--brand-tint); }
 #picker .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Round selection circles, as in Instagram's share dialog. */
 #picker input[type="checkbox"] {
@@ -183,7 +203,7 @@ ul.profiles li:hover { background: var(--hover); }
   border: 1.5px solid var(--line); cursor: pointer; display: grid; place-items: center;
 }
 #picker input[type="checkbox"]:checked {
-  border-color: var(--blue); background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat;
+  border-color: var(--brand); background: var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat;
 }
 #picker .none { color: var(--muted); font-size: 12px; padding: 0 8px 4px; }
 #picker input:not([type]) {
