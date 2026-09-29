@@ -23,6 +23,8 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 Files go straight to `Downloads/KeepKeep/`, each photo and video as its own file – no ZIP, no questions, no windows.
 
+Photos come in their uploaded size (up to 3072 px, found on the post's embed page) or, if you pick **Standard** in the popup's settings (⚙), in the largest size Instagram shows (up to 1080 px). If the original can't be fetched, the standard size is used.
+
 While downloading, balloons on the right show the overall progress and each photo / video with its thumbnail, size and progress; they disappear a few seconds after it's saved.
 
 ### Video controls

@@ -251,6 +251,20 @@ body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2
 .settings-body { flex: 1; overflow-y: auto; padding-top: 4px; }
 .settings-body h2 { font-size: 14px; margin: 8px 0 2px; }
 .settings-hint { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+.setting-option {
+  display: flex; gap: 12px; padding: 14px; margin-bottom: 8px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--line); transition: border-color 0.15s, background 0.15s;
+}
+.setting-option:hover { background: var(--hover); }
+.setting-option:has(input:checked) { border-color: var(--brand); background: var(--brand-tint); }
+.setting-option input {
+  appearance: none; flex: none; width: 20px; height: 20px; margin: 1px 0 0; border-radius: 50%;
+  border: 1.5px solid var(--line); background: var(--bg); cursor: pointer; transition: all 0.15s;
+}
+.setting-option input:checked { border: 6px solid var(--brand); }
+.setting-option .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.setting-option .desc { color: var(--muted); font-size: 12px; line-height: 16px; }
+.settings-body h2:not(:first-child) { margin-top: 20px; }
 .settings-footer {
   display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 10px;
   border-top: 1px solid var(--divider); color: var(--muted); font-size: 12px;

@@ -92,9 +92,47 @@ var InstaApi = (() => {
     }
   }
 
+  // The API lists photos only up to 1080 px wide. The post's embed page also
+  // carries the address of the uploaded original (its `stp` has no size or
+  // crop step, e.g. "dst-jpg_e35_tt6"). The addresses are signed, so they
+  // can't be made by hand – only found. Returns file key → address.
+  async function embedOriginals(code) {
+    const res = await fetch(`/p/${code}/embed/captioned/`, { credentials: 'include' });
+    if (!res.ok) throw new Error(`embed: ${res.status}`);
+    const text = (await res.text())
+      .replace(/\\\//g, '/')
+      .replace(/\\u0026|&amp;/g, '&')
+      .replace(/&quot;/g, '"');
+    const found = new Map();
+    for (const [url] of text.matchAll(/https:\/\/[^"'\s<>\\]+/g)) {
+      let u;
+      try {
+        u = new URL(url);
+      } catch {
+        continue;
+      }
+      const stp = u.searchParams.get('stp');
+      if (!stp || /(^|_)[ps]\d+x\d+|^c\d/.test(stp)) continue; // resized or cropped
+      const key = fileKey(url);
+      if (key && !found.has(key)) found.set(key, url);
+    }
+    return found;
+  }
+
+  // "…/828467265_1862…_n.jpg?…" → "828467265_1862…_n.jpg": the same photo in
+  // every size shares this file name.
+  function fileKey(url) {
+    try {
+      return new URL(url).pathname.split('/').pop();
+    } catch {
+      return null;
+    }
+  }
+
   // Every photo / video of a post (all items of an album), each in the highest
-  // resolution Instagram offers, plus the owner and publish time for file names.
-  async function mediaFiles(code) {
+  // resolution Instagram offers (photos in their uploaded size unless
+  // `originals` is false), plus the owner and publish time for file names.
+  async function mediaFiles(code, { originals: wantOriginals = true } = {}) {
     const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
     const item = items[0];
     const parts = item.carousel_media?.length ? item.carousel_media : [item];
@@ -105,6 +143,14 @@ var InstaApi = (() => {
       if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image', thumb };
       return null;
     }).filter(Boolean);
+    // Photos in their uploaded size, where the post's embed page has them.
+    const originals = wantOriginals && files.some((f) => f.kind === 'image')
+      ? await embedOriginals(code).catch(() => new Map())
+      : new Map();
+    for (const f of files) {
+      const original = f.kind === 'image' && originals.get(fileKey(f.url));
+      if (original && original !== f.url) Object.assign(f, { fallback: f.url, url: original });
+    }
     const cover = item.image_versions2 || item.carousel_media?.[0]?.image_versions2;
     return {
       username: item.user?.username?.toLowerCase() || null,

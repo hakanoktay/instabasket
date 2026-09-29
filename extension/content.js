@@ -188,19 +188,20 @@ var KeepKeepDrop = (() => {
     const ui = KeepKeepPanel.downloads;
     ui.start(job);
     try {
-      const post = await InstaApi.mediaFiles(code);
+      const { photoSize } = await chrome.storage.local.get('photoSize');
+      const post = await InstaApi.mediaFiles(code, { originals: photoSize !== 'standard' });
       if (!post.files.length) throw new Error('no files');
       const stamp = compactTime(post.takenAt ? post.takenAt * 1000 : Date.now());
       const base = `${post.username || 'instagram'}_${stamp}`;
       const many = post.files.length > 1;
       const files = post.files.map((f, i) => ({
-        url: f.url, kind: f.kind, thumb: f.thumb,
+        url: f.url, fallback: f.fallback, kind: f.kind, thumb: f.thumb,
         filename: `${base}${many ? `_${i + 1}` : ''}.${extension(f)}`,
       }));
       ui.items(job, { username: post.username, files });
       const res = await chrome.runtime.sendMessage({
         type: 'download', job,
-        files: files.map(({ url, filename }) => ({ url, filename })),
+        files: files.map(({ url, fallback, filename }) => ({ url, fallback, filename })),
       });
       if (!res?.ok) throw new Error(res?.error || 'failed');
       ui.finish(job, res);

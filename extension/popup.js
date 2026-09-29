@@ -451,7 +451,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function renderSettings() {
+  const { photoSize } = await chrome.storage.local.get('photoSize');
+  for (const input of document.querySelectorAll('input[name=photo-size]')) {
+    input.checked = input.value === (photoSize === 'standard' ? 'standard' : 'original');
+  }
   $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
+}
+for (const input of document.querySelectorAll('input[name=photo-size]')) {
+  input.addEventListener('change', () => chrome.storage.local.set({ photoSize: input.value }));
 }
 loadPage();
 

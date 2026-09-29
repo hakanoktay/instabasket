@@ -28,10 +28,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 const jobs = new Map(); // job id → tab id, for progress messages
 
 async function startDownload({ job, files }, tabId) {
-  files = (files || []).filter(({ url }) => {
-    const u = new URL(url);
-    return u.protocol === 'https:' && ALLOWED_HOSTS.test(u.hostname);
-  }).map((f) => ({ url: f.url, filename: safeName(f.filename) }));
+  const allowed = (url) => {
+    try {
+      const u = new URL(url);
+      return u.protocol === 'https:' && ALLOWED_HOSTS.test(u.hostname);
+    } catch {
+      return false;
+    }
+  };
+  files = (files || []).filter(({ url }) => allowed(url)).map((f) => ({
+    url: f.url, fallback: allowed(f.fallback) ? f.fallback : null, filename: safeName(f.filename),
+  }));
   if (!files.length) throw new Error('no files');
   jobs.set(job, tabId);
   try {
