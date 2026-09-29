@@ -229,7 +229,12 @@
   function addPostButtons() {
     for (const time of document.querySelectorAll('a[href] time[datetime]')) {
       const link = time.closest('a');
-      if (link.dataset.keepkeepDone) continue;
+      const done = link.dataset.keepkeepDone;
+      if (done === '1') continue;
+      // Posts that aren't laid out (e.g. the feed hidden behind the story
+      // viewer) can't be measured: try again once they're visible, without
+      // counting it as a failed try.
+      if (!link.getBoundingClientRect().width) continue;
       const item = postItem(link.getAttribute('href'));
       if (!item) {
         link.dataset.keepkeepDone = '1';
@@ -238,13 +243,16 @@
       const bar = findActionBar(link);
       if (bar) {
         link.dataset.keepkeepDone = '1';
+        // A post that only got the fallback text button gets the real ones now.
+        if (done === 'inline') link.parentElement?.querySelector(':scope > [data-keepkeep="inline"]')?.remove();
         if (!bar.saveItem.querySelector(':scope > [data-keepkeep="action-group"]')) addActionButtons(bar, item);
         continue;
       }
+      if (done === 'inline') continue;
       const tries = (actionTries.get(link) || 0) + 1;
       actionTries.set(link, tries);
       if (tries >= 6) {
-        link.dataset.keepkeepDone = '1';
+        link.dataset.keepkeepDone = 'inline';
         link.after(makeButton('inline', fixed(item, item.url)));
       }
     }

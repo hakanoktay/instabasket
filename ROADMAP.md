@@ -35,6 +35,22 @@ Click a photo to open it at its original size, with zoom; view profile pictures 
 
 Hide suggested posts, ads and like counts in the feed; switched on and off in the settings.
 
+## Under consideration
+
+Ideas to think through before they're planned.
+
+### Insights (statistics for social media professionals)
+
+Like SEO toolbars on search results: numbers next to profiles and posts while browsing Instagram. Built on the data Instagram already loads for the page (read in the page, like anonymous stories), so it adds next to no requests and never trips rate limits; everything is computed locally.
+
+- **Profile bar** under the profile header: engagement rate ((likes + comments) / followers) with a low / normal / good label for the account's size, average and median likes and comments, Reels views and views per follower, posts per week and days since the last post, content mix (Reels / albums / photos) and which performs best.
+- **Post badges** on the profile grid: "×2.3" or "ER 4.1%" against the account's average (green above, grey below); on hover likes, comments, views and the exact date.
+- **Growth tracking** for saved profiles: daily follower counts, 7- and 30-day change with a chart (history starts when the profile is saved; shares the snapshots with *Profile change history*).
+- **Full report** (library page): best day and hour to post, top hashtags and the best-performing ones, sponsored share ("Paid partnership", #ad…) and the brands tagged most, an estimated value per post (clearly marked as an estimate), audience-quality signals (engagement far too low for the follower count, sudden follower jumps) shown as a warning, not a verdict.
+- **Compare and export:** 2–4 profiles side by side; CSV export and a PDF / image report for clients.
+
+A candidate for a Pro plan.
+
 ## Done
 
 ### Stories (0.12.x)
