@@ -101,7 +101,13 @@
       </span>
     </label>
 
-    <p class="settings-note">To save somewhere else, change Chrome's download location in Chrome's settings (Downloads → Location).</p>
+    <div class="settings-notice" id="chrome-asks" hidden>
+      <b>Chrome asks where to save each file</b>
+      <span>So albums are saved as one ZIP for now: one window per post instead of one per photo. Turn off “Ask where to save each file before downloading” and everything is saved straight away, with no window.</span>
+      <button type="button" class="btn small primary" id="open-chrome-downloads">Open Chrome settings</button>
+    </div>
+
+    <p class="settings-note">To save somewhere else, change the download location in Chrome's settings.</p>
   </div>
 
   <footer class="settings-footer"><img class="logo" src="icons/logo.svg" alt=""> KeepKeep <span class="version"></span></footer>
