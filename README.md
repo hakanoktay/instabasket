@@ -19,7 +19,7 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 ### Watching stories anonymously
 
-Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner.
+Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner. Like a private window, the mode shows while it's on: a thin brand line along the top of Instagram, a brand frame with an **Anonymous** badge in Stories, and an **Anonymous** chip in the popup's header.
 
 ### Downloading
 
