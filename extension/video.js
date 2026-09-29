@@ -86,7 +86,7 @@
     const bar = root.querySelector('.bar');
     const els = Object.fromEntries(['track', 'buffered', 'played', 'knob', 'hover-time', 'play']
       .map((c) => [c, root.querySelector('.' + c)]));
-    const o = { video, host, bar, els, dragging: false, mute: { at: 0, rect: null } };
+    const o = { video, host, bar, els, dragging: false, mute: { at: 0, rel: null } };
 
     // Nothing here should reach Instagram (e.g. its click-to-pause).
     for (const type of ['click', 'mousedown', 'pointerdown', 'pointerup', 'dblclick', 'touchstart']) {
@@ -209,9 +209,13 @@
 
   // Instagram's mute button: the small round icon button in the video's
   // bottom-right corner. Looked up by position (it has no stable markers);
-  // re-checked at most a few times a second.
+  // re-checked at most a few times a second. Kept relative to the video, so
+  // between checks it moves with the video while the page scrolls.
   function muteButton(o, r) {
-    if (performance.now() - o.mute.at < 400) return o.mute.rect;
+    if (performance.now() - o.mute.at < 400) {
+      const m = o.mute.rel;
+      return m && { left: r.left + m.dx, top: r.top + m.dy, width: m.width, height: m.height };
+    }
     let rect = null;
     if (r.bottom <= innerHeight) {
       for (const el of document.elementsFromPoint(r.right - 26, r.bottom - 26)) {
@@ -225,7 +229,10 @@
         }
       }
     }
-    o.mute = { at: performance.now(), rect };
+    o.mute = {
+      at: performance.now(),
+      rel: rect && { dx: rect.left - r.left, dy: rect.top - r.top, width: rect.width, height: rect.height },
+    };
     return rect;
   }
 
