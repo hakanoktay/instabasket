@@ -225,12 +225,16 @@
   // rightmost. If it can't be found after a few tries, a text button is put
   // next to the date instead.
   const actionTries = new WeakMap();
+  const actionGroups = new WeakMap(); // post date link → its button group
 
   function addPostButtons() {
     for (const time of document.querySelectorAll('a[href] time[datetime]')) {
       const link = time.closest('a');
       const done = link.dataset.keepkeepDone;
-      if (done === '1') continue;
+      // Instagram re-renders action bars (e.g. after the story viewer closes)
+      // while keeping the post's date link: if our group went with the old
+      // bar, place it again.
+      if (done === '1' && actionGroups.get(link)?.isConnected !== false) continue;
       // Posts that aren't laid out (e.g. the feed hidden behind the story
       // viewer) can't be measured: try again once they're visible, without
       // counting it as a failed try.
@@ -245,7 +249,8 @@
         link.dataset.keepkeepDone = '1';
         // A post that only got the fallback text button gets the real ones now.
         if (done === 'inline') link.parentElement?.querySelector(':scope > [data-keepkeep="inline"]')?.remove();
-        if (!bar.saveItem.querySelector(':scope > [data-keepkeep="action-group"]')) addActionButtons(bar, item);
+        const existing = bar.saveItem.querySelector(':scope > [data-keepkeep="action-group"]');
+        actionGroups.set(link, existing || addActionButtons(bar, item));
         continue;
       }
       if (done === 'inline') continue;
@@ -324,6 +329,7 @@
       }),
     );
     saveItem.appendChild(group);
+    return group;
   }
 
   // The post's owner: the first profile link in the post above its action bar
