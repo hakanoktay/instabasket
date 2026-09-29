@@ -632,7 +632,7 @@
       storyBar.append(
         makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark: true }),
         makeButton('story', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this story to Media', dark: true }),
-        makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download this story (D)', dark: true }),
+        makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download all of these stories (D)', dark: true }),
       );
       document.body.appendChild(storyBar);
     }

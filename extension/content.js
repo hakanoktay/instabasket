@@ -214,23 +214,33 @@ var KeepKeepDrop = (() => {
     }
   }
 
-  // Downloads a story item, named <username>_<YYMMDDHHmm>_story.<ext>.
+  // Downloads all of the account's current stories at once (starting from the
+  // one on screen), named <username>_<YYMMDDHHmm of each story>_story.<ext>.
   async function downloadStory(pk) {
     const job = Math.random().toString(36).slice(2);
     const ui = KeepKeepPanel.downloads;
     ui.start(job);
     try {
-      const item = await InstaApi.story(pk);
-      if (!item.files.length) throw new Error('no files');
-      const base = `${item.username || 'instagram'}_${compactTime(item.takenAt ? item.takenAt * 1000 : Date.now())}_story`;
-      const files = item.files.map((f) => ({ url: f.url, kind: f.kind, thumb: f.thumb, filename: `${base}.${extension(f)}` }));
-      ui.items(job, { username: item.username, files });
+      const reel = await InstaApi.storyReel(pk);
+      const user = reel.username || 'instagram';
+      const files = [];
+      const used = new Set();
+      for (const it of reel.items) {
+        for (const f of it.files) {
+          let name = `${user}_${compactTime(it.takenAt ? it.takenAt * 1000 : Date.now())}_story`;
+          for (let n = 2; used.has(name); n++) name = name.replace(/(_\d+)?$/, '') + '_' + n; // same minute
+          used.add(name);
+          files.push({ url: f.url, kind: f.kind, thumb: f.thumb, filename: `${name}.${extension(f)}` });
+        }
+      }
+      if (!files.length) throw new Error('no files');
+      ui.items(job, { username: reel.username, files });
       const res = await chrome.runtime.sendMessage({ type: 'download', job, files: files.map(({ url, filename }) => ({ url, filename })) });
       if (!res?.ok) throw new Error(res?.error || 'failed');
       ui.finish(job, res);
       return true;
     } catch {
-      ui.fail(job, "Couldn't download this story");
+      ui.fail(job, "Couldn't download these stories");
       return false;
     }
   }

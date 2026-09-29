@@ -159,6 +159,28 @@ var InstaApi = (() => {
     };
   }
 
+  // All of an account's current stories, starting from one story id: the
+  // item tells the owner's id, and the owner's reel lists every story. Falls
+  // back to just the one story if the reel can't be read.
+  async function storyReel(pk) {
+    const { items } = await json(`/api/v1/media/${encodeURIComponent(pk)}/info/`);
+    const first = items[0];
+    let reelItems = [first];
+    const userId = first.user?.pk || first.user?.id;
+    if (userId) {
+      try {
+        const j = await json(`/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(userId)}`);
+        const list = j.reels?.[userId]?.items || j.reels_media?.[0]?.items;
+        if (list?.length) reelItems = list;
+      } catch {}
+    }
+    reelItems = [...reelItems].sort((a, b) => (a.taken_at || 0) - (b.taken_at || 0));
+    return {
+      username: first.user?.username?.toLowerCase() || null,
+      items: reelItems.map((it) => ({ takenAt: it.taken_at || null, files: filesOf(it) })).filter((it) => it.files.length),
+    };
+  }
+
   async function mediaFiles(code, { originals: wantOriginals = true } = {}) {
     const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
     const item = items[0];
@@ -180,5 +202,5 @@ var InstaApi = (() => {
     };
   }
 
-  return { profile, media, mediaFiles, story, thumbnail, codeToId };
+  return { profile, media, mediaFiles, story, storyReel, thumbnail, codeToId };
 })();
