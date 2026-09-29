@@ -132,17 +132,37 @@ var InstaApi = (() => {
   // Every photo / video of a post (all items of an album), each in the highest
   // resolution Instagram offers (photos in their uploaded size unless
   // `originals` is false), plus the owner and publish time for file names.
-  async function mediaFiles(code, { originals: wantOriginals = true } = {}) {
-    const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
-    const item = items[0];
+  // Each photo / video of an API item (all items of an album), in the largest listed size.
+  function filesOf(item) {
     const parts = item.carousel_media?.length ? item.carousel_media : [item];
     const largest = (list) => list.reduce((a, b) => ((b.width || 0) * (b.height || 0) > (a.width || 0) * (a.height || 0) ? b : a));
-    const files = parts.map((m) => {
+    return parts.map((m) => {
       const thumb = pick(m.image_versions2?.candidates, 150); // small preview (a video's cover)
       if (m.video_versions?.length) return { url: largest(m.video_versions).url, kind: 'video', thumb };
       if (m.image_versions2?.candidates?.length) return { url: largest(m.image_versions2.candidates).url, kind: 'image', thumb };
       return null;
     }).filter(Boolean);
+  }
+
+  // A story item by its id (the number in /stories/<username>/<id>/). Asking
+  // for it doesn't mark the story as seen.
+  async function story(pk) {
+    const { items } = await json(`/api/v1/media/${encodeURIComponent(pk)}/info/`);
+    const item = items[0];
+    return {
+      username: item.user?.username?.toLowerCase() || null,
+      type: item.media_type === 2 ? 'story-video' : 'story-photo',
+      takenAt: item.taken_at || null,
+      expiresAt: item.expiring_at || (item.taken_at ? item.taken_at + 86400 : null), // unix seconds
+      thumbUrl: pick(item.image_versions2?.candidates, 320),
+      files: filesOf(item),
+    };
+  }
+
+  async function mediaFiles(code, { originals: wantOriginals = true } = {}) {
+    const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
+    const item = items[0];
+    const files = filesOf(item);
     // Photos in their uploaded size, where the post's embed page has them.
     const originals = wantOriginals && files.some((f) => f.kind === 'image')
       ? await embedOriginals(code).catch(() => new Map())
@@ -160,5 +180,5 @@ var InstaApi = (() => {
     };
   }
 
-  return { profile, media, mediaFiles, thumbnail, codeToId };
+  return { profile, media, mediaFiles, story, thumbnail, codeToId };
 })();

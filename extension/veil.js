@@ -35,6 +35,9 @@
       height: 32px; padding: 0 12px 0 8px; border: none; border-radius: 999px; cursor: pointer; color: #fff;
       font-family: inherit; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.2px; animation: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     .capsule:hover { filter: brightness(1.12); }
+    /* Posts and Reels open with Instagram's close / arrow buttons top right. */
+    .capsule.shift { right: 140px; }
+    .sheet.shift { right: 140px; }
     .capsule .i { width: 20px; height: 20px; }
     .sheet { position: fixed; top: 54px; right: 16px; z-index: 2147483646; width: 264px; padding: 14px 16px 12px; border-radius: 14px;
       background: #fff; color: #000; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); animation: drop 0.22s ease-out both; }
@@ -95,13 +98,18 @@
       find('sheet')?.remove();
       return;
     }
-    if (find('capsule')) return;
+    const shift = /^\/(p|reels?|tv)\//.test(location.pathname);
+    if (find('capsule')) {
+      find('capsule').classList.toggle('shift', shift);
+      return;
+    }
     const b = el('capsule grad', `<span class="i">${MASK}</span>Anonymous`, 'button');
     b.title = 'KeepKeep: watching stories anonymously';
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       find('sheet') ? find('sheet').remove() : openSheet();
     });
+    b.classList.toggle('shift', shift);
     layer().append(b);
   }
 
@@ -110,6 +118,7 @@
       <b><span class="i grad">${MASK}</span>Watching stories anonymously</b>
       <p>Story owners won't see you in their viewers list. Stories stay unseen for you too. Replies and reactions are still visible.</p>
       <button type="button">Turn off</button>`);
+    s.classList.toggle('shift', find('capsule')?.classList.contains('shift'));
     s.addEventListener('click', (e) => e.stopPropagation());
     s.querySelector('button').addEventListener('click', () => chrome.storage.local.set({ anonStories: false }));
     layer().append(s);

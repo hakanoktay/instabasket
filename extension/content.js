@@ -27,16 +27,16 @@ var KeepKeepDrop = (() => {
 
   async function enrichMedia(item) {
     let info = {};
-    if (item.code) {
-      try {
-        info = await InstaApi.media(item.code);
-      } catch {}
-    }
+    try {
+      if (item.code) info = await InstaApi.media(item.code);
+      else if (item.type === 'story' || item.key?.startsWith('story:')) info = await InstaApi.story(item.key.slice(6));
+    } catch {}
     const thumb = await InstaApi.thumbnail(info.thumbUrl, 240);
     const update = { key: item.key, triedAt: Date.now() };
     const username = item.username || info.username;
     if (username) update.username = username;
     if (info.type) update.type = info.type;
+    if (info.expiresAt) update.expiresAt = info.expiresAt * 1000;
     if (thumb) update.thumb = thumb;
     return KeepKeep.saveMedia(update);
   }
@@ -161,7 +161,8 @@ var KeepKeepDrop = (() => {
     if (item.kind === 'profile') return { profile: item.username };
     let username = item.username;
     if (!username && item.code) username = (await InstaApi.media(item.code).catch(() => ({}))).username || null;
-    return { profile: username || null, media: { key: item.key, code: item.code, url: item.url } };
+    const storyPk = item.key.startsWith('story:') ? item.key.slice(6) : null;
+    return { profile: username || null, media: { key: item.key, code: item.code, storyPk, url: item.url } };
   }
 
   // Adds, or removes if already saved; downloads the post.
@@ -175,6 +176,7 @@ var KeepKeepDrop = (() => {
       return (await KeepKeep.get(key)) ? remove(key) : run(info.media.url);
     }
     if (action === 'download' && info.media?.code) return download(info.media.code);
+    if (action === 'download' && info.media?.storyPk) return downloadStory(info.media.storyPk);
   }
 
   setTimeout(() => fillMissing().catch(() => {}), 3000);
@@ -212,6 +214,27 @@ var KeepKeepDrop = (() => {
     }
   }
 
+  // Downloads a story item, named <username>_<YYMMDDHHmm>_story.<ext>.
+  async function downloadStory(pk) {
+    const job = Math.random().toString(36).slice(2);
+    const ui = KeepKeepPanel.downloads;
+    ui.start(job);
+    try {
+      const item = await InstaApi.story(pk);
+      if (!item.files.length) throw new Error('no files');
+      const base = `${item.username || 'instagram'}_${compactTime(item.takenAt ? item.takenAt * 1000 : Date.now())}_story`;
+      const files = item.files.map((f) => ({ url: f.url, kind: f.kind, thumb: f.thumb, filename: `${base}.${extension(f)}` }));
+      ui.items(job, { username: item.username, files });
+      const res = await chrome.runtime.sendMessage({ type: 'download', job, files: files.map(({ url, filename }) => ({ url, filename })) });
+      if (!res?.ok) throw new Error(res?.error || 'failed');
+      ui.finish(job, res);
+      return true;
+    } catch {
+      ui.fail(job, "Couldn't download this story");
+      return false;
+    }
+  }
+
   // 2025-07-27 14:32 → "2507271432" (local time)
   function compactTime(ms) {
     const d = new Date(ms);
@@ -224,5 +247,5 @@ var KeepKeepDrop = (() => {
     return m ? m[1].toLowerCase().replace('jpeg', 'jpg') : file.kind === 'video' ? 'mp4' : 'jpg';
   }
 
-  return { run, remove, download };
+  return { run, remove, download, downloadStory };
 })();

@@ -17,6 +17,10 @@ There are also **🧺 Add to basket** buttons on Instagram itself:
 
 Once an item is saved its button shows **✓ In basket**. Hovering it turns it into a red **Remove** (like "Following" → "Unfollow" on Instagram); clicking removes the item, and the corner card offers **Undo** for a few seconds.
 
+### Stories
+
+While a story is open, a small bar on its top right has **Profile** (add the owner), **Media** (add the story) and **Download** (save the story on screen as `<username>_<YYMMDDHHmm>_story.jpg/.mp4`); **D** downloads it too. None of these marks the story as seen.
+
 ### Watching stories anonymously
 
 Turn on **Watch stories anonymously** in the popup's settings (⚙) and KeepKeep stops the request that tells Instagram you've seen a story, so you don't appear in its viewers list (`extension/stories-main.js`). Stories you watch stay unseen for you too; replies and likes are still visible to the owner. Switch it with the mask button in the popup's header or in the settings (⚙).
