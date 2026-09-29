@@ -6,7 +6,7 @@ A Chrome extension that lets you drag Instagram profiles and posts into a "baske
 
 - While on `instagram.com`, drag the URL from the address bar (or a profile/post link on the page) over the page.
 - A card appears in the top-right corner; drop the link on it.
-- Or use the icons at the top of the extension's popup: **Profile**, **Media** and **Download** act on the post or profile open in the current tab (⚙ opens the download settings).
+- Or use the icons at the top of the extension's popup: **Profile**, **Media** and **Download** act on the post or profile open in the current tab (⚙ opens the settings).
 
 There are also **🧺 Add to basket** buttons on Instagram itself:
 
@@ -21,12 +21,12 @@ Once an item is saved its button shows **✓ In basket**. Hovering it turns it i
 
 **Download** saves every photo and video of a post in the highest resolution Instagram offers. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
 
-The first time you download, KeepKeep asks where to save:
+The first time you download, KeepKeep asks right in the page where to save:
 
-- **Choose a folder** – files are written straight into that folder, each as a separate file, with no save window and no ZIP (existing files are never overwritten). If Chrome later wants the access confirmed again, the same window asks once.
+- **Choose a folder** – files are written straight into that folder, each as a separate file, with no save window and no ZIP (existing files are never overwritten). Picking the folder opens a small window once: Chrome only lets extensions open the folder picker from their own page.
 - **Use the Downloads folder** – files go to `Downloads/KeepKeep/`; an album is saved as one ZIP so there's at most one "Save as" window.
 
-You can change this any time with the download button in the popup's header.
+Change it any time in the popup: ⚙ slides in the settings.
 
 While downloading, balloons on the right show the overall progress and each photo / video with its thumbnail, size and progress; they disappear a few seconds after it's saved.
 

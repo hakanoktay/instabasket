@@ -1,15 +1,25 @@
-// The "Where should KeepKeep save downloads?" window. Opened by the
-// background script on the first download (or when Chrome needs the folder
-// access confirmed again), and from the download button in the popup.
+// A small window with a single button: Chrome only lets an extension open the
+// folder picker (or confirm access to a folder picked before) from its own
+// page, not from inside Instagram or the popup (which closes when the picker
+// opens). Everything else about downloads is asked in the page or set in the
+// popup's settings.
+//   ?mode=pick  – choose a folder
+//   ?mode=allow – confirm access to the folder chosen before
 // Reports the outcome back so a waiting download can continue.
 
 const $ = (s) => document.querySelector(s);
 const params = new URLSearchParams(location.search);
-const waiting = params.get('request'); // id of a download waiting for this choice
+const request = params.get('request');
+const mode = params.get('mode') || 'pick';
 
 async function done(result) {
-  await chrome.runtime.sendMessage({ type: 'folder-result', request: waiting, result }).catch(() => {});
+  await chrome.runtime.sendMessage({ type: 'folder-result', request, result }).catch(() => {});
   window.close();
+}
+
+function showError(text) {
+  $('#error').hidden = false;
+  $('#error').textContent = text;
 }
 
 async function chooseFolder() {
@@ -22,36 +32,27 @@ async function chooseFolder() {
     done('folder');
   } catch (e) {
     if (e?.name === 'AbortError') return; // closed the picker; stay here
-    $('#error').hidden = false;
-    $('#error').textContent = "Couldn't use that folder. Try another one, or use the Downloads folder.";
+    showError("Couldn't use that folder. Try another one.");
   }
 }
 
-async function useDownloads() {
-  await chrome.storage.local.set({ downloadMode: 'zip' });
-  done('zip');
+async function allowAccess() {
+  const dir = await FolderStore.get().catch(() => null);
+  if (!dir) return chooseFolder();
+  if ((await dir.requestPermission({ mode: 'readwrite' }).catch(() => 'denied')) === 'granted') done('folder');
+  else showError('Access was not allowed. You can choose another folder in the settings.');
 }
-
-$('#choose').addEventListener('click', chooseFolder);
-$('#choose-other').addEventListener('click', chooseFolder);
-$('#change').addEventListener('click', chooseFolder);
-for (const id of ['#use-downloads', '#use-downloads-2', '#use-downloads-3']) $(id).addEventListener('click', useDownloads);
-$('#allow').addEventListener('click', async () => {
-  const dir = await FolderStore.get();
-  if (dir && (await dir.requestPermission({ mode: 'readwrite' })) === 'granted') done('folder');
-});
 
 (async () => {
-  const { downloadMode } = await chrome.storage.local.get('downloadMode');
-  const { state, name } = await FolderStore.state();
-  for (const el of document.querySelectorAll('.folder-name')) el.textContent = name || '';
-  if (downloadMode === 'folder' && state === 'prompt') {
-    $('#reauth').hidden = false;
-    $('#ask').hidden = true;
-  } else if (!waiting && downloadMode) {
-    // Opened from the popup: show the current setting.
-    $('#current').hidden = false;
-    $('#ask').hidden = true;
-    $('.where').textContent = downloadMode === 'folder' && name ? `“${name}”` : 'Downloads/KeepKeep (albums as ZIP)';
+  if (mode === 'allow') {
+    const { name } = await FolderStore.state();
+    $('#title').textContent = 'Allow access again';
+    $('#text').textContent = 'Choose “Allow on every visit” if Chrome offers it, so you’re not asked again.';
+    $('#go-label').textContent = `Allow access to “${name || 'folder'}”`;
+    $('#go').addEventListener('click', allowAccess);
+  } else {
+    $('#go').addEventListener('click', chooseFolder);
   }
+  $('#cancel').addEventListener('click', () => done('closed'));
+  $('#go').focus();
 })();

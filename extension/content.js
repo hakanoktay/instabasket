@@ -140,7 +140,14 @@ var KeepKeepDrop = (() => {
   // Download progress, relayed by the background script.
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'dl-progress') KeepKeepPanel.downloads.progress(msg.job, msg.index, msg.loaded, msg.total, msg.done);
-    if (msg?.type === 'dl-waiting') KeepKeepPanel.downloads.waiting(msg.job);
+  });
+
+  // First download: ask in the page where downloads should go.
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.type !== 'ask-download-target') return;
+    KeepKeepPanel.downloads.waiting(msg.job);
+    KeepKeepPanel.askDownloadTarget({ reauthName: msg.reauthName }).then(sendResponse);
+    return true;
   });
 
   // The popup's Profile / Media / Download icons act on what's open in this tab.

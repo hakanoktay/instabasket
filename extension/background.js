@@ -16,8 +16,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     folderRequests.get(msg.request)?.(msg.result);
     folderRequests.delete(msg.request);
   }
-  if (msg?.type === 'open-folder-settings') {
-    chrome.windows.create({ url: 'folder.html', type: 'popup', width: 440, height: 480, focused: true });
+  if (msg?.type === 'pick-folder') {
+    // From the popup's settings: the popup closes when the folder picker opens,
+    // so the picker runs in a small window instead.
+    askForFolder(msg.mode === 'allow' ? 'allow' : 'pick');
   }
   if (msg?.type === 'dl-progress') {
     // From the helper page; pass it on to the Instagram tab that asked.
@@ -74,17 +76,30 @@ async function downloadTarget(job, tabId) {
   const { askedFolder } = await chrome.storage.session.get('askedFolder');
   if (askedFolder) return 'downloads';
   await chrome.storage.session.set({ askedFolder: true });
-  chrome.tabs.sendMessage(tabId, { type: 'dl-waiting', job }).catch(() => {});
-  return (await askForFolder()) === 'folder' ? 'folder' : 'downloads';
+  // The question is shown in the Instagram page itself. Only picking a folder
+  // needs a window: Chrome lets an extension open the folder picker from its
+  // own page only (from inside a website, the website would get the access).
+  const reauthName = downloadMode === 'folder' && folder?.state === 'prompt' ? folder.name : null;
+  const choice = await chrome.tabs.sendMessage(tabId, { type: 'ask-download-target', job, reauthName }).catch(() => 'closed');
+  if (choice === 'zip') {
+    await chrome.storage.local.set({ downloadMode: 'zip' });
+    return 'downloads';
+  }
+  if (choice === 'folder' || choice === 'allow') {
+    return (await askForFolder(choice === 'allow' ? 'allow' : 'pick')) === 'folder' ? 'folder' : 'downloads';
+  }
+  return 'downloads';
 }
 
 const folderRequests = new Map(); // request id → resolve
-function askForFolder() {
+// A small window with just the folder picker button ('pick') or the button to
+// confirm access to the folder chosen before ('allow').
+function askForFolder(mode = 'pick') {
   const request = Math.random().toString(36).slice(2);
   return new Promise(async (resolve) => {
     folderRequests.set(request, resolve);
     const win = await chrome.windows.create({
-      url: `folder.html?request=${request}`, type: 'popup', width: 440, height: 480, focused: true,
+      url: `folder.html?request=${request}&mode=${mode}`, type: 'popup', width: 400, height: 300, focused: true,
     });
     // Closing the window without choosing: use Downloads for this time.
     const onClose = (id) => {
