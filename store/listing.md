@@ -95,9 +95,9 @@ person's photos or Instagram's logo appear in the listing.
 ### Additional fields
 
 - **Official URL:** leave empty (it needs a verified domain).
-- **Homepage URL:** `https://github.com/hakanoktay/instabasket` (or the GitHub
+- **Homepage URL:** `https://github.com/hakanoktay/keepkeep` (or the GitHub
   Pages address below).
-- **Support URL:** `https://github.com/hakanoktay/instabasket/issues`
+- **Support URL:** `https://github.com/hakanoktay/keepkeep/issues`
 - **Mature content:** No.
 
 ---

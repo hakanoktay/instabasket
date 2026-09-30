@@ -16,25 +16,29 @@ Everything needed for the store is in this folder:
    [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
    with the Google account that will own KeepKeep, pay the one-time US$5
    registration fee, turn on 2-step verification and verify the contact email.
-2. **Privacy policy online.** In the GitHub repository: **Settings → Pages →
+2. **Repository name.** The links in these files assume the repository is
+   called `keepkeep` (GitHub → **Settings → General → Repository name**).
+   GitHub redirects the old repository address, but not GitHub Pages
+   addresses, so rename it before publishing the privacy policy.
+3. **Privacy policy online.** In the GitHub repository: **Settings → Pages →
    Deploy from a branch → `main` / `docs`** → Save. Check that
-   `https://hakanoktay.github.io/instabasket/privacy.html` opens.
+   `https://hakanoktay.github.io/keepkeep/privacy.html` opens.
    (The store changes need to be on `main` for this.)
-3. **Build the package.** From the repository folder:
+4. **Build the package.** From the repository folder:
 
    ```sh
    ./scripts/package.sh
    ```
 
    It checks the manifest and writes `dist/keepkeep-<version>.zip`.
-4. **New item.** In the dashboard: **Items → New item** → upload the ZIP.
-5. **Store listing tab.** Copy the texts from [`listing.md`](listing.md) and
+5. **New item.** In the dashboard: **Items → New item** → upload the ZIP.
+6. **Store listing tab.** Copy the texts from [`listing.md`](listing.md) and
    upload the images from [`assets/`](assets/) as listed there.
-6. **Privacy tab.** Copy the answers from
+7. **Privacy tab.** Copy the answers from
    [`privacy-practices.md`](privacy-practices.md).
-7. **Distribution tab.** Public (or Unlisted to try it first), all regions,
+8. **Distribution tab.** Public (or Unlisted to try it first), all regions,
    free.
-8. **Submit for review.** Because KeepKeep asks for access to Instagram's
+9. **Submit for review.** Because KeepKeep asks for access to Instagram's
    sites, the review is more thorough than usual: usually a few days,
    sometimes up to three weeks. You get an email either way.
 

@@ -95,7 +95,7 @@ download a story); nothing is recorded, stored or sent.
 ## Privacy policy URL
 
 ```
-https://hakanoktay.github.io/instabasket/privacy.html
+https://hakanoktay.github.io/keepkeep/privacy.html
 ```
 
 The page is [`docs/privacy.html`](../docs/privacy.html). To publish it:
