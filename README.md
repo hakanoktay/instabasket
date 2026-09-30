@@ -1,6 +1,14 @@
 # KeepKeep
 
-A Chrome extension that lets you drag Instagram profiles and posts into a "basket".
+![KeepKeep – keep what you find on Instagram](store/assets/promo-marquee-1400x560.png)
+
+A Chrome extension for instagram.com: save profiles and posts to your own lists, download photos and videos in full quality, watch stories anonymously and skip through any video. Everything stays in your browser.
+
+| | |
+| --- | --- |
+| ![Keep what you find](store/assets/screenshot-1-keep.png) | ![Your own lists](store/assets/screenshot-2-lists.png) |
+| ![Download in full quality](store/assets/screenshot-3-download.png) | ![Watch stories anonymously](store/assets/screenshot-4-anonymous.png) |
+| ![Skip through any video](store/assets/screenshot-5-video.png) | |
 
 ## How it works
 
