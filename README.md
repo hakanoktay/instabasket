@@ -76,6 +76,10 @@ Profile pictures and cover images are stored inside the extension as small thumb
 
 After updating the extension, click its reload (⟳) button on `chrome://extensions` and reload your Instagram tabs.
 
+## Chrome Web Store
+
+Everything for publishing – listing texts, privacy answers, screenshots and promo tiles – is in [`store/`](store/README.md); the privacy policy page is [`docs/privacy.html`](docs/privacy.html). `./scripts/package.sh` builds the ZIP to upload.
+
 ## Roadmap
 
 Planned features are listed in [ROADMAP.md](ROADMAP.md).

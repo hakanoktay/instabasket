@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KeepKeep</title>
+  <meta name="description" content="KeepKeep: save Instagram profiles and posts to your own lists, download photos and videos in full quality, and watch stories anonymously.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root { --bg: #ffffff; --text: #1d1321; --muted: #6b6172; --brand: #8119b5; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bg: #120a16; --text: #f3eef6; --muted: #b3a8ba; --brand: #c07fe0; }
+    }
+    :root[data-theme="dark"] { --bg: #120a16; --text: #f3eef6; --muted: #b3a8ba; --brand: #c07fe0; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--text);
+      font: 400 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+    }
+    main { max-width: 560px; padding: 48px 16px; text-align: center; }
+    img { width: 88px; height: 88px; border-radius: 20px; box-shadow: 0 10px 30px rgba(69, 11, 98, 0.3); }
+    h1 { font-size: 40px; letter-spacing: -0.02em; margin: 20px 0 8px; }
+    p { color: var(--muted); margin: 0 0 24px; }
+    nav { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    a { color: var(--brand); font-weight: 600; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="logo.svg" alt="KeepKeep logo">
+    <h1>KeepKeep</h1>
+    <p>Save Instagram profiles and posts to your own lists, download photos and videos in full quality, and watch stories anonymously. Everything stays in your browser.</p>
+    <nav>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="https://github.com/hakanoktay/instabasket/issues">Support</a>
+    </nav>
+  </main>
+</body>
+</html>

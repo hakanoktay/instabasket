@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KeepKeep Privacy Policy</title>
+  <meta name="description" content="How the KeepKeep browser extension handles your data: everything you save stays in your browser.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #ffffff; --surface: #faf6fd; --text: #1d1321; --muted: #6b6172; --line: #ece4f1;
+      --brand: #8119b5; --brand-deep: #450b62; --brand-tint: rgba(129, 25, 181, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #120a16; --surface: #1b1121; --text: #f3eef6; --muted: #b3a8ba; --line: #2c2033;
+        --brand: #c07fe0; --brand-deep: #aa56d5; --brand-tint: rgba(192, 127, 224, 0.12);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #120a16; --surface: #1b1121; --text: #f3eef6; --muted: #b3a8ba; --line: #2c2033;
+      --brand: #c07fe0; --brand-deep: #aa56d5; --brand-tint: rgba(192, 127, 224, 0.12);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 400 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+    }
+    .stripe { height: 4px; background: linear-gradient(90deg, #450b62, #8119b5 45%, #aa56d5); }
+    main { max-width: 760px; margin: 0 auto; padding: 40px 16px 72px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+    header img { width: 48px; height: 48px; border-radius: 11px; }
+    header a { color: inherit; text-decoration: none; font-weight: 700; font-size: 20px; }
+    h1 { font-size: clamp(30px, 6vw, 40px); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 8px; }
+    .updated { color: var(--muted); margin: 0 0 28px; font-size: 15px; }
+    h2 { font-size: 22px; line-height: 1.3; letter-spacing: -0.01em; margin: 44px 0 10px; }
+    p, li { max-width: 68ch; }
+    ul { padding-left: 22px; }
+    li { margin: 6px 0; }
+    a { color: var(--brand); }
+    strong { font-weight: 650; }
+    .summary {
+      background: var(--brand-tint); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; margin: 0 0 8px;
+    }
+    .summary p { margin: 0 0 8px; }
+    .summary ul { margin: 0; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: var(--surface); font-weight: 650; }
+    tr:last-child td { border-bottom: none; }
+    code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--surface); padding: 1px 5px; border-radius: 5px; }
+    footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="stripe"></div>
+  <main>
+    <header>
+      <img src="logo.svg" alt="">
+      <a href="./">KeepKeep</a>
+    </header>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Effective 30 September 2026</p>
+
+    <div class="summary">
+      <p><strong>In short:</strong></p>
+      <ul>
+        <li>Everything you save with KeepKeep stays in your browser, on your computer.</li>
+        <li>KeepKeep has no servers, no accounts, no analytics and no ads. Its developer never receives your data.</li>
+        <li>KeepKeep talks only to Instagram, from your browser, to show and save what you ask for.</li>
+      </ul>
+    </div>
+
+    <p>This policy explains what the KeepKeep browser extension ("KeepKeep", "the extension") does with information when you use it on instagram.com.</p>
+
+    <h2>What KeepKeep stores, and where</h2>
+    <p>When you choose to keep something, KeepKeep stores it in your Chrome profile using Chrome's local extension storage. It is not synced to other devices and is not sent anywhere. What is stored:</p>
+    <ul>
+      <li><strong>Profiles you save:</strong> the username, the display name and a small copy of the profile picture.</li>
+      <li><strong>Posts, reels and stories you save:</strong> the link, the owner's username, the type (photo, video, reel, story), a small preview image and, for stories, when they expire.</li>
+      <li><strong>Your lists</strong> and which saved items are in them, and when you saved each item.</li>
+      <li><strong>Your settings</strong>, such as photo quality and whether anonymous story viewing is on.</li>
+    </ul>
+    <p>Preview images are small copies made on your computer, so your lists keep their pictures after Instagram's own image links expire.</p>
+
+    <h2>What KeepKeep sends, and to whom</h2>
+    <p>KeepKeep only communicates with Instagram: <code>instagram.com</code> and Instagram's media servers (<code>cdninstagram.com</code>, <code>fbcdn.net</code>). These requests are made from your browser, with your own Instagram session, and only to do what you asked:</p>
+    <ul>
+      <li>to look up the details of a post, reel, story or profile you act on (its owner, pictures and videos);</li>
+      <li>to make the small preview images for items you save;</li>
+      <li>to fetch the photos and videos you choose to download.</li>
+    </ul>
+    <p>These are the same kinds of requests Instagram's own website makes; Instagram's privacy policy applies to them. KeepKeep sends nothing to its developer or to any third party.</p>
+
+    <h2>Downloads</h2>
+    <p>When you click Download, the photos and videos are saved to your Downloads folder (in <code>Downloads/KeepKeep</code>). KeepKeep does not upload them anywhere and keeps no record of what you downloaded.</p>
+
+    <h2>Anonymous story viewing</h2>
+    <p>If you turn on anonymous story viewing, KeepKeep stops the one request that tells Instagram you have seen a story, by answering it inside the page instead of sending it. It does not read, store or change anything else. You can turn it off at any time in KeepKeep's settings.</p>
+
+    <h2>What KeepKeep never does</h2>
+    <ul>
+      <li>It does not collect personal information, browsing history, messages or passwords.</li>
+      <li>It does not use analytics, tracking, cookies of its own or advertising.</li>
+      <li>It does not sell, rent or share data with anyone.</li>
+      <li>It does not run on any website other than Instagram.</li>
+      <li>It does not load code from the internet; all of its code ships with the extension.</li>
+    </ul>
+
+    <h2>Permissions and why they are needed</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Permission</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>storage</code></td><td>Keeps your saved profiles and posts, your lists and your settings in your browser.</td></tr>
+          <tr><td><code>unlimitedStorage</code></td><td>Room for the small preview images of saved items, which can exceed Chrome's default 10 MB when you save many items.</td></tr>
+          <tr><td><code>downloads</code></td><td>Saves the photos and videos you choose to download to your Downloads folder.</td></tr>
+          <tr><td><code>offscreen</code></td><td>Prepares the files you download and shows their progress.</td></tr>
+          <tr><td>instagram.com</td><td>Adds KeepKeep's buttons to Instagram and looks up the post, story or profile you act on.</td></tr>
+          <tr><td>cdninstagram.com, fbcdn.net</td><td>Instagram's media servers: fetches the photos and videos you download, and the preview images.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Your control</h2>
+    <ul>
+      <li>Remove any saved item from KeepKeep's popup or with its button on Instagram.</li>
+      <li>Rename or delete your lists at any time (deleting a list keeps the items themselves).</li>
+      <li>Uninstalling KeepKeep removes everything it stored; Chrome deletes the extension's storage.</li>
+    </ul>
+
+    <h2>Children</h2>
+    <p>KeepKeep is not directed at children under 13 and does not knowingly handle information about them.</p>
+
+    <h2>Chrome Web Store User Data Policy</h2>
+    <p>KeepKeep's use of information complies with the Chrome Web Store User Data Policy, including its Limited Use requirements.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>If KeepKeep's handling of information changes, this page will be updated and its effective date changed before the new version of the extension is released.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or concerns: please open an issue at <a href="https://github.com/hakanoktay/instabasket/issues">github.com/hakanoktay/instabasket/issues</a>.</p>
+
+    <footer>
+      KeepKeep is an independent project and is not affiliated with, endorsed or sponsored by Instagram or Meta. Instagram is a trademark of Instagram, LLC.
+    </footer>
+  </main>
+</body>
+</html>
