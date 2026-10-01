@@ -16,3 +16,20 @@ test('content scripts run on instagram.com', async ({ context }) => {
   await page.goto('https://www.instagram.com/?page=video');
   await expect(page.locator('.keepkeep-video')).toHaveCount(1, { timeout: 5000 });
 });
+
+test('settings open and close without leaving focus on a hidden button', async ({ context, extensionId }) => {
+  const page = await context.newPage();
+  const warnings = [];
+  page.on('console', (m) => warnings.push(m.text()));
+  await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.click('#settings');
+  await expect(page.locator('#settings-view')).toBeVisible();
+  await expect(page.locator('#settings-back')).toBeFocused();
+  await page.click('#settings-back');
+  await expect(page.locator('#settings-view')).toBeHidden();
+  await expect(page.locator('#settings')).toBeFocused();
+  await page.click('#settings');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#settings')).toBeFocused();
+  expect(warnings.filter((w) => /aria-hidden/.test(w))).toEqual([]);
+});

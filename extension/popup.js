@@ -441,7 +441,9 @@ for (const b of document.querySelectorAll('.page-btn')) {
 function openSettings(open) {
   document.body.classList.toggle('settings-open', open);
   document.body.classList.toggle('settings-closing', !open);
-  $('#settings-view').setAttribute('aria-hidden', String(!open));
+  // The hidden pane is display:none (hidden from screen readers too); move
+  // focus to the pane now shown, so it never stays on a hidden button.
+  $(open ? '#settings-back' : '#settings').focus();
   if (open) renderSettings();
 }
 $('#settings').addEventListener('click', () => openSettings(true));
