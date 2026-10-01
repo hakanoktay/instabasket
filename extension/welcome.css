@@ -42,6 +42,13 @@ h1 em { font-style: normal; color: var(--brand); }
 .steps b { display: block; font-weight: 600; }
 .steps span:not(.n) { color: var(--muted); font-size: 15px; }
 
+.note {
+  display: flex; gap: 12px; align-items: flex-start; margin: -8px 0 32px; padding: 14px 16px; border-radius: 12px;
+  background: var(--brand-tint); border: 1px solid var(--brand-line); font-size: 14.5px; color: var(--muted);
+}
+.note svg { flex: none; width: 22px; height: 22px; margin-top: 1px; fill: none; stroke: var(--brand); stroke-width: 1.8; stroke-linejoin: round; }
+.note b { color: var(--text); font-weight: 600; }
+
 .cta {
   display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 30px; border-radius: 12px;
   background: var(--brand-gradient); color: #fff; font-weight: 700; text-decoration: none;
