@@ -13,7 +13,6 @@ var KeepKeepPanel = (() => {
   const LOGO = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="kk-logo" x1="486.4" y1="0" x2="-14.9" y2="908.9" gradientUnits="userSpaceOnUse"><stop offset="0.365" stop-color="#8119B5"/><stop offset="0.849" stop-color="#450B62"/></linearGradient></defs><rect width="1024" height="1024" rx="220" fill="url(#kk-logo)"/><path fill="#fff" d="M518.609 839.484H194V701.984H256.5V355.5H194V218H506.109V355.5H456.5V496.906L559.625 355.5V218H802.984V355.5H749.078L625.25 505.891V511.359C667.438 511.359 700.51 518.651 724.469 533.234C748.427 547.557 760.406 572.557 760.406 608.234V671.516C760.406 679.589 762.62 686.75 767.047 693C771.734 698.99 778.115 701.984 786.188 701.984H830.719V839.484H687.75C600.25 839.484 556.5 799.51 556.5 719.562V651.594C556.5 638.312 552.203 625.292 543.609 612.531C535.016 599.51 524.859 593 513.141 593H456.5V701.984H518.609V839.484Z"/></svg>';
 
   const ICONS = {
-    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
@@ -147,7 +146,7 @@ var KeepKeepPanel = (() => {
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="card">
-        <div class="drop"><div class="icon">${ICONS.basket}</div>Drop to add to basket</div>
+        <div class="drop"><div class="icon">${LOGO}</div>Drop to save to KeepKeep</div>
         <div class="head">
           <div class="thumb-slot"></div>
           <div class="text"><div class="title"></div><div class="sub"></div></div>
@@ -423,7 +422,7 @@ var KeepKeepPanel = (() => {
   function showRemoved(title, thumb, round, onUndo) {
     mount('removed');
     setThumb(thumb, round);
-    setHead(title, 'Removed from basket');
+    setHead(title, 'Removed from KeepKeep');
     closePicker();
     const undo = Object.assign(document.createElement('button'), { className: 'text-btn', textContent: 'Undo' });
     undo.addEventListener('click', onUndo);

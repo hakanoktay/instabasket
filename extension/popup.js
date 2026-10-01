@@ -168,7 +168,7 @@ function renderFooter(mode = 'view') {
   if (mode === 'confirm') {
     footer.querySelector('.question').replaceChildren(
       'Delete ', el('b', {}, `"${list.name}"`), '? ',
-      el('span', { class: 'n' }, 'Its items stay in your basket.'));
+      el('span', { class: 'n' }, 'Its items stay saved.'));
     footer.querySelector('.confirm-delete').focus();
   }
 }
@@ -256,7 +256,7 @@ function renderProfiles() {
   $('#profiles .empty').hidden = profiles.length > 0;
   $('#profiles .empty').textContent = activeList
     ? 'No profiles in this list yet. Use the tag button on a profile to add it.'
-    : 'No profiles yet. On Instagram, use the basket buttons or drag a profile link onto the page.';
+    : 'No profiles yet. On Instagram, use the KeepKeep buttons or drag a profile link onto the page.';
 
   $('#profiles ul').replaceChildren(...profiles.map((p) => {
     const n = counts[p.username] || 0;
@@ -293,7 +293,7 @@ function renderMedia() {
   $('#media .empty').hidden = list.length > 0;
   $('#media .empty').textContent = activeList
     ? 'No media in this list yet. Use the tag button on a thumbnail to add it.'
-    : 'No media yet. On Instagram, use the basket buttons or drag a post, reel or video link onto the page.';
+    : 'No media yet. On Instagram, use the KeepKeep buttons or drag a post, reel or video link onto the page.';
 
   $('#media .groups').replaceChildren(el('div', { class: 'cards' }, ...list.map((m) => mediaCard(m, saved))));
 }
@@ -328,7 +328,7 @@ function mediaCard(m, savedProfiles) {
         : el('span', { class: 'owner unknown' }, 'Owner not found'),
       m.username ? profileToggle(m.username, savedProfiles.has(m.username)) : null,
       el('button', {
-        class: 'icon-btn remove', title: 'Delete from basket', onclick: () => KeepKeep.removeMedia(m.key),
+        class: 'icon-btn remove', title: 'Remove from KeepKeep', onclick: () => KeepKeep.removeMedia(m.key),
       }, icon('trash'))),
   );
 }
