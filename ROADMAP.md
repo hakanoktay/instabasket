@@ -21,7 +21,7 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 5. **First run (done in `v1.1.0`, `extension/welcome.*`):** a welcome tab after installing (`chrome.runtime.onInstalled`, only on install), in the look of the store images: the app's own headline "Keep what you find on Instagram" first, then three steps and Open Instagram; the trust badges and line come after, as the supporting key (owner: the headline sells the lock, the badges are the key), then Zetasis and ☕ Buy me a coffee.
 6. **Keyword line** (owner's request): "Reels, Stories, Photos, Videos and Posts" in the store description and the welcome tab – done. Add **Highlights** to it ("Reels, Stories, Photos, Videos, Highlights and Posts") only once highlights work; until then the store must not promise them.
 7. **Later – Settings on the welcome tab** (owner's idea): a Settings button next to Open Instagram that walks through the settings step by step (photo quality, anonymous stories…), showing what KeepKeep can do along the way.
-8. **Popup and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
+8. **Popup (done: Settings → About) and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
 
 ### Next version: list card polish (owner's request)
 
@@ -55,6 +55,8 @@ Leftovers from the InstaBasket days that users still see:
 Use "KeepKeep" or "saved" instead (e.g. "Save to KeepKeep", "Saved", "Remove from KeepKeep"). Internal names (`basket.js`, storage keys) stay as they are, so saved data is not affected. Afterwards search the whole extension for "basket" once more.
 
 ### Next version: "Made by Zetasis" and a support link (owner's request)
+
+**Done** in the `v1.1.0` branch: the popup's credit line, Settings → About (version, badges, Zetasis, coffee, privacy policy, Report a problem), the welcome tab.
 
 KeepKeep is developed by Zetasis. Show it, without ads and without getting in the way:
 

@@ -113,6 +113,7 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
   publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
   default branch `main`, GitHub Pages from `main` / `docs`.
+- **Release timing (owner):** 1.1.0 is released only after the Library page (full tab) is built and everything works; no version bump / ZIP before that.
 - **Next version (1.1.0) is being built in the `v1.1.0` branch.** Done there,
   each with tests: the list card blink (also after the card closed by
   itself; closing now folds the list picker first), the "basket" wording,

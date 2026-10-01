@@ -458,7 +458,7 @@ async function renderSettings() {
   for (const input of document.querySelectorAll('input[name=photo-size]')) {
     input.checked = input.value === (photoSize === 'standard' ? 'standard' : 'original');
   }
-  $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
+  $('.about .version').textContent = 'v' + chrome.runtime.getManifest().version;
 }
 $('#anon-stories').addEventListener('change', (e) => chrome.storage.local.set({ anonStories: e.target.checked }));
 // Like a private window: the mask button in the header switches anonymous
