@@ -48,6 +48,7 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `store/` | Chrome Web Store listing, privacy answers, images (`assets/`) |
 | `docs/` | GitHub Pages site: `index.html`, `privacy.html`, `images/` |
 | `scripts/package.sh` | Validates the manifest, writes `dist/keepkeep-<version>.zip` |
+| `scripts/store-badges.mjs` | Adds the trust badges to the store images: `store/source/*.png` (badge-free originals, the owner loves these – don't redesign) → `store/assets/` |
 
 ## Instagram knowledge (verified)
 
