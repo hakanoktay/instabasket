@@ -134,8 +134,9 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   closed and open again) when adding while the previous card is still shown
   (cause and fix in `ROADMAP.md`). The owner wants even small visual glitches
   fixed: quality first.
-- Also next version: store name "KeepKeep – Save, Download & Anonymous
-  Stories for Instagram" or similar (owner picks; see `ROADMAP.md`).
+- Store name decided and applied (v1.1.0): "KeepKeep – Downloader & Anonymous Story Viewer for Instagram"
+  in `manifest.json` (the store takes it from there), `short_name`
+  "KeepKeep"; inside the extension it is just "KeepKeep".
 - After the next version, the owner's feature order: 1) Library page (full
   tab, most important), 2) caption search, 3) moodboard export, 4) influencer
   shortlist, 5) learning mode for Reels (see `ROADMAP.md`). Keep KeepKeep

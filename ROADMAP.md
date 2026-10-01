@@ -72,6 +72,8 @@ Cause (found in `extension/panel.js`): the card is reused. `showBusy()` calls `c
 
 ### Next version: a searchable store name (owner's request)
 
+**Decided: KeepKeep – Downloader & Anonymous Story Viewer for Instagram** (60 characters), with `short_name` "KeepKeep". **Done** in the `v1.1.0` branch: `manifest.json`, `store/listing.md`, the README, the website's title and description; `scripts/package.sh` now allows "Instagram" only as "for Instagram" at the end.
+
 People search the store for "instagram download", "anonymous story viewer"… and a bare "KeepKeep" doesn't match. Use the common, accepted pattern *Brand + "for Instagram"* (like "Inssist – Web Client for Instagram"): `name` in `manifest.json` (max 75 characters), e.g.
 
 - **KeepKeep – Save, Download & Anonymous Stories for Instagram** (61, recommended)

@@ -2,7 +2,7 @@
 
 ![KeepKeep – keep what you find on Instagram](store/assets/promo-marquee-1400x560.png)
 
-A Chrome extension for instagram.com: save profiles and posts to your own lists, download photos and videos in full quality, watch stories anonymously and skip through any video. Everything stays in your browser.
+**KeepKeep – Downloader & Anonymous Story Viewer for Instagram** is a Chrome extension for instagram.com: save profiles and posts to your own lists, download photos and videos in full quality, watch stories anonymously and skip through any video. Everything stays in your browser.
 
 | | |
 | --- | --- |

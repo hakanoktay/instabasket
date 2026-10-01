@@ -11,12 +11,15 @@ Images are in [`assets/`](assets/); the permission and privacy answers are in
 ### Name
 
 ```
-KeepKeep
+KeepKeep – Downloader & Anonymous Story Viewer for Instagram
 ```
 
-(From `manifest.json`. Never put "Instagram" in the name or the icon — that is
-a trademark violation and the most common reason extensions like this are
-rejected.)
+(From `manifest.json`, where the store takes it from; 60 characters, the limit
+is 75. Inside the extension and on the toolbar it is just "KeepKeep"
+(`short_name`). "Instagram" may appear in the name only at the end, as "for
+Instagram"; never "Insta" or "Gram". No Instagram logo or look-alike in the
+icon or the images, and the description keeps its "not affiliated with
+Instagram or Meta" note. `scripts/package.sh` checks these rules.)
 
 ### Summary (short description, max. 132 characters)
 
