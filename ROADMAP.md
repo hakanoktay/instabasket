@@ -20,6 +20,14 @@ The "Add to a list" card that appears after saving (`extension/panel.js`):
 - **Reorder lists by drag and drop** right in the card; the new order is saved and used everywhere (card, popup, keys 1–9).
 - **Remove the small order numbers** in the top-right corner of each list box. Keys 1–9 keep working in the list order; the "Press 1–9" hint stays as the only mention.
 
+### Next version: Export & import (owner's request)
+
+Users change computers or want their lists on a second one. Everything is stored only in the browser, so:
+
+- **Export** in the settings: one `.json` file with all profiles, media, lists (with their order), settings and the preview images, saved to `Downloads/KeepKeep`.
+- **Import** the file on another computer: merges without duplicates (same profile / post is matched and its lists combined); a short summary afterwards ("Added 42 profiles, 3 lists").
+- Later, maybe: automatic sync between computers. Chrome's own sync storage is far too small for the preview images, so it would need the user's Google Drive (an extra permission) — export / import first.
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
@@ -30,10 +38,6 @@ The "Add to a list" card that appears after saving (`extension/panel.js`):
 ### Library page
 
 KeepKeep in a full browser tab: all saved profiles and media in a large grid, with search, filters (list, type, owner, date), multi-select, moving items between lists, removing in bulk and downloading a whole list at once.
-
-### Backup & restore
-
-Export everything (profiles, media, lists, settings) to one file and import it on another computer; importing merges without creating duplicates.
 
 ### New-post badges for saved profiles
 
