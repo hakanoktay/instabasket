@@ -32,7 +32,16 @@ the store shows when the summary field is left empty.)
 Paste as plain text — the store keeps line breaks but shows no Markdown.
 
 ```
+Never asks for your password. Your data never leaves your computer.
+KeepKeep works inside the Instagram tab you're already signed in to – no login, no account, no servers. We never see what you save.
+
 KeepKeep is a quiet companion for instagram.com. It puts a few purple buttons right where you already look – next to posts, reels and stories – so you can keep what you find, organise it your way and save it in full quality.
+
+PRIVATE BY DESIGN
+• Never asks for your Instagram username or password – it simply works in the tab where you're already signed in.
+• Everything you save stays in your browser, on your computer. We never receive it.
+• No account, no servers, no analytics, no ads.
+• KeepKeep only talks to Instagram, on your behalf, to show and save what you ask for.
 
 KEEP PROFILES AND POSTS
 • One click next to any post, reel, story or profile saves it to KeepKeep.
@@ -55,11 +64,6 @@ WATCH STORIES ANONYMOUSLY
 SKIP THROUGH ANY VIDEO
 • A thin scrubber on every video lets you jump anywhere; play / pause sits right next to Instagram's mute button.
 • ← and → skip 5 seconds, Space or K plays and pauses.
-
-PRIVATE BY DESIGN
-• Everything you save stays in your browser, on your computer.
-• No account, no servers, no analytics, no ads.
-• KeepKeep only talks to Instagram, on your behalf, to show and save what you ask for.
 
 GOOD TO KNOW
 • KeepKeep works on instagram.com in Chrome on your computer.

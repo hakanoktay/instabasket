@@ -4,14 +4,22 @@ Features planned for upcoming versions of KeepKeep.
 
 ## Planned
 
-### Next version: "Never asks for your password" (top priority)
+### Next version: "Never asks for your password" + "Your data never leaves your computer" (top priority)
 
-A tester's feedback: the biggest worry with extensions like this is that they ask for your Instagram username and password, and many people won't install one for fear it will. KeepKeep never asks, never sees and never stores them (it works inside the user's own logged-in instagram.com tab), so say so loudly:
+A tester's feedback: the biggest worry with extensions like this is that they ask for your Instagram username and password, and many people won't install one for fear it will. KeepKeep never asks for it, and never receives anything the user saves. Say both, elegantly, where people look first.
 
-- **Store screenshots:** a new first screenshot (and the small promo tile) built around it, e.g. "No login. No password. Ever." with a short line on why: KeepKeep works in the Instagram tab you're already signed in to.
-- **Store description:** open with it, before the features.
-- **First run:** after installing, open a short welcome tab (`chrome.runtime.onInstalled`) that says it first, then shows how to use KeepKeep in three steps and links to instagram.com. Shown once, only on install, not on updates.
-- **Popup and website:** a short "Never asks for your password" note in the popup (e.g. the empty state) and on the GitHub page.
+**The message** (use these exact words everywhere, so it becomes recognisable):
+- Headline: **"Never asks for your password. Your data never leaves your computer."**
+- Short badge form: **"No password · No account · Nothing leaves your computer"**
+- Avoid "collects no data": the store's own privacy panel lists *Website content* (kept locally), so stay precise – "we never receive it" is the true and stronger claim.
+
+**Where, in order of how often it is seen:**
+1. **Summary** (`description` in `manifest.json`, max 132 characters; shown in search results and at the top of the listing), e.g. "Save posts to your lists, download in full quality, watch stories anonymously. No password. Your data never leaves your computer." (129)
+2. **Small promo tile** (440×280, shown in search and category pages): logo + "No password. Nothing leaves your computer."
+3. **Screenshots:** screenshot 1 stays the main feature, **screenshot 2 is a dedicated "Private by design" slide** (a lock / shield visual, the headline, three short lines: works in the tab where you're signed in · everything stays on your computer · no account, no ads, no tracking). In addition, **every screenshot gets the same slim bottom ribbon** with the badge form, so the message is seen whichever image someone opens.
+4. **Description:** already updated in `store/listing.md` (privacy opens the text and "Private by design" is the first section) – can be pasted into the dashboard now, no new package needed.
+5. **First run:** a welcome tab after installing (`chrome.runtime.onInstalled`, only on install): the headline first, then how to use KeepKeep in three steps, a link to instagram.com, and at the end Zetasis and ☕ Buy me a coffee.
+6. **Popup and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
 
 ### Next version: list card polish (owner's request)
 

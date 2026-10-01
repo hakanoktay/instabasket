@@ -95,9 +95,12 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
   publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
   default branch `main`, GitHub Pages from `main` / `docs`.
-- **Top priority for the next version:** "Never asks for your password" in
-  the store screenshots, description, a first-run welcome tab and the popup
-  (see `ROADMAP.md`). A new store screenshot set is needed for it.
+- **Top priority for the next version:** "Never asks for your password. Your
+  data never leaves your computer." in the summary, small promo tile, a
+  dedicated 2nd screenshot plus a ribbon on every screenshot, a first-run
+  welcome tab and the popup (exact wording and placement in `ROADMAP.md`;
+  the store description in `store/listing.md` is already updated). Never
+  claim "collects no data" (the store panel lists Website content).
 - Also next version: drag-and-drop reordering of lists in the "Add to a list"
   card, no order numbers in the list boxes, Export & import, and removing
   every user-visible "basket" wording, e.g. the profile page's "Add to
