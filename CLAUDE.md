@@ -110,5 +110,9 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   fixed: quality first.
 - Also next version: store name "KeepKeep – Save, Download & Anonymous
   Stories for Instagram" or similar (owner picks; see `ROADMAP.md`).
+- After the next version, the owner's feature order: 1) Library page (full
+  tab, most important), 2) caption search, 3) moodboard export, 4) influencer
+  shortlist, 5) learning mode for Reels (see `ROADMAP.md`). Keep KeepKeep
+  simple and elegant; no posting / scheduling.
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.

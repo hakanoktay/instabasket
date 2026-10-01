@@ -72,9 +72,29 @@ Final wording is the owner's choice. Keep it safe: "Instagram" only as "for Inst
 - **Kept story copies** – stories disappear after 24 hours, so a story added to Media keeps its own copy in the extension (only on this computer). Media shows "Story · 18h left", later "Kept copy"; an expired story opens in KeepKeep's own viewer with a Download button. Settings show how much space the copies use, with "Delete copies".
 - **One Quality setting** – Original / Standard for photos, videos and stories alike.
 
-### Library page
+### Feature track (owner's priority order, after the next version's polish)
 
-KeepKeep in a full browser tab: all saved profiles and media in a large grid, with search, filters (list, type, owner, date), multi-select, moving items between lists, removing in bulk and downloading a whole list at once.
+KeepKeep stays simple and focused – "keep what you see, organise it, use it" – but adds a few genuinely useful features aimed at specific people. In this order:
+
+#### 1. Library page – KeepKeep in a full tab (most important)
+
+KeepKeep in a full browser tab (`library.html`, opened from the popup and the toolbar menu): all saved profiles and media in a large, beautiful grid, with search, filters (list, type, owner, date), multi-select, drag items between lists, reorder lists, remove in bulk and download a whole list at once. Everything below lives here, so it comes first.
+
+#### 2. Caption search – for everyone (recipes, travel, shopping…)
+
+Keep each saved post's caption (and its hashtags) and make it searchable in the library and the popup: type "lentil", "Rome" or "jacket" and find the post. Instagram's own Saved has no search, a common complaint. New saves store the caption; captions of items saved before are fetched quietly later (a few at a time, rate-limit safe) without touching other stored data.
+
+#### 3. Moodboard – for designers, people planning a wedding or a home, anyone briefing someone
+
+Turn a list into a clean collage board in the library ("Make a board"), arrange it, and export it as one image (PNG) or PDF to send to an architect, designer, hairdresser… instead of 15 separate links. Uses the original-size photos.
+
+#### 4. Influencer shortlist – for agencies and brands (Pro candidate)
+
+For saved profiles: notes and tags ("asked for rates", "fits"), follower count and engagement next to each profile, sort and filter, and export to CSV. Shares data with *Insights* below.
+
+#### 5. Learning mode – for people learning dance, sport, cooking from Reels
+
+In the video controls: slow-motion speeds (0.25×–0.75×) and an A–B loop to repeat one part. Small; can be slotted in between the bigger items.
 
 ### New-post badges for saved profiles
 
