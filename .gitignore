@@ -1,2 +1,5 @@
 dist/
 .DS_Store
+node_modules/
+tests/test-results/
+tests/playwright-report/

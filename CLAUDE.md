@@ -81,7 +81,14 @@ There is no build step; `extension/` is loaded unpacked as is.
 
 ## Testing
 
-Playwright with the pre-installed Chromium, loading `extension/` unpacked
+`cd tests && npm test` (Playwright, full Chromium via `channel: 'chromium'`;
+the headless shell can't load extensions). `tests/fixtures.js` loads
+`extension/` unpacked and answers `https://www.instagram.com/?page=<name>`
+with `tests/pages/<name>.html`; CDN requests get 404 unless a test routes
+them. Add a test for every fix, so it stays fixed. First-time setup:
+`cd tests && npm install && npx playwright install chromium`.
+
+Earlier (1.0.0) notes: Playwright loading `extension/` unpacked
 against local Instagram-like demo pages. The CDN is faked with a local HTTPS
 server and `--host-resolver-rules`; serve page image requests with
 `context.route` (they hang otherwise). Store images were captured from the
@@ -114,5 +121,13 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   tab, most important), 2) caption search, 3) moodboard export, 4) influencer
   shortlist, 5) learning mode for Reels (see `ROADMAP.md`). Keep KeepKeep
   simple and elegant; no posting / scheduling.
+- Positioning vs. Inssist ("INSSIST: Web Client for Instagram", ~600k users,
+  free core + PRO): don't compete on feature count; KeepKeep's edge is
+  simplicity and quality (lists, original-size downloads, the veil). Its
+  single purpose is defined narrowly ("save, organise, download while
+  browsing"); adding something outside it (e.g. scheduling) would mean
+  rewriting the store purpose first. Free core + PRO (Insights, influencer
+  shortlist) is the likely money model; selling PRO means switching the
+  publisher account to "trader".
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.
