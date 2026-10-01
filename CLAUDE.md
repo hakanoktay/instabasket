@@ -88,6 +88,14 @@ with `tests/pages/<name>.html`; CDN requests get 404 unless a test routes
 them. Add a test for every fix, so it stays fixed. First-time setup:
 `cd tests && npm install && npx playwright install chromium`.
 
+Real Instagram: `./scripts/dev-chrome.sh` opens a separate Chrome profile
+(`~/.keepkeep-dev-chrome`, the owner signed in there) with only the unpacked
+extension and port 9222, so scripts can look at real pages with
+`chromium.connectOverCDP('http://127.0.0.1:9222')`. Read only: never like,
+follow, comment or post from it. Chrome refuses this port on the everyday
+profile, where the store version is also installed (buttons would show twice,
+and the unpacked copy has its own, empty storage).
+
 Earlier (1.0.0) notes: Playwright loading `extension/` unpacked
 against local Instagram-like demo pages. The CDN is faked with a local HTTPS
 server and `--host-resolver-rules`; serve page image requests with

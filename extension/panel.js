@@ -244,13 +244,17 @@ var KeepKeepPanel = (() => {
   }
 
   function showBusy(title = 'Adding…', sub = 'Fetching details from Instagram') {
+    // Adding again while the picker is on screen: keep it open until the new
+    // result replaces its boxes, rather than animating it closed and open again.
+    const keepPicker = !!host?.isConnected && els.picker.classList.contains('open') && !card.classList.contains('dropping');
     mount('busy');
     const spinner = document.createElement('div');
     spinner.className = 'spinner';
     spinner.innerHTML = '<span></span>';
     els['thumb-slot'].replaceChildren(spinner);
     setHead(title, sub);
-    closePicker();
+    if (keepPicker) current = null; // the boxes belong to the previous item: clicks and 1–9 do nothing
+    else closePicker();
   }
 
   // A short notice with a thumbnail, e.g. after starting downloads.
@@ -304,9 +308,11 @@ var KeepKeepPanel = (() => {
     els.searchInput.value = '';
     els.search.hidden = lists.length < SEARCH_FROM;
     els.hint.textContent = lists.length ? 'Press 1–9' : '';
-    els.grid.classList.add('entering');
+    // Boxes slide in when the picker opens; if it stayed open, they just update.
+    const entering = !els.picker.classList.contains('open');
+    els.grid.classList.toggle('entering', entering);
     renderBoxes();
-    setTimeout(() => els.grid.classList.remove('entering'), 700);
+    if (entering) setTimeout(() => els.grid.classList.remove('entering'), 700);
     requestAnimationFrame(() => els.picker.classList.add('open'));
     setKeys(true);
     startTimer(RESULT_MS);
