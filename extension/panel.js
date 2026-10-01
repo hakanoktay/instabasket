@@ -5,7 +5,9 @@ var KeepKeepPanel = (() => {
   const RESULT_MS = 8000; // how long the card stays after adding (paused while hovered)
   const SHORT_MS = 2500; // errors and "removed"
   const SEARCH_FROM = 7; // show a search field when there are this many lists
-  let host, card, els, onDrop, keyHandler, current;
+  const FOLD_MS = 320; // the picker's open / close transition
+  const FADE_MS = 160; // the card's fade out
+  let host, card, els, onDrop, keyHandler, current, hideTimer;
 
   // The KeepKeep logo, inline (pages can't load extension files without extra permissions).
   const LOGO = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="kk-logo" x1="486.4" y1="0" x2="-14.9" y2="908.9" gradientUnits="userSpaceOnUse"><stop offset="0.365" stop-color="#8119B5"/><stop offset="0.849" stop-color="#450B62"/></linearGradient></defs><rect width="1024" height="1024" rx="220" fill="url(#kk-logo)"/><path fill="#fff" d="M518.609 839.484H194V701.984H256.5V355.5H194V218H506.109V355.5H456.5V496.906L559.625 355.5V218H802.984V355.5H749.078L625.25 505.891V511.359C667.438 511.359 700.51 518.651 724.469 533.234C748.427 547.557 760.406 572.557 760.406 608.234V671.516C760.406 679.589 762.62 686.75 767.047 693C771.734 698.99 778.115 701.984 786.188 701.984H830.719V839.484H687.75C600.25 839.484 556.5 799.51 556.5 719.562V651.594C556.5 638.312 552.203 625.292 543.609 612.531C535.016 599.51 524.859 593 513.141 593H456.5V701.984H518.609V839.484Z"/></svg>';
@@ -39,6 +41,9 @@ var KeepKeepPanel = (() => {
       --brand: #aa56d5; --brand-hover: #c07fe0; --brand-tint: rgba(170, 86, 213, 0.14);
     }
     @keyframes in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+    /* Closing: the list picker folds up first (see hide()), then the card fades. */
+    .card.leaving { pointer-events: none; animation: out 0.16s ease-in forwards; }
+    @keyframes out { to { opacity: 0; transform: translateY(-8px) scale(0.98); } }
     svg { display: block; width: 100%; height: 100%; }
     button { font: inherit; color: inherit; cursor: pointer; }
 
@@ -161,8 +166,8 @@ var KeepKeepPanel = (() => {
       .map((c) => [c, root.querySelector('.' + c)]));
     els.searchInput = els.search.querySelector('input');
 
-    root.querySelector('.close').addEventListener('click', hide);
-    els.bar.addEventListener('animationend', hide);
+    root.querySelector('.close').addEventListener('click', () => hide());
+    els.bar.addEventListener('animationend', () => hide());
     els.searchInput.addEventListener('input', () => renderBoxes());
 
     card.addEventListener('dragenter', (e) => { e.preventDefault(); card.classList.add('over'); });
@@ -182,16 +187,35 @@ var KeepKeepPanel = (() => {
 
   function mount(state) {
     if (!host) build();
-    if (!host.isConnected) document.documentElement.appendChild(host);
+    clearTimeout(hideTimer); // a new state while closing keeps the card
+    if (!host.isConnected) {
+      // Back on screen: the picker starts closed, never from where it was left.
+      closePicker();
+      document.documentElement.appendChild(host);
+    }
     card.className = `card ${state}${isDarkPage() ? ' dark' : ''}`;
     stopTimer();
     setKeys(false);
   }
 
-  function hide() {
+  // Closes the card: the list picker folds up first, then the card fades out.
+  // `now` removes it at once (e.g. for the download balloons in its place).
+  function hide(now) {
     current = null;
     setKeys(false);
-    host?.remove();
+    clearTimeout(hideTimer);
+    if (!host?.isConnected) return;
+    if (now) return host.remove();
+    stopTimer();
+    const folding = els.picker.classList.contains('open');
+    els.picker.classList.remove('open');
+    hideTimer = setTimeout(() => {
+      card.classList.add('leaving');
+      hideTimer = setTimeout(() => {
+        host.remove();
+        closePicker();
+      }, FADE_MS);
+    }, folding ? FOLD_MS : 0);
   }
 
   function startTimer(ms) {
@@ -496,7 +520,7 @@ var KeepKeepPanel = (() => {
   const downloads = {
     start(job) {
       dlMount();
-      hide(); // the corner card would sit under the balloons
+      hide(true); // the corner card would sit under the balloons
       const header = bubble('header', null, 'Preparing download…', 'Finding the best quality');
       dlStack.append(header);
       dlJobs.set(job, { header, items: [] });
