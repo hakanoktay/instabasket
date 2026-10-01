@@ -56,6 +56,15 @@ Sometimes, right after clicking Profile / Media, the "Add to a list" part of the
 
 Cause (found in `extension/panel.js`): the card is reused. `showBusy()` calls `closePicker()`, which removes `.open` from `.picker`, so the picker *animates* closed (grid-template-rows transition, 0.32 s) while the spinner shows; a moment later `showResult()` adds `.open` again and it animates open. Fix: when the card goes busy while the picker is open, don't animate the collapse – either keep the picker as it is until the new result replaces its content, or collapse it instantly (no transition for that one change) – so a second add looks exactly like the first. Check with a test that adds twice in a row, quickly, and records the picker's height over time (it must never shrink and grow again).
 
+### Next version: a searchable store name (owner's request)
+
+People search the store for "instagram download", "anonymous story viewer"… and a bare "KeepKeep" doesn't match. Use the common, accepted pattern *Brand + "for Instagram"* (like "Inssist – Web Client for Instagram"): `name` in `manifest.json` (max 75 characters), e.g.
+
+- **KeepKeep – Save, Download & Anonymous Stories for Instagram** (61, recommended)
+- KeepKeep – Save, Download & Anonymous Story Viewer for Instagram (66, matches "story viewer" searches)
+
+Final wording is the owner's choice. Keep it safe: "Instagram" only as "for Instagram" at the end, never "Insta" / "Gram", no Instagram logo in the icon or images, keep the "not affiliated with Instagram or Meta" note; set `short_name` to "KeepKeep" (toolbar, menus). Update `store/listing.md`, the store images' text if needed, `docs/` and the README.
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.

@@ -12,7 +12,9 @@ There is no build step; `extension/` is loaded unpacked as is.
 - Explain things plainly, like a person, not a machine. Be brief.
 - Don't guess about Instagram's behaviour; check it (console snippets for the
   owner to run, or tests) before claiming something.
-- Never put "Instagram" in the extension's name or icon (trademark).
+- "Instagram" may appear in the extension's name only as a descriptor at the
+  end ("KeepKeep – … for Instagram"); never "Insta" / "Gram", never the
+  Instagram logo or look in the icon or images (trademark).
 - Never put the owner's email address in public files; the contact is GitHub
   Issues.
 - Downloads: separate files straight into `Downloads/KeepKeep`. The owner
@@ -106,5 +108,7 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   closed and open again) when adding while the previous card is still shown
   (cause and fix in `ROADMAP.md`). The owner wants even small visual glitches
   fixed: quality first.
+- Also next version: store name "KeepKeep – Save, Download & Anonymous
+  Stories for Instagram" or similar (owner picks; see `ROADMAP.md`).
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.
