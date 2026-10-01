@@ -44,7 +44,7 @@ Use "KeepKeep" or "saved" instead (e.g. "Save to KeepKeep", "Saved", "Remove fro
 
 KeepKeep is developed by Zetasis. Show it, without ads and without getting in the way:
 
-- **Popup footer:** a small, quiet line at the bottom, e.g. "Made by Zetasis · ☕ Support KeepKeep", linking to Zetasis's website and a "Buy me a coffee"-style page. Visible every time, never a pop-up, never blinking.
+- **Popup footer:** a small, quiet line at the bottom, exactly "Made by Zetasis · ☕ Buy me a coffee" (wording chosen by the owner), linking to Zetasis's website and the owner's coffee / support page. Visible every time, never a pop-up, never blinking.
 - **Settings:** an "About" row with the version, the Zetasis link, the support link and the privacy policy.
 - **Welcome tab** (first run) and the GitHub page: the same two links at the end.
 - Only inside KeepKeep's own UI, never on Instagram's pages. Plain links and bundled images only (nothing loaded from the internet, no tracking). The store texts' "no ads" stays true; mention the optional support link in the description.
