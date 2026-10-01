@@ -102,5 +102,9 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   basket" button, and a quiet "Made by Zetasis · ☕ Buy me a coffee" line in the popup
   (see `ROADMAP.md`; coffee link: https://buymeacoffee.com/zetasis; ask the
   owner for the Zetasis website).
+- Also next version: fix the "Add to a list" card blinking (picker animates
+  closed and open again) when adding while the previous card is still shown
+  (cause and fix in `ROADMAP.md`). The owner wants even small visual glitches
+  fixed: quality first.
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.

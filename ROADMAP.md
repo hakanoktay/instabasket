@@ -50,6 +50,12 @@ KeepKeep is developed by Zetasis. Show it, without ads and without getting in th
 - Only inside KeepKeep's own UI, never on Instagram's pages. Plain links and bundled images only (nothing loaded from the internet, no tracking). The store texts' "no ads" stays true; mention the optional support link in the description.
 - Support page: https://buymeacoffee.com/zetasis (payouts set up). Still needed from the owner: the Zetasis website address (until then the "Zetasis" link can point to https://hakanoktay.github.io/keepkeep/).
 
+### Next version: card flicker when adding again (owner's report, must fix)
+
+Sometimes, right after clicking Profile / Media, the "Add to a list" part of the card shows, slides up and then opens down again – a visible blink. It only happens when the card from the previous add is still on screen.
+
+Cause (found in `extension/panel.js`): the card is reused. `showBusy()` calls `closePicker()`, which removes `.open` from `.picker`, so the picker *animates* closed (grid-template-rows transition, 0.32 s) while the spinner shows; a moment later `showResult()` adds `.open` again and it animates open. Fix: when the card goes busy while the picker is open, don't animate the collapse – either keep the picker as it is until the new result replaces its content, or collapse it instantly (no transition for that one change) – so a second add looks exactly like the first. Check with a test that adds twice in a row, quickly, and records the picker's height over time (it must never shrink and grow again).
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
