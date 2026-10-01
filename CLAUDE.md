@@ -110,6 +110,12 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
   publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
   default branch `main`, GitHub Pages from `main` / `docs`.
+- **Next version (1.1.0) is being built in the `v1.1.0` branch.** Done there,
+  each with tests: the list card blink (also after the card closed by
+  itself; closing now folds the list picker first), the "basket" wording,
+  drag-to-reorder lists with no order numbers, the popup's aria-hidden
+  warning. Still to do: the password / privacy message, "Made by Zetasis"
+  and About, Export & import, the store name.
 - **Top priority for the next version:** "Never asks for your password" in
   the store screenshots, description, a first-run welcome tab and the popup
   (see `ROADMAP.md`). A new store screenshot set is needed for it.
