@@ -82,7 +82,13 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
 
 ## Status / next
 
-- Store materials are ready (`store/README.md` has the steps). The repository
-  is being renamed to `keepkeep`; links already use the new name.
+- 1.0.0 is published on the Chrome Web Store as **Unlisted** (item id
+  `jelnnpodemcgdhehjokojjbahgjjgmeb`,
+  https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
+  publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
+  default branch `main`, GitHub Pages from `main` / `docs`.
+- **Top priority for the next version:** "Never asks for your password" in
+  the store screenshots, description, a first-run welcome tab and the popup
+  (see `ROADMAP.md`). A new store screenshot set is needed for it.
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.
