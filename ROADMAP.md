@@ -13,6 +13,13 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 - **First run:** after installing, open a short welcome tab (`chrome.runtime.onInstalled`) that says it first, then shows how to use KeepKeep in three steps and links to instagram.com. Shown once, only on install, not on updates.
 - **Popup and website:** a short "Never asks for your password" note in the popup (e.g. the empty state) and on the GitHub page.
 
+### Next version: list card polish (owner's request)
+
+The "Add to a list" card that appears after saving (`extension/panel.js`):
+
+- **Reorder lists by drag and drop** right in the card; the new order is saved and used everywhere (card, popup, keys 1–9).
+- **Remove the small order numbers** in the top-right corner of each list box. Keys 1–9 keep working in the list order; the "Press 1–9" hint stays as the only mention.
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
