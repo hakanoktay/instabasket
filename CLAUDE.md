@@ -100,6 +100,7 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   card, no order numbers in the list boxes, Export & import, and removing
   every user-visible "basket" wording, e.g. the profile page's "Add to
   basket" button, and a quiet "Made by Zetasis · ☕ Buy me a coffee" line in the popup
-  (see `ROADMAP.md`; ask the owner for both URLs).
+  (see `ROADMAP.md`; coffee link: https://buymeacoffee.com/zetasis; ask the
+  owner for the Zetasis website).
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.

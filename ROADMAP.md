@@ -48,7 +48,7 @@ KeepKeep is developed by Zetasis. Show it, without ads and without getting in th
 - **Settings:** an "About" row with the version, the Zetasis link, the support link and the privacy policy.
 - **Welcome tab** (first run) and the GitHub page: the same two links at the end.
 - Only inside KeepKeep's own UI, never on Instagram's pages. Plain links and bundled images only (nothing loaded from the internet, no tracking). The store texts' "no ads" stays true; mention the optional support link in the description.
-- Needed from the owner: the Zetasis website address and the support page link.
+- Support page: https://buymeacoffee.com/zetasis (payouts set up). Still needed from the owner: the Zetasis website address (until then the "Zetasis" link can point to https://hakanoktay.github.io/keepkeep/).
 
 ### Already under way
 
