@@ -8,6 +8,7 @@ test('installing opens the welcome tab: what KeepKeep does, then the trust badge
   await expect(page.locator('h1')).toHaveText('Keep what you find on Instagram');
   await expect(page.locator('.trust p')).toHaveText('Never asks for your password. Nothing leaves your computer.');
   await expect(page.locator('.tag')).toHaveText(['No password', 'No tracking', 'No ads']);
+  await expect(page.locator('.lead')).toContainText('Reels, Stories, Photos, Videos and Posts');
   await expect(page.locator('.steps li')).toHaveCount(3);
   await expect(page.locator('a.cta')).toHaveAttribute('href', 'https://www.instagram.com/');
   await expect(page.locator('footer a')).toHaveText(['Zetasis', '☕ Buy me a coffee']);

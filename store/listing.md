@@ -38,6 +38,8 @@ Paste as plain text — the store keeps line breaks but shows no Markdown.
 Never asks for your password. Your data never leaves your computer.
 KeepKeep works inside the Instagram tab you're already signed in to – no login, no account, no servers. We never see what you save.
 
+Reels, Stories, Photos, Videos and Posts – save them to your own lists or download them in full quality.
+
 KeepKeep is a quiet companion for instagram.com. It puts a few purple buttons right where you already look – next to posts, reels and stories – so you can keep what you find, organise it your way and save it in full quality.
 
 PRIVATE BY DESIGN
