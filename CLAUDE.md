@@ -97,7 +97,8 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   the store screenshots, description, a first-run welcome tab and the popup
   (see `ROADMAP.md`). A new store screenshot set is needed for it.
 - Also next version: drag-and-drop reordering of lists in the "Add to a list"
-  card, no order numbers in the list boxes, and Export & import (see
-  `ROADMAP.md`).
+  card, no order numbers in the list boxes, Export & import, and removing
+  every user-visible "basket" wording, e.g. the profile page's "Add to
+  basket" button (see `ROADMAP.md`).
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.

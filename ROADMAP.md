@@ -28,6 +28,18 @@ Users change computers or want their lists on a second one. Everything is stored
 - **Import** the file on another computer: merges without duplicates (same profile / post is matched and its lists combined); a short summary afterwards ("Added 42 profiles, 3 lists").
 - Later, maybe: automatic sync between computers. Chrome's own sync storage is far too small for the preview images, so it would need the user's Google Drive (an extra permission) — export / import first.
 
+### Next version: remove the old "basket" wording (must do)
+
+Leftovers from the InstaBasket days that users still see:
+
+- The profile page button says **"Add to basket"** / **"In basket"** with the basket icon (`buttons.js`, the default label and icon of `makeButton`). Make it match the rest: "Profile" / KeepKeep wording and icon.
+- Tooltips: "Add this profile / post / reel to basket", "In basket · click to remove" (`buttons.js`).
+- Popup: "Its items stay in your basket.", "use the basket buttons", "Delete from basket" (`popup.js`).
+- Drop zone "Drop to add to basket" and "Removed from basket" (`panel.js`).
+- `README.md` ("Add to basket", "In basket", "The basket has…").
+
+Use "KeepKeep" or "saved" instead (e.g. "Save to KeepKeep", "Saved", "Remove from KeepKeep"). Internal names (`basket.js`, storage keys) stay as they are, so saved data is not affected. Afterwards search the whole extension for "basket" once more.
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
