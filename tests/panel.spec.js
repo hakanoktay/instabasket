@@ -136,3 +136,13 @@ test('adding while the card is closing keeps the card', async ({ context, extens
   });
   expect(card).toEqual({ leaving: false, open: true });
 });
+
+// Two copies of the logo with the same gradient id made the visible one
+// blank (the gradient resolved to the hidden copy in the drop zone).
+test('the card has no duplicate ids, so the logo keeps its colours', async ({ context, extensionId }) => {
+  const page = await cardPage(context, extensionId);
+  await pickerHeights(page, [{ busy: true }, { result: 'm:AAA' }, { wait: 300 }]);
+  const ids = await page.evaluate(() => [...document.getElementById('keepkeep-host').shadowRoot.querySelectorAll('[id]')].map((e) => e.id));
+  expect(ids.length).toBeGreaterThan(0);
+  expect(new Set(ids).size).toBe(ids.length);
+});

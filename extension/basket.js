@@ -139,6 +139,15 @@ var KeepKeep = (() => {
     return list;
   }
 
+  // Puts the lists of one kind in the order of `ids`; the other kind's lists
+  // keep their places. Lists missing from `ids` (e.g. created meanwhile) go last.
+  async function reorderLists(kind, ids) {
+    const lists = await getLists();
+    const ordered = ids.map((id) => lists.find((l) => l.id === id && l.kind === kind)).filter(Boolean);
+    const queue = [...ordered, ...lists.filter((l) => l.kind === kind && !ordered.includes(l))];
+    await chrome.storage.local.set({ lists: lists.map((l) => (l.kind === kind ? queue.shift() : l)) });
+  }
+
   async function renameList(id, name) {
     const lists = await getLists();
     await chrome.storage.local.set({ lists: lists.map((l) => (l.id === id ? { ...l, name: name.trim() } : l)) });
@@ -181,6 +190,7 @@ var KeepKeep = (() => {
     },
     getLists,
     createList,
+    reorderLists,
     renameList,
     deleteList,
     setInList,
