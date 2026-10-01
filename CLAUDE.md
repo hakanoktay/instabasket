@@ -43,7 +43,7 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `extension/video.js` | Scrubber and play/pause for every video |
 | `extension/background.js` | Service worker: downloads, anonymous toolbar icon (`icons/anon*.png`) |
 | `extension/offscreen.js` | Fetches files (rejects non image/video responses, fallback URL), progress, one blob per file |
-| `extension/welcome.*` | First-run tab (opened by `background.js` only on install): privacy promise, three steps, Zetasis / coffee links |
+| `extension/welcome.*` | First-run tab (opened by `background.js` only on install), styled like the store images (Inter in `fonts/`): the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
 | `extension/popup.*` | Popup: lists, single-pane settings slide (opens only via ⚙) |
 | `ROADMAP.md` | Planned / under consideration / done |
 | `store/` | Chrome Web Store listing, privacy answers, images (`assets/`) |
