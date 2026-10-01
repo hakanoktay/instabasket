@@ -25,3 +25,11 @@ test('the welcome page loads nothing from the internet', async ({ context, exten
   await page.waitForLoadState('networkidle');
   expect(requests.filter((u) => !u.startsWith('chrome-extension://'))).toEqual([]);
 });
+
+test('a new install starts with anonymous stories on', async ({ context, extensionId }) => {
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect.poll(() => page.evaluate(async () => (await chrome.storage.local.get('anonStories')).anonStories)).toBe(true);
+  await page.click('#settings');
+  await expect(page.locator('#anon-stories')).toBeChecked();
+});

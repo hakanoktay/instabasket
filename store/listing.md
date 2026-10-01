@@ -62,7 +62,7 @@ DOWNLOAD IN FULL QUALITY
 • Files are saved to Downloads/KeepKeep and named after the account and the date, so they sort nicely. Progress bubbles show every file.
 
 WATCH STORIES ANONYMOUSLY
-• Switch it on and you won't appear in the story's viewers list.
+• On from the start: you won't appear in the story's viewers list. Switch it off any time in the popup.
 • Like a private window, Instagram then wears KeepKeep purple, so you always know the mode is on.
 • A heads-up appears before you reply or react, because the owner still sees those.
 

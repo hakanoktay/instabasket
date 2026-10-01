@@ -118,8 +118,12 @@ chrome.storage.onChanged.addListener((changes, area) => area === 'local' && chan
 chrome.runtime.onStartup.addListener(showAnonIcon);
 chrome.runtime.onInstalled.addListener(showAnonIcon);
 
-// ---- First run: a welcome tab, only on install (never on updates) ----
+// ---- First run, only on install (never on updates) ----
+// New users start with anonymous stories on (owner's choice); people who
+// already use KeepKeep keep whatever they had, so an update changes nothing.
 
-chrome.runtime.onInstalled.addListener(({ reason }) => {
-  if (reason === 'install') chrome.tabs.create({ url: 'welcome.html' });
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== 'install') return;
+  await chrome.storage.local.set({ anonStories: true });
+  chrome.tabs.create({ url: 'welcome.html' });
 });
