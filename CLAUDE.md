@@ -20,6 +20,12 @@ There is no build step; `extension/` is loaded unpacked as is.
   change Chrome settings. (Chrome's "Ask where to save each file" is off by
   default and cannot be bypassed by extensions; the owner has it off.)
 
+- **Never lose users' data on update.** Since 1.0.0 is in users' hands,
+  `chrome.storage.local` survives every store update, but only if the code
+  still understands it: any change to the stored format must read the old
+  format and migrate it (in `basket.js`), never reset or drop keys. Test an
+  update from the 1.0.0 data before releasing.
+
 ## Layout
 
 | Path | What |
