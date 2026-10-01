@@ -40,6 +40,16 @@ Leftovers from the InstaBasket days that users still see:
 
 Use "KeepKeep" or "saved" instead (e.g. "Save to KeepKeep", "Saved", "Remove from KeepKeep"). Internal names (`basket.js`, storage keys) stay as they are, so saved data is not affected. Afterwards search the whole extension for "basket" once more.
 
+### Next version: "Made by Zetasis" and a support link (owner's request)
+
+KeepKeep is developed by Zetasis. Show it, without ads and without getting in the way:
+
+- **Popup footer:** a small, quiet line at the bottom, e.g. "Made by Zetasis · ☕ Support KeepKeep", linking to Zetasis's website and a "Buy me a coffee"-style page. Visible every time, never a pop-up, never blinking.
+- **Settings:** an "About" row with the version, the Zetasis link, the support link and the privacy policy.
+- **Welcome tab** (first run) and the GitHub page: the same two links at the end.
+- Only inside KeepKeep's own UI, never on Instagram's pages. Plain links and bundled images only (nothing loaded from the internet, no tracking). The store texts' "no ads" stays true; mention the optional support link in the description.
+- Needed from the owner: the Zetasis website address and the support page link.
+
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
