@@ -10,7 +10,7 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 
 **The message** (use these exact words everywhere, so it becomes recognisable):
 - Headline: **"Never asks for your password. Your data never leaves your computer."**
-- Short badge form: **"No password · No account · Nothing leaves your computer"**
+- Badges (store images, chosen by the owner): **"No password" · "No tracking" · "No ads"**, with "Never asks for your password. Nothing leaves your computer." under them
 - Avoid "collects no data": the store's own privacy panel lists *Website content* (kept locally), so stay precise – "we never receive it" is the true and stronger claim.
 
 **Where, in order of how often it is seen:**
@@ -22,6 +22,8 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 6. **Popup and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
 
 ### Next version: list card polish (owner's request)
+
+**Done** in the `v1.1.0` branch (with tests in `tests/`).
 
 The "Add to a list" card that appears after saving (`extension/panel.js`):
 
@@ -37,6 +39,8 @@ Users change computers or want their lists on a second one. Everything is stored
 - Later, maybe: automatic sync between computers. Chrome's own sync storage is far too small for the preview images, so it would need the user's Google Drive (an extra permission) — export / import first.
 
 ### Next version: remove the old "basket" wording (must do)
+
+**Done** in the `v1.1.0` branch (with tests in `tests/`).
 
 Leftovers from the InstaBasket days that users still see:
 
@@ -59,6 +63,8 @@ KeepKeep is developed by Zetasis. Show it, without ads and without getting in th
 - Support page: https://buymeacoffee.com/zetasis (payouts set up). Still needed from the owner: the Zetasis website address (until then the "Zetasis" link can point to https://hakanoktay.github.io/keepkeep/).
 
 ### Next version: card flicker when adding again (owner's report, must fix)
+
+**Done** in the `v1.1.0` branch (with tests in `tests/`).
 
 Sometimes, right after clicking Profile / Media, the "Add to a list" part of the card shows, slides up and then opens down again – a visible blink. It only happens when the card from the previous add is still on screen.
 

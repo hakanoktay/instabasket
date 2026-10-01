@@ -5,7 +5,7 @@ var KeepKeepDrop = (() => {
   const DRAG_END_DELAY = 400;
   const RETRY_AFTER = 6 * 60 * 60 * 1000; // retry missing details at most every 6 hours
 
-  // ---- Adding to the basket ----
+  // ---- Saving to KeepKeep ----
 
   // Fetches an account's name and picture into the u: cache. Used for saved
   // profiles and for the owners of saved media alike.

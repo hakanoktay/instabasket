@@ -1,4 +1,4 @@
-// Adds "Add to basket" buttons to Instagram pages:
+// Adds KeepKeep's Save buttons to Instagram pages:
 //   - Profile, Media and Download icons in each post's action bar, left of the
 //     save icon (home feed, post page, post modal)
 //   - on hover over post thumbnails (profile grid, explore)
@@ -20,8 +20,6 @@
   // Outline icons for "not saved", filled ones for "saved" – the same
   // convention as Instagram's bookmark (outline → filled when saved).
   const ICONS = {
-    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
-    basketFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6" fill="none"/></svg>',
     profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
     // Like Instagram's "Following" icon: a filled person with a check.
     profileFilled: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4" fill="currentColor"/><path d="M3 21a7 7 0 0 1 12.5-4.3" fill="currentColor"/><path d="M15.5 18l2.5 2.5 4.5-5"/></svg>',
@@ -129,12 +127,13 @@
     host.dataset.keepkeep = variant;
     if (variant === 'overlay') Object.assign(host.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
     const root = host.attachShadow({ mode: 'open' });
-    const label = opts.label || 'Add to basket';
-    const savedLabel = opts.savedLabel || 'In basket';
+    const label = opts.label || 'Save';
+    const savedLabel = opts.savedLabel || 'Saved';
+    const icon = opts.icon || 'media';
     root.innerHTML = `<style>${STYLE}</style>
       <button class="${variant}${(opts.dark ?? KeepKeepPanel.isDarkPage()) ? ' dark' : ''}">
-        <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
-        <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
+        <span class="view add">${ICONS[icon]}<span class="label">${label}</span></span>
+        <span class="view done">${ICONS[icon + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
       </button>`;
     const button = root.querySelector('button');
@@ -189,7 +188,7 @@
 
   function setSaved(entry, saved) {
     entry.button.classList.toggle('saved', saved);
-    entry.button.title = saved ? 'In basket · click to remove' : entry.title;
+    entry.button.title = saved ? 'Saved in KeepKeep · click to remove' : entry.title;
   }
 
   async function refresh(entry) {
@@ -258,7 +257,7 @@
       actionTries.set(link, tries);
       if (tries >= 6) {
         link.dataset.keepkeepDone = 'inline';
-        link.after(makeButton('inline', fixed(item, item.url)));
+        link.after(makeButton('inline', fixed(item, item.url), { title: 'Save this post to KeepKeep' }));
       }
     }
   }
@@ -322,8 +321,8 @@
     });
     const dark = isLightColor(getComputedStyle(save).color); // light icons → dark background
     group.append(
-      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark }),
-      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket', dark }),
+      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark }),
+      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Save this post to KeepKeep', dark }),
       makeCommandButton('action', () => KeepKeepDrop.download(item.code), {
         icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)', dark,
       }),
@@ -369,7 +368,7 @@
       const item = postItem(link.getAttribute('href'));
       if (!item) continue;
       if (getComputedStyle(link).position === 'static') link.style.position = 'relative';
-      link.appendChild(makeButton('overlay', fixed(item, item.url)));
+      link.appendChild(makeButton('overlay', fixed(item, item.url), { title: 'Save this post to KeepKeep' }));
     }
   }
 
@@ -390,7 +389,9 @@
     // the profile picture's button has none.
     const actions = [...header.querySelectorAll('button, [role="button"]')]
       .find((b) => b.textContent.trim() && !b.closest('[data-keepkeep]'));
-    const host = makeButton('header', fixed(item, KeepKeep.profileUrl(item.username)));
+    const host = makeButton('header', fixed(item, KeepKeep.profileUrl(item.username)), {
+      icon: 'profile', label: 'Save profile', title: 'Save this profile to KeepKeep',
+    });
     host.dataset.key = wanted;
     Object.assign(host.style, { marginLeft: '8px', display: 'inline-flex', alignSelf: 'center' });
     if (actions) {
@@ -510,7 +511,7 @@
       // Instagram's own icons are white on a dark background: use the brand's light tone there.
       const dark = isLightColor(getComputedStyle(found.first.querySelector('svg') || found.first).color);
       for (const [icon, label, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
-        const title = icon === 'profile' ? 'Add this profile to basket' : 'Add this reel to basket';
+        const title = icon === 'profile' ? 'Save this profile to KeepKeep' : 'Save this reel to KeepKeep';
         const host = makeButton('reel', target, { icon, label, savedLabel: label, title, dark });
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0' });
         column.insertBefore(host, found.first);
@@ -646,7 +647,7 @@
         return s?.key && { url: s.url, key: storageKey(s) };
       };
       storyBar.append(
-        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark: true }),
+        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark: true }),
         makeButton('story', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this story to Media', dark: true }),
         makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download all of these stories (D)', dark: true }),
       );

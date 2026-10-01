@@ -82,7 +82,22 @@ There is no build step; `extension/` is loaded unpacked as is.
 
 ## Testing
 
-Playwright with the pre-installed Chromium, loading `extension/` unpacked
+`cd tests && npm test` (Playwright, full Chromium via `channel: 'chromium'`;
+the headless shell can't load extensions). `tests/fixtures.js` loads
+`extension/` unpacked and answers `https://www.instagram.com/?page=<name>`
+with `tests/pages/<name>.html`; CDN requests get 404 unless a test routes
+them. Add a test for every fix, so it stays fixed. First-time setup:
+`cd tests && npm install && npx playwright install chromium`.
+
+Real Instagram: `./scripts/dev-chrome.sh` opens a separate Chrome profile
+(`~/.keepkeep-dev-chrome`, the owner signed in there) with only the unpacked
+extension and port 9222, so scripts can look at real pages with
+`chromium.connectOverCDP('http://127.0.0.1:9222')`. Read only: never like,
+follow, comment or post from it. Chrome refuses this port on the everyday
+profile, where the store version is also installed (buttons would show twice,
+and the unpacked copy has its own, empty storage).
+
+Earlier (1.0.0) notes: Playwright loading `extension/` unpacked
 against local Instagram-like demo pages. The CDN is faked with a local HTTPS
 server and `--host-resolver-rules`; serve page image requests with
 `context.route` (they hang otherwise). Store images were captured from the
@@ -96,12 +111,19 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
   publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
   default branch `main`, GitHub Pages from `main` / `docs`.
+- **Next version (1.1.0) is being built in the `v1.1.0` branch.** Done there,
+  each with tests: the list card blink (also after the card closed by
+  itself; closing now folds the list picker first), the "basket" wording,
+  drag-to-reorder lists with no order numbers, the popup's aria-hidden
+  warning. Still to do: the password / privacy message, "Made by Zetasis"
+  and About, Export & import, the store name.
 - **Top priority for the next version:** "Never asks for your password. Your
-  data never leaves your computer." in the summary, small promo tile, a
-  dedicated 2nd screenshot plus a ribbon on every screenshot, a first-run
-  welcome tab and the popup (exact wording and placement in `ROADMAP.md`;
-  the store description in `store/listing.md` is already updated). Never
-  claim "collects no data" (the store panel lists Website content).
+  data never leaves your computer." in the summary (manifest `description`), a
+  dedicated 2nd "Private by design" screenshot, a first-run welcome tab and the
+  popup (exact wording and placement in `ROADMAP.md`). Already done: the store
+  description in `store/listing.md` opens with it, and every store image has
+  the "No password · No tracking · No ads" badges (`scripts/store-badges.mjs`).
+  Never claim "collects no data" (the store panel lists Website content).
 - Also next version: drag-and-drop reordering of lists in the "Add to a list"
   card, no order numbers in the list boxes, Export & import, and removing
   every user-visible "basket" wording, e.g. the profile page's "Add to
@@ -118,5 +140,13 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   tab, most important), 2) caption search, 3) moodboard export, 4) influencer
   shortlist, 5) learning mode for Reels (see `ROADMAP.md`). Keep KeepKeep
   simple and elegant; no posting / scheduling.
+- Positioning vs. Inssist ("INSSIST: Web Client for Instagram", ~600k users,
+  free core + PRO): don't compete on feature count; KeepKeep's edge is
+  simplicity and quality (lists, original-size downloads, the veil). Its
+  single purpose is defined narrowly ("save, organise, download while
+  browsing"); adding something outside it (e.g. scheduling) would mean
+  rewriting the store purpose first. Free core + PRO (Insights, influencer
+  shortlist) is the likely money model; selling PRO means switching the
+  publisher account to "trader".
 - Not started (waiting for the owner): kept story copies, video Original via
   DASH merge, highlights, one Quality setting — see `ROADMAP.md`.
