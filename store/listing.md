@@ -24,10 +24,10 @@ Instagram or Meta" note. `scripts/package.sh` checks these rules.)
 ### Summary (short description, max. 132 characters)
 
 ```
-Save Instagram profiles and posts to your own lists, download photos and videos in full quality, and watch stories anonymously.
+Save posts to your lists, download in full quality, watch stories anonymously. No password. Your data never leaves your computer.
 ```
 
-(127 characters; the same text is the `description` in `manifest.json`, which
+(129 characters; the same text is the `description` in `manifest.json`, which
 the store shows when the summary field is left empty.)
 
 ### Description
