@@ -117,3 +117,9 @@ async function showAnonIcon() {
 chrome.storage.onChanged.addListener((changes, area) => area === 'local' && changes.anonStories && showAnonIcon());
 chrome.runtime.onStartup.addListener(showAnonIcon);
 chrome.runtime.onInstalled.addListener(showAnonIcon);
+
+// ---- First run: a welcome tab, only on install (never on updates) ----
+
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  if (reason === 'install') chrome.tabs.create({ url: 'welcome.html' });
+});

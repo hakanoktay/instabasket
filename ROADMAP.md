@@ -18,7 +18,7 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 2. **Small promo tile** (440×280, shown in search and category pages): the badges are already on it (done).
 3. **Screenshots:** screenshot 1 stays the main feature, **screenshot 2 is a dedicated "Private by design" slide** (a lock / shield visual, the headline, three short lines: works in the tab where you're signed in · everything stays on your computer · no account, no ads, no tracking). In addition, every image carries the same trust badges – **done**: "No password" (solid purple) · "No tracking" · "No ads" pills with "Never asks for your password. Nothing leaves your computer." under them, bottom-left on all five screenshots and on both promo tiles (`store/assets/`, `docs/images/`; uploaded-ready). Badge-free originals are in `store/source/`; regenerate with `node scripts/store-badges.mjs store/assets`.
 4. **Description:** already updated in `store/listing.md` (privacy opens the text and "Private by design" is the first section) – can be pasted into the dashboard now, no new package needed.
-5. **First run:** a welcome tab after installing (`chrome.runtime.onInstalled`, only on install): the headline first, then how to use KeepKeep in three steps, a link to instagram.com, and at the end Zetasis and ☕ Buy me a coffee.
+5. **First run (done in `v1.1.0`, `extension/welcome.*`):** a welcome tab after installing (`chrome.runtime.onInstalled`, only on install): the headline first, then how to use KeepKeep in three steps, a link to instagram.com, and at the end Zetasis and ☕ Buy me a coffee.
 6. **Popup and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
 
 ### Next version: list card polish (owner's request)
@@ -60,7 +60,7 @@ KeepKeep is developed by Zetasis. Show it, without ads and without getting in th
 - **Settings:** an "About" row with the version, the Zetasis link, the support link and the privacy policy.
 - **Welcome tab** (first run) and the GitHub page: the same two links at the end.
 - Only inside KeepKeep's own UI, never on Instagram's pages. Plain links and bundled images only (nothing loaded from the internet, no tracking). The store texts' "no ads" stays true; mention the optional support link in the description.
-- Support page: https://buymeacoffee.com/zetasis (payouts set up). Still needed from the owner: the Zetasis website address (until then the "Zetasis" link can point to https://hakanoktay.github.io/keepkeep/).
+- Support page: https://buymeacoffee.com/zetasis (payouts set up). Zetasis website: https://zetasis.net.
 
 ### Next version: card flicker when adding again (owner's report, must fix)
 

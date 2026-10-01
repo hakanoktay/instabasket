@@ -43,6 +43,7 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `extension/video.js` | Scrubber and play/pause for every video |
 | `extension/background.js` | Service worker: downloads, anonymous toolbar icon (`icons/anon*.png`) |
 | `extension/offscreen.js` | Fetches files (rejects non image/video responses, fallback URL), progress, one blob per file |
+| `extension/welcome.*` | First-run tab (opened by `background.js` only on install): privacy promise, three steps, Zetasis / coffee links |
 | `extension/popup.*` | Popup: lists, single-pane settings slide (opens only via ⚙) |
 | `ROADMAP.md` | Planned / under consideration / done |
 | `store/` | Chrome Web Store listing, privacy answers, images (`assets/`) |
@@ -128,8 +129,8 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   card, no order numbers in the list boxes, Export & import, and removing
   every user-visible "basket" wording, e.g. the profile page's "Add to
   basket" button, and a quiet "Made by Zetasis · ☕ Buy me a coffee" line in the popup
-  (see `ROADMAP.md`; coffee link: https://buymeacoffee.com/zetasis; ask the
-  owner for the Zetasis website).
+  (see `ROADMAP.md`; coffee link: https://buymeacoffee.com/zetasis; Zetasis
+  website: https://zetasis.net).
 - Also next version: fix the "Add to a list" card blinking (picker animates
   closed and open again) when adding while the previous card is still shown
   (cause and fix in `ROADMAP.md`). The owner wants even small visual glitches
