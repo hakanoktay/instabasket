@@ -1,7 +1,8 @@
 const TYPE_LABELS = {
   photo: 'Photo', album: 'Album', video: 'Video', reel: 'Reel', story: 'Story', post: 'Post',
+  'story-video': 'Story', 'story-photo': 'Story', highlight: 'Highlight',
 };
-const TYPE_ICONS = { reel: 'reel', album: 'album', video: 'video', story: 'video' };
+const TYPE_ICONS = { reel: 'reel', album: 'album', video: 'video', story: 'video', 'story-video': 'video', 'story-photo': 'video', highlight: 'video' };
 
 const ICONS = {
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
@@ -168,7 +169,7 @@ function renderFooter(mode = 'view') {
   if (mode === 'confirm') {
     footer.querySelector('.question').replaceChildren(
       'Delete ', el('b', {}, `"${list.name}"`), '? ',
-      el('span', { class: 'n' }, 'Its items stay in your basket.'));
+      el('span', { class: 'n' }, 'Its items stay saved.'));
     footer.querySelector('.confirm-delete').focus();
   }
 }
@@ -256,7 +257,7 @@ function renderProfiles() {
   $('#profiles .empty').hidden = profiles.length > 0;
   $('#profiles .empty').textContent = activeList
     ? 'No profiles in this list yet. Use the tag button on a profile to add it.'
-    : 'No profiles yet. On Instagram, use the basket buttons or drag a profile link onto the page.';
+    : 'No profiles yet. On Instagram, use the KeepKeep buttons or drag a profile link onto the page.';
 
   $('#profiles ul').replaceChildren(...profiles.map((p) => {
     const n = counts[p.username] || 0;
@@ -293,7 +294,7 @@ function renderMedia() {
   $('#media .empty').hidden = list.length > 0;
   $('#media .empty').textContent = activeList
     ? 'No media in this list yet. Use the tag button on a thumbnail to add it.'
-    : 'No media yet. On Instagram, use the basket buttons or drag a post, reel or video link onto the page.';
+    : 'No media yet. On Instagram, use the KeepKeep buttons or drag a post, reel or video link onto the page.';
 
   $('#media .groups').replaceChildren(el('div', { class: 'cards' }, ...list.map((m) => mediaCard(m, saved))));
 }
@@ -328,7 +329,7 @@ function mediaCard(m, savedProfiles) {
         : el('span', { class: 'owner unknown' }, 'Owner not found'),
       m.username ? profileToggle(m.username, savedProfiles.has(m.username)) : null,
       el('button', {
-        class: 'icon-btn remove', title: 'Delete from basket', onclick: () => KeepKeep.removeMedia(m.key),
+        class: 'icon-btn remove', title: 'Remove from KeepKeep', onclick: () => KeepKeep.removeMedia(m.key),
       }, icon('trash'))),
   );
 }
@@ -441,7 +442,9 @@ for (const b of document.querySelectorAll('.page-btn')) {
 function openSettings(open) {
   document.body.classList.toggle('settings-open', open);
   document.body.classList.toggle('settings-closing', !open);
-  $('#settings-view').setAttribute('aria-hidden', String(!open));
+  // The hidden pane is display:none (hidden from screen readers too); move
+  // focus to the pane now shown, so it never stays on a hidden button.
+  $(open ? '#settings-back' : '#settings').focus();
   if (open) renderSettings();
 }
 $('#settings').addEventListener('click', () => openSettings(true));
@@ -456,7 +459,7 @@ async function renderSettings() {
   for (const input of document.querySelectorAll('input[name=photo-size]')) {
     input.checked = input.value === (photoSize === 'standard' ? 'standard' : 'original');
   }
-  $('.settings-footer .version').textContent = 'v' + chrome.runtime.getManifest().version;
+  $('.about .version').textContent = 'v' + chrome.runtime.getManifest().version;
 }
 $('#anon-stories').addEventListener('change', (e) => chrome.storage.local.set({ anonStories: e.target.checked }));
 // Like a private window: the mask button in the header switches anonymous
@@ -484,3 +487,30 @@ loadPage();
 chrome.storage.onChanged.addListener(render);
 selectTab('profiles');
 render();
+
+// ---- Backup ----
+// Export saves one file straight to Downloads/KeepKeep, like every download.
+// Import needs a file picker, which can close the popup, so it lives on the app page.
+
+$('#export').addEventListener('click', async () => {
+  const status = $('#backup-status');
+  status.classList.remove('bad');
+  status.textContent = 'Exporting…';
+  try {
+    status.textContent = `Saved to Downloads/KeepKeep as ${await KeepKeep.downloadBackup()}`;
+  } catch {
+    status.classList.add('bad');
+    status.textContent = 'Export failed. Please try again.';
+  }
+});
+
+$('#import').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'app.html#settings' });
+  window.close();
+});
+
+// ---- The full-tab app ----
+$('#open-app').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'app.html#media' });
+  window.close();
+});

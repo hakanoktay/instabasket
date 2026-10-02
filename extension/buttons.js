@@ -1,4 +1,4 @@
-// Adds "Add to basket" buttons to Instagram pages:
+// Adds KeepKeep's Save buttons to Instagram pages:
 //   - Profile, Media and Download icons in each post's action bar, left of the
 //     save icon (home feed, post page, post modal)
 //   - on hover over post thumbnails (profile grid, explore)
@@ -20,8 +20,6 @@
   // Outline icons for "not saved", filled ones for "saved" – the same
   // convention as Instagram's bookmark (outline → filled when saved).
   const ICONS = {
-    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
-    basketFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6" fill="none"/></svg>',
     profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 12.5-4.3"/><path d="M19 14v6M16 17h6"/></svg>',
     // Like Instagram's "Following" icon: a filled person with a check.
     profileFilled: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4" fill="currentColor"/><path d="M3 21a7 7 0 0 1 12.5-4.3" fill="currentColor"/><path d="M15.5 18l2.5 2.5 4.5-5"/></svg>',
@@ -129,12 +127,13 @@
     host.dataset.keepkeep = variant;
     if (variant === 'overlay') Object.assign(host.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
     const root = host.attachShadow({ mode: 'open' });
-    const label = opts.label || 'Add to basket';
-    const savedLabel = opts.savedLabel || 'In basket';
+    const label = opts.label || 'Save';
+    const savedLabel = opts.savedLabel || 'Saved';
+    const icon = opts.icon || 'media';
     root.innerHTML = `<style>${STYLE}</style>
       <button class="${variant}${(opts.dark ?? KeepKeepPanel.isDarkPage()) ? ' dark' : ''}">
-        <span class="view add">${ICONS[opts.icon || 'basket']}<span class="label">${label}</span></span>
-        <span class="view done">${ICONS[(opts.icon || 'basket') + 'Filled']}<span class="label">${savedLabel}</span></span>
+        <span class="view add">${ICONS[icon]}<span class="label">${label}</span></span>
+        <span class="view done">${ICONS[icon + 'Filled']}<span class="label">${savedLabel}</span></span>
         <span class="view rm">${ICONS.trash}<span class="label">Remove</span></span>
       </button>`;
     const button = root.querySelector('button');
@@ -155,7 +154,7 @@
       const t = await target(true);
       if (!t) await KeepKeepDrop.run(null); // shows "not an Instagram profile or post"
       else if (button.classList.contains('saved')) await KeepKeepDrop.remove(t.key);
-      else await KeepKeepDrop.run(t.url);
+      else await KeepKeepDrop.run(t.item || t.url);
       button.classList.remove('busy');
       refresh(entry);
     });
@@ -189,7 +188,7 @@
 
   function setSaved(entry, saved) {
     entry.button.classList.toggle('saved', saved);
-    entry.button.title = saved ? 'In basket · click to remove' : entry.title;
+    entry.button.title = saved ? 'Saved in KeepKeep · click to remove' : entry.title;
   }
 
   async function refresh(entry) {
@@ -258,7 +257,7 @@
       actionTries.set(link, tries);
       if (tries >= 6) {
         link.dataset.keepkeepDone = 'inline';
-        link.after(makeButton('inline', fixed(item, item.url)));
+        link.after(makeButton('inline', fixed(item, item.url), { title: 'Save this post to KeepKeep' }));
       }
     }
   }
@@ -322,8 +321,8 @@
     });
     const dark = isLightColor(getComputedStyle(save).color); // light icons → dark background
     group.append(
-      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark }),
-      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this post to basket', dark }),
+      makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark }),
+      makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Save this post to KeepKeep', dark }),
       makeCommandButton('action', () => KeepKeepDrop.download(item.code), {
         icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)', dark,
       }),
@@ -369,7 +368,7 @@
       const item = postItem(link.getAttribute('href'));
       if (!item) continue;
       if (getComputedStyle(link).position === 'static') link.style.position = 'relative';
-      link.appendChild(makeButton('overlay', fixed(item, item.url)));
+      link.appendChild(makeButton('overlay', fixed(item, item.url), { title: 'Save this post to KeepKeep' }));
     }
   }
 
@@ -390,7 +389,9 @@
     // the profile picture's button has none.
     const actions = [...header.querySelectorAll('button, [role="button"]')]
       .find((b) => b.textContent.trim() && !b.closest('[data-keepkeep]'));
-    const host = makeButton('header', fixed(item, KeepKeep.profileUrl(item.username)));
+    const host = makeButton('header', fixed(item, KeepKeep.profileUrl(item.username)), {
+      icon: 'profile', label: 'Save profile', title: 'Save this profile to KeepKeep',
+    });
     host.dataset.key = wanted;
     Object.assign(host.style, { marginLeft: '8px', display: 'inline-flex', alignSelf: 'center' });
     if (actions) {
@@ -510,7 +511,7 @@
       // Instagram's own icons are white on a dark background: use the brand's light tone there.
       const dark = isLightColor(getComputedStyle(found.first.querySelector('svg') || found.first).color);
       for (const [icon, label, target] of [['profile', 'Profile', profileTarget], ['media', 'Media', mediaTarget]]) {
-        const title = icon === 'profile' ? 'Add this profile to basket' : 'Add this reel to basket';
+        const title = icon === 'profile' ? 'Save this profile to KeepKeep' : 'Save this reel to KeepKeep';
         const host = makeButton('reel', target, { icon, label, savedLabel: label, title, dark });
         Object.assign(host.style, { display: 'flex', justifyContent: 'center', padding: '6px 0' });
         column.insertBefore(host, found.first);
@@ -532,8 +533,10 @@
   // story. The story is found by its shape (a tall card in the middle of the
   // window). The story item comes from the address bar, or – when Instagram
   // hasn't put its id there yet (the first story opened) – from the picture on
-  // screen, whose CDN address carries the id in ig_cache_key. Highlights have
-  // no owner in the address, so they get no pill.
+  // screen, whose CDN address carries the id in ig_cache_key. Highlights
+  // (/stories/highlights/<id>/) name neither the owner nor the item: the item
+  // comes from the picture, the owner from the story's header link (or, until
+  // that's on screen, from Instagram's highlight data, asked once).
 
   let storyBar = null;
   let storyCardRect = null;
@@ -565,7 +568,80 @@
     }
   }
 
+  // Instagram's data for a highlight, asked once per highlight: its owner and
+  // the ids of its stories in the viewer's order. null while asking or if it
+  // couldn't be read.
+  const highlights = new Map(); // highlight id → { username, pks } | null
+  function highlightData(id) {
+    if (!highlights.has(id)) {
+      highlights.set(id, null);
+      InstaApi.highlight(id).then((h) => highlights.set(id, { username: h.username, pks: h.pks }), () => {});
+    }
+    return highlights.get(id);
+  }
+
+  // The owner of the highlight on screen: the header's profile link (picture
+  // and title link to /<username>/), else Instagram's highlight data.
+  function highlightOwner(id) {
+    const card = storyCardRect;
+    if (card) {
+      for (const a of document.querySelectorAll('a[href]')) {
+        const m = a.getAttribute('href').match(/^\/([A-Za-z0-9._]{1,30})\/$/);
+        if (!m) continue;
+        const r = a.getBoundingClientRect();
+        if (!r.width || r.left < card.left || r.right > card.right || r.top < card.top || r.bottom > card.top + card.height * 0.2) continue;
+        return m[1].toLowerCase();
+      }
+    }
+    return highlightData(id)?.username || null;
+  }
+
+  // Which story of the highlight is on screen, from the progress bar at the
+  // top of the story: one thin segment per story, and only the one playing
+  // holds a fill. Videos play from blob: addresses with no id in them, so this
+  // is how a video story is found. Returns { index, count } or null.
+  function progressPosition() {
+    const card = storyCardRect;
+    if (!card) return null;
+    const rows = new Map();
+    for (const d of document.querySelectorAll('div')) {
+      const r = d.getBoundingClientRect();
+      if (!r.height || r.height > 4 || r.width < 1 || r.top < card.top || r.top > card.top + 60 || r.left < card.left - 1 || r.right > card.right + 1) continue;
+      const k = Math.round(r.top);
+      rows.set(k, [...(rows.get(k) || []), d]);
+    }
+    const row = [...rows.values()].sort((a, b) => b.length - a.length)[0];
+    if (!row || row.length < 2) return null;
+    const set = new Set(row);
+    const width = (d) => d.getBoundingClientRect().width;
+    const box = row.reduce((w, d) => (width(d) > width(w) ? d : w));
+    const fills = row.filter((d) => d !== box && set.has(d.parentElement) && d.parentElement !== box);
+    const segments = row.filter((d) => d !== box && !fills.includes(d));
+    const index = segments.findIndex((s) => fills.some((f) => s.contains(f)));
+    return index < 0 ? null : { index, count: segments.length };
+  }
+
+  // The story of a highlight on screen: its picture's id, or (a video) the
+  // progress bar's position in Instagram's list – only if the counts agree.
+  function highlightStoryId(id) {
+    const fromPicture = storyIdOnScreen();
+    if (fromPicture) return fromPicture;
+    const pks = highlightData(id)?.pks;
+    const pos = pks && progressPosition();
+    return pos && pos.count === pks.length ? pks[pos.index] : null;
+  }
+
   const currentStory = () => {
+    const hl = location.pathname.match(/^\/stories\/highlights\/(\d+)\/?$/);
+    if (hl) {
+      const username = highlightOwner(hl[1]);
+      if (!username) return null;
+      const id = highlightStoryId(hl[1]);
+      const url = `https://www.instagram.com/stories/highlights/${hl[1]}/`;
+      return id
+        ? { kind: 'media', key: 'story:' + id, code: null, type: 'highlight', highlightId: hl[1], username, url }
+        : { kind: 'media', key: null, highlightId: hl[1], username, url };
+    }
     const item = KeepKeep.parse(location.href);
     if (item?.key?.startsWith('story:')) return item;
     const m = location.pathname.match(/^\/stories\/([A-Za-z0-9._]{1,30})\/?$/);
@@ -643,10 +719,10 @@
       };
       const mediaTarget = async () => {
         const s = currentStory();
-        return s?.key && { url: s.url, key: storageKey(s) };
+        return s?.key && { url: s.url, key: storageKey(s), item: s };
       };
       storyBar.append(
-        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Add this profile to basket', dark: true }),
+        makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark: true }),
         makeButton('story', mediaTarget, { icon: 'media', label: 'Media', title: 'Add this story to Media', dark: true }),
         makeCommandButton('story', downloadCurrentStory, { icon: 'download', label: 'Download', title: 'Download all of these stories (D)', dark: true }),
       );
@@ -657,7 +733,8 @@
 
   async function downloadCurrentStory() {
     const s = currentStory();
-    if (s?.key) await KeepKeepDrop.downloadStory(s.key.slice(6));
+    if (s?.highlightId) await KeepKeepDrop.downloadHighlight(s.highlightId);
+    else if (s?.key) await KeepKeepDrop.downloadStory(s.key.slice(6));
     else KeepKeepPanel.showError("Couldn't tell which story this is");
   }
 
@@ -666,7 +743,8 @@
     if (e.key !== 'd' && e.key !== 'D') return;
     if (e.metaKey || e.ctrlKey || e.altKey || !location.pathname.startsWith('/stories/')) return;
     if (e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
-    if (!currentStory()?.key) return;
+    const s = currentStory();
+    if (!s?.key && !s?.highlightId) return;
     e.preventDefault();
     e.stopPropagation();
     downloadCurrentStory();

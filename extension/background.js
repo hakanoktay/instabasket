@@ -1,6 +1,8 @@
 // Background work the content script can't do itself because Instagram's CDN
 // is on a different origin: making thumbnails (downloads an image, crops it to
 // a square and returns a data: URL) and downloading posts.
+importScripts('app/whats-new.js'); // shouldShowWhatsNew, pagesToOpen
+
 const ALLOWED_HOSTS = /(^|\.)(cdninstagram\.com|fbcdn\.net)$/;
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -117,3 +119,15 @@ async function showAnonIcon() {
 chrome.storage.onChanged.addListener((changes, area) => area === 'local' && changes.anonStories && showAnonIcon());
 chrome.runtime.onStartup.addListener(showAnonIcon);
 chrome.runtime.onInstalled.addListener(showAnonIcon);
+
+// ---- First run, only on install (never on updates) ----
+// New users start with anonymous stories on (owner's choice); people who
+// already use KeepKeep keep whatever they had, so an update changes nothing.
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') await chrome.storage.local.set({ anonStories: true });
+  // Install: welcome. Update: what's new, only when this version has notes
+  // and it is a minor/major step. Nothing else opens a tab.
+  const page = pagesToOpen(details, chrome.runtime.getManifest().version);
+  if (page) chrome.tabs.create({ url: page });
+});

@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "KeepKeep",
+  "name": "KeepKeep – Downloader & Anonymous Story Viewer for Instagram",
+  "short_name": "KeepKeep",
   "version": "1.0.0",
-  "description": "Save Instagram profiles and posts to your own lists, download photos and videos in full quality, and watch stories anonymously.",
+  "description": "Save posts to your lists, download in full quality, watch stories anonymously. No password. Your data never leaves your computer.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

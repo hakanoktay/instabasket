@@ -5,13 +5,15 @@ var KeepKeepPanel = (() => {
   const RESULT_MS = 8000; // how long the card stays after adding (paused while hovered)
   const SHORT_MS = 2500; // errors and "removed"
   const SEARCH_FROM = 7; // show a search field when there are this many lists
-  let host, card, els, onDrop, keyHandler, current;
+  const FOLD_MS = 320; // the picker's open / close transition
+  const FADE_MS = 160; // the card's fade out
+  let host, card, els, onDrop, keyHandler, current, hideTimer;
 
   // The KeepKeep logo, inline (pages can't load extension files without extra permissions).
+  // Its gradient id must be unique in a shadow root: a second copy needs its own id.
   const LOGO = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="kk-logo" x1="486.4" y1="0" x2="-14.9" y2="908.9" gradientUnits="userSpaceOnUse"><stop offset="0.365" stop-color="#8119B5"/><stop offset="0.849" stop-color="#450B62"/></linearGradient></defs><rect width="1024" height="1024" rx="220" fill="url(#kk-logo)"/><path fill="#fff" d="M518.609 839.484H194V701.984H256.5V355.5H194V218H506.109V355.5H456.5V496.906L559.625 355.5V218H802.984V355.5H749.078L625.25 505.891V511.359C667.438 511.359 700.51 518.651 724.469 533.234C748.427 547.557 760.406 572.557 760.406 608.234V671.516C760.406 679.589 762.62 686.75 767.047 693C771.734 698.99 778.115 701.984 786.188 701.984H830.719V839.484H687.75C600.25 839.484 556.5 799.51 556.5 719.562V651.594C556.5 638.312 552.203 625.292 543.609 612.531C535.016 599.51 524.859 593 513.141 593H456.5V701.984H518.609V839.484Z"/></svg>';
 
   const ICONS = {
-    basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.6 9.1a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z"/><path d="M2.5 10h19M8 10l3-6M16 10l-3-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
@@ -39,6 +41,9 @@ var KeepKeepPanel = (() => {
       --brand: #aa56d5; --brand-hover: #c07fe0; --brand-tint: rgba(170, 86, 213, 0.14);
     }
     @keyframes in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+    /* Closing: the list picker folds up first (see hide()), then the card fades. */
+    .card.leaving { pointer-events: none; animation: out 0.16s ease-in forwards; }
+    @keyframes out { to { opacity: 0; transform: translateY(-8px) scale(0.98); } }
     svg { display: block; width: 100%; height: 100%; }
     button { font: inherit; color: inherit; cursor: pointer; }
 
@@ -109,9 +114,12 @@ var KeepKeepPanel = (() => {
       position: absolute; top: 50%; right: 10px; width: 20px; height: 20px; margin-top: -10px; padding: 3px;
       border-radius: 50%; border: 1.5px solid var(--line); color: transparent; transition: all 0.12s;
     }
-    .box .key {
-      position: absolute; top: 6px; right: 8px; font-size: 10px; line-height: 1; color: var(--muted); display: none;
-    }
+    /* Reordering: drag a box (see startSort); the others slide out of its way. */
+    .grid { user-select: none; }
+    .grid.sorting .box:not(.dragging) { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.12s, background 0.12s; }
+    .box.dragging { z-index: 2; cursor: grabbing; transition: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
+    .card.dark .box.dragging { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6); }
+    .box.settling { z-index: 2; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s; }
     /* Selected: brand border and tint, with a filled circle and white check. */
     .box.on { border-color: var(--brand); background: var(--brand-tint); }
     .box.on .tick { background: var(--brand); border-color: var(--brand); color: #fff; }
@@ -142,7 +150,7 @@ var KeepKeepPanel = (() => {
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${STYLE}</style>
       <div class="card">
-        <div class="drop"><div class="icon">${ICONS.basket}</div>Drop to add to basket</div>
+        <div class="drop"><div class="icon">${LOGO.replaceAll('kk-logo', 'kk-logo-drop')}</div>Drop to save to KeepKeep</div>
         <div class="head">
           <div class="thumb-slot"></div>
           <div class="text"><div class="title"></div><div class="sub"></div></div>
@@ -161,8 +169,8 @@ var KeepKeepPanel = (() => {
       .map((c) => [c, root.querySelector('.' + c)]));
     els.searchInput = els.search.querySelector('input');
 
-    root.querySelector('.close').addEventListener('click', hide);
-    els.bar.addEventListener('animationend', hide);
+    root.querySelector('.close').addEventListener('click', () => hide());
+    els.bar.addEventListener('animationend', () => hide());
     els.searchInput.addEventListener('input', () => renderBoxes());
 
     card.addEventListener('dragenter', (e) => { e.preventDefault(); card.classList.add('over'); });
@@ -182,16 +190,35 @@ var KeepKeepPanel = (() => {
 
   function mount(state) {
     if (!host) build();
-    if (!host.isConnected) document.documentElement.appendChild(host);
+    clearTimeout(hideTimer); // a new state while closing keeps the card
+    if (!host.isConnected) {
+      // Back on screen: the picker starts closed, never from where it was left.
+      closePicker();
+      document.documentElement.appendChild(host);
+    }
     card.className = `card ${state}${isDarkPage() ? ' dark' : ''}`;
     stopTimer();
     setKeys(false);
   }
 
-  function hide() {
+  // Closes the card: the list picker folds up first, then the card fades out.
+  // `now` removes it at once (e.g. for the download balloons in its place).
+  function hide(now) {
     current = null;
     setKeys(false);
-    host?.remove();
+    clearTimeout(hideTimer);
+    if (!host?.isConnected) return;
+    if (now) return host.remove();
+    stopTimer();
+    const folding = els.picker.classList.contains('open');
+    els.picker.classList.remove('open');
+    hideTimer = setTimeout(() => {
+      card.classList.add('leaving');
+      hideTimer = setTimeout(() => {
+        host.remove();
+        closePicker();
+      }, FADE_MS);
+    }, folding ? FOLD_MS : 0);
   }
 
   function startTimer(ms) {
@@ -244,13 +271,17 @@ var KeepKeepPanel = (() => {
   }
 
   function showBusy(title = 'Adding…', sub = 'Fetching details from Instagram') {
+    // Adding again while the picker is on screen: keep it open until the new
+    // result replaces its boxes, rather than animating it closed and open again.
+    const keepPicker = !!host?.isConnected && els.picker.classList.contains('open') && !card.classList.contains('dropping');
     mount('busy');
     const spinner = document.createElement('div');
     spinner.className = 'spinner';
     spinner.innerHTML = '<span></span>';
     els['thumb-slot'].replaceChildren(spinner);
     setHead(title, sub);
-    closePicker();
+    if (keepPicker) current = null; // the boxes belong to the previous item: clicks and 1–9 do nothing
+    else closePicker();
   }
 
   // A short notice with a thumbnail, e.g. after starting downloads.
@@ -304,9 +335,11 @@ var KeepKeepPanel = (() => {
     els.searchInput.value = '';
     els.search.hidden = lists.length < SEARCH_FROM;
     els.hint.textContent = lists.length ? 'Press 1–9' : '';
-    els.grid.classList.add('entering');
+    // Boxes slide in when the picker opens; if it stayed open, they just update.
+    const entering = !els.picker.classList.contains('open');
+    els.grid.classList.toggle('entering', entering);
     renderBoxes();
-    setTimeout(() => els.grid.classList.remove('entering'), 700);
+    if (entering) setTimeout(() => els.grid.classList.remove('entering'), 700);
     requestAnimationFrame(() => els.picker.classList.add('open'));
     setKeys(true);
     startTimer(RESULT_MS);
@@ -322,13 +355,18 @@ var KeepKeepPanel = (() => {
       const box = document.createElement('button');
       box.className = 'box' + (current.inLists.has(list.id) ? ' on' : '');
       box.style.animationDelay = `${Math.min(i, 8) * 30}ms`;
-      box.innerHTML = `<span class="name"></span><span class="count"></span><span class="tick">${ICONS.check}</span>` +
-        (i < 9 ? `<span class="key">${i + 1}</span>` : '');
+      box.innerHTML = `<span class="name"></span><span class="count"></span><span class="tick">${ICONS.check}</span>`;
       box.querySelector('.name').textContent = list.name;
       const n = current.counts[list.id] || 0;
       box.querySelector('.count').textContent = `${n} item${n === 1 ? '' : 's'}`;
-      box.title = list.name;
-      box.addEventListener('click', () => toggle(list.id));
+      box.title = q ? list.name : `${list.name} · drag to reorder`;
+      box.dataset.id = list.id;
+      box.addEventListener('click', () => {
+        if (box.dataset.dragged) delete box.dataset.dragged; // the end of a drag, not a click
+        else toggle(list.id);
+      });
+      // Reordering only makes sense on the full list, not on search results.
+      if (!q) box.addEventListener('pointerdown', (e) => startSort(e, box));
       return box;
     });
 
@@ -356,8 +394,127 @@ var KeepKeepPanel = (() => {
 
     const empty = !shown.length && q ? [Object.assign(document.createElement('div'), { className: 'empty', textContent: 'No matching lists' })] : [];
     els.grid.replaceChildren(...boxes, ...empty, add);
-    // Number hints only make sense while nothing is being typed.
-    for (const k of els.grid.querySelectorAll('.key')) k.style.display = q ? 'none' : 'block';
+  }
+
+  // ---- Reordering lists by dragging a box ----
+  // Pointer events, not HTML drag and drop: a native drag would make the page
+  // show the "Drop to save" card. A box only starts moving after a few pixels,
+  // so a plain click still ticks it. The boxes in the way slide aside (FLIP);
+  // on release the new order is saved and used everywhere (card, popup, 1–9).
+
+  const DRAG_FROM = 5; // px of movement before a press becomes a drag
+  const EDGE = 28; // px from the grid's top / bottom edge that scroll it
+
+  function startSort(e, box) {
+    if (e.button !== 0 || !current) return;
+    const s = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, active: false };
+    const move = (e) => {
+      if (e.pointerId !== s.id) return;
+      s.x = e.clientX;
+      s.y = e.clientY;
+      if (!s.active) {
+        if (Math.hypot(s.x - s.x0, s.y - s.y0) < DRAG_FROM) return;
+        s.active = true;
+        const r = box.getBoundingClientRect();
+        s.grabX = s.x0 - r.left; // where the box was grabbed
+        s.grabY = s.y0 - r.top;
+        box.setPointerCapture(s.id);
+        els.grid.classList.remove('entering'); // its animation would override the transform
+        els.grid.classList.add('sorting');
+        box.classList.add('dragging');
+        stopTimer(); // the card mustn't close mid-drag; saveOrder() restarts it
+        frame();
+      }
+      follow();
+    };
+    const end = (e) => {
+      if (e.pointerId !== s.id) return;
+      removeEventListener('pointermove', move, true);
+      removeEventListener('pointerup', end, true);
+      removeEventListener('pointercancel', end, true);
+      if (!s.active) return;
+      s.active = false;
+      box.dataset.dragged = '1'; // swallow the click that follows
+      setTimeout(() => delete box.dataset.dragged, 0);
+      // Glide into the slot it was dropped on.
+      box.classList.replace('dragging', 'settling');
+      box.style.transform = '';
+      box.addEventListener('transitionend', () => box.classList.remove('settling'), { once: true });
+      setTimeout(() => box.classList.remove('settling'), 300);
+      els.grid.classList.remove('sorting');
+      saveOrder();
+    };
+    // Keeps scrolling while the pointer rests near the grid's top or bottom.
+    const frame = () => {
+      if (!s.active) return;
+      const g = els.grid.getBoundingClientRect();
+      const step = s.y < g.top + EDGE ? -6 : s.y > g.bottom - EDGE ? 6 : 0;
+      if (step) {
+        els.grid.scrollTop += step;
+        follow();
+      }
+      requestAnimationFrame(frame);
+    };
+    // The box whose slot is under the pointer swaps places with the dragged one.
+    // Slots, not where boxes are on screen: one sliding away mustn't swap back.
+    const follow = () => {
+      const over = [...els.grid.querySelectorAll('.box[data-id]')].find((b) => {
+        if (b === box) return false;
+        const r = slot(b);
+        return s.x >= r.left && s.x <= r.right && s.y >= r.top && s.y <= r.bottom;
+      });
+      if (over) flip(() => {
+        const boxes = [...els.grid.querySelectorAll('.box[data-id]')];
+        if (boxes.indexOf(over) > boxes.indexOf(box)) over.after(box);
+        else over.before(box);
+      });
+      // Keep the dragged box under the pointer, wherever its slot is now.
+      const r = slot(box);
+      box.style.transform = `translate(${s.x - s.grabX - r.left}px, ${s.y - s.grabY - r.top}px)`;
+    };
+    addEventListener('pointermove', move, true);
+    addEventListener('pointerup', end, true);
+    addEventListener('pointercancel', end, true);
+  }
+
+  async function saveOrder() {
+    if (!current) return;
+    const ids = [...els.grid.querySelectorAll('.box[data-id]')].map((b) => b.dataset.id);
+    const byId = new Map(current.lists.map((l) => [l.id, l]));
+    current.lists = ids.map((id) => byId.get(id));
+    current.shown = current.lists;
+    startTimer(RESULT_MS); // interacting keeps the card open
+    await KeepKeep.reorderLists(current.recordKey[0], ids);
+  }
+
+  // A box's place in the grid, without the transform it may be sliding with.
+  function slot(b) {
+    const r = b.getBoundingClientRect();
+    const t = getComputedStyle(b).transform;
+    const m = t && t !== 'none' ? new DOMMatrixReadOnly(t) : { m41: 0, m42: 0 };
+    return { left: r.left - m.m41, top: r.top - m.m42, right: r.right - m.m41, bottom: r.bottom - m.m42 };
+  }
+
+  // Runs `change` (which moves boxes in the DOM) and animates every other box
+  // from where it was on screen to its new place.
+  function flip(change) {
+    const boxes = [...els.grid.querySelectorAll('.box:not(.dragging)')];
+    const before = new Map(boxes.map((b) => [b, b.getBoundingClientRect()]));
+    change();
+    for (const b of boxes) {
+      b.style.transition = 'none';
+      b.style.transform = '';
+    }
+    for (const b of boxes) {
+      const was = before.get(b);
+      const now = b.getBoundingClientRect();
+      if (was.left !== now.left || was.top !== now.top) b.style.transform = `translate(${was.left - now.left}px, ${was.top - now.top}px)`;
+    }
+    void els.grid.offsetWidth;
+    for (const b of boxes) {
+      b.style.transition = '';
+      b.style.transform = '';
+    }
   }
 
   async function toggle(listId) {
@@ -393,7 +550,7 @@ var KeepKeepPanel = (() => {
   function showRemoved(title, thumb, round, onUndo) {
     mount('removed');
     setThumb(thumb, round);
-    setHead(title, 'Removed from basket');
+    setHead(title, 'Removed from KeepKeep');
     closePicker();
     const undo = Object.assign(document.createElement('button'), { className: 'text-btn', textContent: 'Undo' });
     undo.addEventListener('click', onUndo);
@@ -490,7 +647,7 @@ var KeepKeepPanel = (() => {
   const downloads = {
     start(job) {
       dlMount();
-      hide(); // the corner card would sit under the balloons
+      hide(true); // the corner card would sit under the balloons
       const header = bubble('header', null, 'Preparing download…', 'Finding the best quality');
       dlStack.append(header);
       dlJobs.set(job, { header, items: [] });

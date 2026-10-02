@@ -4,7 +4,8 @@
 // additions never overwrite each other:
 //   p:<username>   → a saved profile          { username, addedAt, lists }
 //   m:<shortcode>  → a saved photo/video/reel { key, code, url, type, username, thumb, addedAt, lists }
-//                    (stories use m:story:<id>)
+//                    (stories use m:story:<id>; a story inside a highlight too, with
+//                    type 'highlight' and highlightId)
 //   u:<username>   → cached account details   { username, fullName, pic }, used by
 //                    both saved profiles and the owners of saved media
 //   lists          → the user's lists [{ id, name, kind }]; kind is 'p' (profile lists) or
@@ -43,6 +44,9 @@ var KeepKeep = (() => {
     if (parts.length >= 3 && USERNAME.test(parts[0]) && MEDIA_PATHS[parts[1]]) {
       return media(parts[2], MEDIA_PATHS[parts[1]], parts[0].toLowerCase());
     }
+    // /stories/highlights/ID/ is a highlight: its address names neither the
+    // owner nor the item on screen (buttons.js reads both from the page).
+    if (parts[0] === 'stories' && parts[1] === 'highlights') return null;
     // /stories/username/ID/
     if (parts[0] === 'stories' && USERNAME.test(parts[1] || '') && /^\d+$/.test(parts[2] || '')) {
       const username = parts[1].toLowerCase();
@@ -85,8 +89,16 @@ var KeepKeep = (() => {
   // list (same id) plus a profile list with the same name, and saved profiles
   // move over to the profile copy.
   async function splitLists(all) {
+    const update = splitUpdate(all);
+    if (!update) return;
+    await chrome.storage.local.set(update);
+    Object.assign(all, update);
+  }
+
+  // The changes splitLists() makes, without saving them (also used on backups).
+  function splitUpdate(all) {
     const old = (all.lists || []).filter((l) => !l.kind);
-    if (!old.length) return;
+    if (!old.length) return null;
     const lists = (all.lists || []).filter((l) => l.kind);
     const update = {};
     for (const l of old) {
@@ -100,8 +112,112 @@ var KeepKeep = (() => {
       }
     }
     update.lists = lists;
+    return update;
+  }
+
+  // ---- Backup: export everything to one file, import it on another computer ----
+  // The file says what it is and which format version it uses, so later
+  // versions of KeepKeep can still read old backups.
+
+  const BACKUP = 'keepkeep-backup';
+  const BACKUP_VERSION = 1;
+  const SETTINGS = ['photoSize', 'anonStories'];
+
+  async function exportData() {
+    const all = await chrome.storage.local.get(null);
+    await splitLists(all);
+    const items = Object.fromEntries(Object.entries(all).filter(([k]) => /^[pmu]:/.test(k)));
+    const settings = Object.fromEntries(SETTINGS.filter((k) => k in all).map((k) => [k, all[k]]));
+    return {
+      format: BACKUP, version: BACKUP_VERSION, app: chrome.runtime.getManifest().version,
+      exportedAt: new Date().toISOString(), lists: all.lists || [], items, settings,
+    };
+  }
+
+  // Saves a backup straight to Downloads/KeepKeep (no dialog, no extra window)
+  // and returns the file's name. Used by the popup and the app page.
+  async function downloadBackup() {
+    const bytes = new TextEncoder().encode(JSON.stringify(await exportData()));
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    const d = new Date();
+    const date = [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+    const name = `KeepKeep-backup-${date}.json`;
+    await chrome.downloads.download({
+      url: 'data:application/json;base64,' + btoa(binary), filename: `KeepKeep/${name}`, conflictAction: 'uniquify', saveAs: false,
+    });
+    return name;
+  }
+
+  // The words for an import's outcome: pass the counts importData() returned,
+  // or the error it threw. Returns { ok, title, text }.
+  function describeImport(result) {
+    const plural = (n, one) => `${n} ${n === 1 ? one : one + 's'}`;
+    if (result instanceof Error) {
+      if (result.code === 'newer') return { ok: false, title: 'This backup was made by a newer KeepKeep.', text: 'Update KeepKeep, then import it again. Nothing was changed.' };
+      if (result.code === 'not-backup') return { ok: false, title: "This file isn't a KeepKeep backup.", text: 'Choose a KeepKeep-backup-….json file made with Export. Nothing was changed.' };
+      return { ok: false, title: 'The import failed.', text: 'Please try again. Nothing was changed.' };
+    }
+    const added = [result.profiles && plural(result.profiles, 'profile'), result.media && plural(result.media, 'post'), result.lists && plural(result.lists, 'list')].filter(Boolean);
+    const already = result.existing ? `${plural(result.existing, 'item')} ${result.existing === 1 ? 'was' : 'were'} already here; their lists were combined.` : '';
+    if (!added.length) return { ok: true, title: 'Everything in this backup was already here.', text: already };
+    const list = added.length > 1 ? added.slice(0, -1).join(', ') + ' and ' + added.at(-1) : added[0];
+    return { ok: true, title: `Added ${list}.`, text: already || 'Open KeepKeep from the toolbar to see them.' };
+  }
+
+  // Adds a backup to what is stored here; nothing is ever deleted or replaced.
+  // Lists are matched by kind and name, so importing twice adds nothing twice.
+  // A profile or post that is already here keeps its data and gets the
+  // backup's lists added. This computer's settings stay as they are.
+  // Returns { profiles, media, lists, existing } (how many were added / already here).
+  async function importData(backup) {
+    if (backup?.format !== BACKUP || typeof backup.version !== 'number' || !backup.items || typeof backup.items !== 'object') {
+      throw Object.assign(new Error('Not a KeepKeep backup'), { code: 'not-backup' });
+    }
+    if (backup.version > BACKUP_VERSION) throw Object.assign(new Error('Made by a newer KeepKeep'), { code: 'newer' });
+
+    const incoming = { lists: Array.isArray(backup.lists) ? backup.lists : [] };
+    for (const [k, v] of Object.entries(backup.items)) if (/^[pmu]:./.test(k) && v && typeof v === 'object') incoming[k] = v;
+    Object.assign(incoming, splitUpdate(incoming)); // a backup from before lists had a kind
+
+    const all = await chrome.storage.local.get(null);
+    await splitLists(all);
+    const lists = [...(all.lists || [])];
+    const same = (a, b) => a.kind === b.kind && a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+    const ids = {}; // backup list id → list id here
+    const counts = { profiles: 0, media: 0, lists: 0, existing: 0 };
+    for (const l of incoming.lists) {
+      if (!l?.id || typeof l.name !== 'string' || !l.name.trim() || !['p', 'm'].includes(l.kind)) continue;
+      const here = lists.find((x) => same(x, l));
+      if (here) {
+        ids[l.id] = here.id;
+        continue;
+      }
+      const id = lists.some((x) => x.id === l.id) ? Date.now().toString(36) + Math.random().toString(36).slice(2, 6) : l.id;
+      lists.push({ id, name: l.name.trim(), kind: l.kind });
+      ids[l.id] = id;
+      counts.lists++;
+    }
+
+    const update = { lists };
+    for (const [k, v] of Object.entries(incoming)) {
+      if (!/^[pmu]:/.test(k)) continue;
+      const have = all[k];
+      if (k.startsWith('u:')) {
+        update[k] = { ...v, ...have }; // fills in what's missing here, e.g. a picture
+        continue;
+      }
+      const theirs = (v.lists || []).map((id) => ids[id]).filter(Boolean);
+      if (have) {
+        counts.existing++;
+        update[k] = { ...v, ...have, lists: [...new Set([...(have.lists || []), ...theirs])] };
+      } else {
+        update[k] = { ...v, lists: theirs };
+        counts[k.startsWith('p:') ? 'profiles' : 'media']++;
+      }
+    }
     await chrome.storage.local.set(update);
-    Object.assign(all, update);
+    return counts;
   }
 
   function strip(item) {
@@ -139,6 +255,15 @@ var KeepKeep = (() => {
     return list;
   }
 
+  // Puts the lists of one kind in the order of `ids`; the other kind's lists
+  // keep their places. Lists missing from `ids` (e.g. created meanwhile) go last.
+  async function reorderLists(kind, ids) {
+    const lists = await getLists();
+    const ordered = ids.map((id) => lists.find((l) => l.id === id && l.kind === kind)).filter(Boolean);
+    const queue = [...ordered, ...lists.filter((l) => l.kind === kind && !ordered.includes(l))];
+    await chrome.storage.local.set({ lists: lists.map((l) => (l.kind === kind ? queue.shift() : l)) });
+  }
+
   async function renameList(id, name) {
     const lists = await getLists();
     await chrome.storage.local.set({ lists: lists.map((l) => (l.id === id ? { ...l, name: name.trim() } : l)) });
@@ -163,6 +288,36 @@ var KeepKeep = (() => {
     await chrome.storage.local.set({ [recordKey]: { ...record, lists } });
   }
 
+  // ---- Many records at once (the app page's selection): one read, one write ----
+
+  // setInList() for every key; keys that are no longer stored are skipped.
+  async function setInListMany(recordKeys, listId, inList) {
+    if (!recordKeys.length) return;
+    const got = await chrome.storage.local.get(recordKeys);
+    const update = {};
+    for (const k of recordKeys) {
+      if (!got[k]) continue;
+      const lists = (got[k].lists || []).filter((x) => x !== listId);
+      if (inList) lists.push(listId);
+      update[k] = { ...got[k], lists };
+    }
+    if (Object.keys(update).length) await chrome.storage.local.set(update);
+  }
+
+  // Removes the records and returns what was removed as [[key, record], ...]
+  // (keys that were not stored are left out), for restoreMany().
+  async function removeMany(recordKeys) {
+    if (!recordKeys.length) return [];
+    const got = await chrome.storage.local.get(recordKeys);
+    const pairs = recordKeys.filter((k) => got[k]).map((k) => [k, got[k]]);
+    if (pairs.length) await chrome.storage.local.remove(pairs.map(([k]) => k));
+    return pairs;
+  }
+
+  async function restoreMany(pairs) {
+    if (pairs.length) await chrome.storage.local.set(Object.fromEntries(pairs));
+  }
+
   return {
     parse,
     profileUrl,
@@ -180,10 +335,18 @@ var KeepKeep = (() => {
       await chrome.storage.local.remove(media.filter((m) => m.username === username).map((m) => 'm:' + m.key));
     },
     getLists,
+    exportData,
+    importData,
+    downloadBackup,
+    describeImport,
     createList,
+    reorderLists,
     renameList,
     deleteList,
     setInList,
+    setInListMany,
+    removeMany,
+    restoreMany,
     get,
     // Removes a saved profile or media item by storage key ("p:alice", "m:CODE")
     // and returns it so the removal can be undone with restore().

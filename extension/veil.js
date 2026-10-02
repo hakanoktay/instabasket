@@ -16,10 +16,20 @@
 
   const inStories = () => location.pathname.startsWith('/stories/');
   const hideCapsule = () => /^\/(direct|accounts)\//.test(location.pathname);
-  // /stories/<username>/<id>/ – highlights have no username in the address.
+  // /stories/<username>/<id>/. Highlights (/stories/highlights/<id>/) have no
+  // username in the address: their owner is the story header's profile link
+  // (picture and title link to /<username>/), near the top in the middle.
   const owner = () => {
     const m = location.pathname.match(/^\/stories\/([^/]+)\//);
-    return m && m[1] !== 'highlights' ? m[1] : null;
+    if (!m) return null;
+    if (m[1] !== 'highlights') return m[1];
+    for (const a of document.querySelectorAll('a[href]')) {
+      const u = a.getAttribute('href').match(/^\/([A-Za-z0-9._]{1,30})\/$/);
+      if (!u) continue;
+      const r = a.getBoundingClientRect();
+      if (r.width && r.top < innerHeight * 0.2 && Math.abs(r.left + r.width / 2 - innerWidth / 2) < Math.min(420, innerWidth / 3)) return u[1];
+    }
+    return null;
   };
 
   // ---- Our layer (shadow DOM, never inside Instagram's own elements) ----

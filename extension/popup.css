@@ -50,6 +50,10 @@ body::before {
   background: linear-gradient(90deg, #450b62, #8119b5 40%, #aa56d5);
 }
 .header-actions { display: flex; align-items: center; gap: 4px; }
+/* The way into the full-tab app: the most visible control after the logo. */
+.open-app { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 10px; margin-right: 4px; border-radius: 15px; background: var(--brand-tint-strong); color: var(--brand); font-weight: 600; white-space: nowrap; }
+.open-app .i { width: 15px; height: 15px; }
+.open-app:hover { background: var(--brand); color: var(--on-brand); }
 /* Profile / Media / Download for the open post: brand colour, green when saved (hover → red). */
 .page-actions { display: flex; align-items: center; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--divider); }
 .page-actions .page-btn { width: 36px; height: 36px; color: var(--brand); }
@@ -298,8 +302,31 @@ body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2
 #anon-band button { flex: none; color: #fff; font-weight: 600; font-size: 12px; opacity: 0.9; text-decoration: underline; }
 #anon-band button:hover { opacity: 1; }
 @keyframes band-in { from { opacity: 0; transform: translateY(-100%); } }
-.settings-footer {
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 10px;
-  border-top: 1px solid var(--divider); color: var(--muted); font-size: 12px;
+/* A quiet credit line at the bottom of the lists: never a pop-up, never blinking. */
+#credit { flex: none; padding-top: 10px; text-align: center; font-size: 11.5px; line-height: 14px; color: var(--muted); }
+#credit a, .about-links a { color: inherit; text-decoration: none; }
+#credit a:hover, .about-links a:hover { color: var(--brand); text-decoration: underline; }
+
+/* Settings → Backup */
+.backup-actions { display: flex; gap: 8px; }
+.backup-actions .btn { flex: 1; }
+.backup-status { min-height: 16px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.backup-status.bad { color: var(--red); }
+
+/* Settings → About: version, the trust badges (small; the store images' look) and links. */
+.about { padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); margin-bottom: 4px; }
+.about-head { display: flex; align-items: center; gap: 8px; }
+.about-head .logo { width: 20px; height: 20px; border-radius: 5px; }
+.about-head .version { color: var(--muted); font-size: 12px; }
+.about .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 6px; padding: 0; list-style: none; }
+.about .tag {
+  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px 0 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; color: var(--brand); background: var(--brand-tint); border: 1px solid var(--brand-tint-strong);
 }
-.settings-footer .logo { width: 16px; height: 16px; }
+.about .tag svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.about .tag.strong { color: #fff; background: var(--brand-gradient); border-color: transparent; }
+.about-line { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.about-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-weight: 600; color: var(--brand); }
+/* With a post or profile open, the page buttons need the room: the pill keeps only its icon (the title says the rest). */
+.header-actions:has(.page-actions:not([hidden])) .open-label { display: none; }
+.header-actions:has(.page-actions:not([hidden])) .open-app { width: 30px; padding: 0; justify-content: center; }
