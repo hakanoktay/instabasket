@@ -44,10 +44,17 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `extension/video.js` | Scrubber and play/pause for every video |
 | `extension/background.js` | Service worker: downloads, anonymous toolbar icon (`icons/anon*.png`) |
 | `extension/offscreen.js` | Fetches files (rejects non image/video responses, fallback URL), progress, one blob per file |
-| `extension/app/welcome.js` | First-run welcome view `app.html#welcome` (opened by `background.js` only on install), styled like the store images (Inter in `fonts/`): the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
-| `extension/import.*` | Import tab for a backup file (Settings → Backup → Import); the backup format and merge rules are in `basket.js` (`exportData`, `importData`): import only adds, never deletes; bump `BACKUP_VERSION` and keep reading old versions if the format changes |
+| `extension/app.html`, `app.css` | KeepKeep's own full tab (opened by the popup's "Open KeepKeep" button). Shell with sidebar (Profiles, Media, lists, Download, Settings); the CSS is the same family as the store images (Inter in `fonts/`, lilac) |
+| `extension/app/core.js` | App shell and router: `KeepKeepApp.view(name, fn)` registers a view, `go(hash)` navigates, `state`, `on` / `emit` (events), `el` (DOM helper), `icon` |
+| `extension/app/saved.js` | Profiles / Media grids: search, filters, live updates from storage, chunked rendering, selection, bulk actions (remove, add to list, download), undo. `KeepKeepApp.saved` = `{selected, filters, rerender(reset)}`: `rerender()` when data changed, `rerender(true)` when filters changed |
+| `extension/app/lists.js` | Lists in the sidebar: create, rename, delete, reorder; `KeepKeepApp.lists.dropTarget` makes an element accept dragged items |
+| `extension/app/download.js` | Download view: asks an open Instagram tab to fetch the files via the `download-keys` message (no Instagram tab: it says so and offers to open one) |
+| `extension/app/settings.js` | Settings, Backup (export / import) and About views; import was folded in here (old `import.html` is gone). The backup format and merge rules are in `basket.js` (`exportData`, `importData`): import only adds, never deletes; bump `BACKUP_VERSION` and keep reading old versions if the format changes |
+| `extension/app/welcome.js` | First-run welcome view `app.html#welcome` (opened by `background.js` only on install), styled like the store images: the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
+| `extension/app/whats-new.js` | `WHATS_NEW` notes per version, `shouldShowWhatsNew(previous, current)`, `pagesToOpen(details, version)`; also loaded by `background.js` via `importScripts` (no DOM in the decision code), the view is registered only in the app page. Add notes for each minor release |
 | `extension/popup.*` | Popup: lists, single-pane settings slide (opens only via ⚙) |
 | `ROADMAP.md` | Planned / under consideration / done |
+| `specs/` | Design and plan of the app page (`2026-10-02-keepkeep-app-page.md`, `...-plan.md`) |
 | `store/` | Chrome Web Store listing, privacy answers, images (`assets/`) |
 | `docs/` | GitHub Pages site: `index.html`, `privacy.html`, `images/` |
 | `scripts/package.sh` | Validates the manifest, writes `dist/keepkeep-<version>.zip` |
@@ -114,13 +121,20 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   https://chromewebstore.google.com/detail/jelnnpodemcgdhehjokojjbahgjjgmeb),
   publisher account "non-trader". The repository is `hakanoktay/keepkeep`,
   default branch `main`, GitHub Pages from `main` / `docs`.
-- **Release timing (owner):** 1.1.0 is released only after the Library page (full tab) is built and everything works; no version bump / ZIP before that.
+- **Release timing (owner):** 1.1.0 is released only after the app page (full tab) is built and everything works; no version bump / ZIP before that.
 - **Next version (1.1.0) is being built in the `v1.1.0` branch.** Done there,
   each with tests: the list card blink (also after the card closed by
   itself; closing now folds the list picker first), the "basket" wording,
   drag-to-reorder lists with no order numbers, the popup's aria-hidden
   warning. Still to do: the password / privacy message, "Made by Zetasis"
   and About, Export & import, the store name.
+- **The app page is built in v1.1.0** (`app.html` + `app/*.js`, design and plan
+  in `specs/`): Profiles / Media grids with search, filters, selection, bulk
+  actions and drag to lists; lists sidebar; download via an Instagram tab;
+  Settings / Backup / About; Welcome on install; What's new after updates. The
+  release still waits for the owner's go: version bump, update test from the
+  1.0.0 data, regenerate the "Private by design" screenshot with v1.1.0, the
+  owner chooses which of the 6 screenshots to leave out, then the ZIP.
 - **Top priority for the next version:** "Never asks for your password. Your
   data never leaves your computer." in the summary (manifest `description`), a
   dedicated 2nd "Private by design" screenshot, a first-run welcome tab and the
@@ -141,8 +155,8 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
 - Store name decided and applied (v1.1.0): "KeepKeep – Downloader & Anonymous Story Viewer for Instagram"
   in `manifest.json` (the store takes it from there), `short_name`
   "KeepKeep"; inside the extension it is just "KeepKeep".
-- After the next version, the owner's feature order: 1) Library page (full
-  tab, most important), 2) caption search, 3) moodboard export, 4) influencer
+- After the next version, the owner's feature order: 1) the app page's next steps (it exists
+  since v1.1.0), 2) caption search, 3) moodboard export, 4) influencer
   shortlist, 5) learning mode for Reels (see `ROADMAP.md`). Keep KeepKeep
   simple and elegant; no posting / scheduling.
 - Positioning vs. Inssist ("INSSIST: Web Client for Instagram", ~600k users,

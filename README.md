@@ -49,6 +49,10 @@ While downloading, balloons on the right show the overall progress and each phot
 
 Every video (feed, post page, post popup or Reels) always shows a thin scrubber along its bottom edge (click or drag to any point; hover shows the time there) and a play / pause button next to Instagram's mute button. Instagram's own username, Follow button and caption stay clickable, and the controls hide while something (like a post popup) covers the video. (Not shown in Stories.) While the mouse is over a video, **← / →** skip 5 seconds and **Space** or **K** play / pause; elsewhere those keys keep doing what Instagram uses them for.
 
+### KeepKeep's own page
+
+Everything you saved also has a page of its own in a full browser tab. Open it with the **Open KeepKeep** button in the popup. Profiles and Media show as big grids you can search and filter; select several items to remove, file or download them together, or drag them onto a list in the sidebar. The same page has Settings, Backup (export and import) and About, welcomes you after installing and tells you what's new after an update.
+
 ### After adding
 
 Everything you add is saved right away. The corner card then shows what was added and, below it, your lists as large boxes that slide open. Click boxes (or press **1–9**) to put the item into those lists, or create a new list from the **+ New list** box. With many lists a search field appears and the boxes scroll. The card closes on its own after a few seconds; a bar at the bottom shows the time left, and it pauses while your mouse is over the card.
