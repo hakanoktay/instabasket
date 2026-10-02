@@ -44,7 +44,7 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `extension/video.js` | Scrubber and play/pause for every video |
 | `extension/background.js` | Service worker: downloads, anonymous toolbar icon (`icons/anon*.png`) |
 | `extension/offscreen.js` | Fetches files (rejects non image/video responses, fallback URL), progress, one blob per file |
-| `extension/welcome.*` | First-run tab (opened by `background.js` only on install), styled like the store images (Inter in `fonts/`): the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
+| `extension/app/welcome.js` | First-run welcome view `app.html#welcome` (opened by `background.js` only on install), styled like the store images (Inter in `fonts/`): the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
 | `extension/import.*` | Import tab for a backup file (Settings → Backup → Import); the backup format and merge rules are in `basket.js` (`exportData`, `importData`): import only adds, never deletes; bump `BACKUP_VERSION` and keep reading old versions if the format changes |
 | `extension/popup.*` | Popup: lists, single-pane settings slide (opens only via ⚙) |
 | `ROADMAP.md` | Planned / under consideration / done |

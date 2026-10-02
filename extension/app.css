@@ -296,3 +296,39 @@ body.dragging-card .lists .list:hover .count { display: inline; }
 .about-links a:hover { text-decoration: underline; }
 .about-links.more a { color: var(--muted); font-weight: 500; }
 .about-links.more a:hover { color: var(--brand); }
+
+/* ---- Welcome view: full width, centred, the look of the first-run tab ---- */
+main[data-view=welcome] { display: grid; place-items: center; min-height: 100vh; padding: 56px 24px; }
+.welcome { width: 100%; max-width: 560px; font-size: 16px; line-height: 1.55; }
+.welcome .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 0; font-weight: 700; font-size: 20px; letter-spacing: 0; }
+.welcome .brand img { border-radius: 10px; }
+.welcome h1 { margin: 0 0 16px; font-size: 56px; line-height: 1.04; font-weight: 800; letter-spacing: -0.035em; }
+.welcome h1 em { font-style: normal; color: var(--brand); }
+.welcome .lead { margin: 0 0 32px; font-size: 18px; color: var(--muted); }
+.welcome .steps { margin: 0 0 32px; padding: 0; list-style: none; }
+.welcome .steps li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; }
+.welcome .steps .n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; font-size: 14px; }
+.welcome .steps b { display: block; font-weight: 600; }
+.welcome .steps span:not(.n) { color: var(--muted); font-size: 15px; }
+.welcome .note { display: flex; gap: 12px; align-items: flex-start; margin: -8px 0 32px; padding: 14px 16px; border-radius: 12px; background: var(--brand-tint); border: 1px solid var(--line); font-size: 14.5px; color: var(--muted); }
+.welcome .note svg { flex: none; width: 22px; height: 22px; margin-top: 1px; fill: none; stroke: var(--brand); stroke-width: 1.8; stroke-linejoin: round; }
+.welcome .note b { color: var(--text); font-weight: 600; }
+.welcome .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.welcome .cta, .welcome .settings-cta { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 30px; border-radius: 12px; font-weight: 700; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s, background 0.15s; }
+.welcome .cta { background: linear-gradient(135deg, #6a0fa8, #8119b5 55%, #9b3fd0); color: #fff; box-shadow: 0 8px 22px rgba(129, 25, 181, 0.28); }
+.welcome .cta:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(129, 25, 181, 0.36); }
+.welcome .settings-cta { background: var(--brand-tint); border: 1px solid var(--line); color: var(--brand); }
+.welcome .settings-cta:hover { background: var(--brand-tint-strong); }
+.welcome .trust { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--line); }
+.welcome .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; padding: 0; list-style: none; }
+.welcome .tag { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 15px 0 12px; border-radius: 999px; font-weight: 700; font-size: 14.5px; color: #5a1385; background: var(--brand-tint); border: 1px solid var(--line); }
+@media (prefers-color-scheme: dark) { .welcome .tag { color: #e2bff4; } }
+.welcome .tag svg { width: 16px; height: 16px; fill: none; stroke: var(--brand); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.welcome .tag.strong { color: #fff; background: linear-gradient(135deg, #6a0fa8, #8119b5 55%, #9b3fd0); border-color: transparent; box-shadow: 0 6px 18px rgba(129, 25, 181, 0.22); }
+.welcome .tag.strong svg { stroke: #fff; }
+.welcome .trust p { margin: 0; font-size: 14px; font-weight: 500; color: var(--muted); }
+.welcome footer { margin-top: 36px; color: var(--muted); font-size: 13px; }
+.welcome footer a { color: inherit; }
+.welcome footer a:hover { color: var(--brand); }
+.welcome .go { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--brand); text-decoration: none; }
+.welcome .go:hover { text-decoration: underline; }

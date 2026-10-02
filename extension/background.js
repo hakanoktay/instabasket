@@ -125,5 +125,5 @@ chrome.runtime.onInstalled.addListener(showAnonIcon);
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason !== 'install') return;
   await chrome.storage.local.set({ anonStories: true });
-  chrome.tabs.create({ url: 'welcome.html' });
+  chrome.tabs.create({ url: 'app.html#welcome' });
 });
