@@ -106,7 +106,16 @@ body.full .sidebar { display: none; }
   font: inherit; font-size: 14px; padding: 0 12px;
 }
 .toolbar input { width: 100%; padding-left: 38px; }
-.toolbar select { cursor: pointer; max-width: 180px; }
+.toolbar select {
+  cursor: pointer; max-width: 200px; appearance: none; -webkit-appearance: none; padding-right: 36px;
+  /* Our own chevron, with room on the right instead of the browser's arrow at the edge. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+  .toolbar select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8a8a8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+}
 .toolbar .list-filter { display: none; }
 body.narrow .toolbar .list-filter { display: block; }
 .toolbar input:hover, .toolbar select:hover { border-color: var(--brand); }
@@ -177,8 +186,13 @@ body.full #bulk-dock { left: 0; }
 #bulk-dock > * { pointer-events: auto; }
 #bulk {
   display: flex; align-items: center; gap: 6px; padding: 8px 10px 8px 18px; border-radius: 999px; background: var(--elevated);
-  border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(69, 11, 98, 0.22), var(--shadow); animation: rise 0.18s ease-out;
+  border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(69, 11, 98, 0.22), var(--shadow);
+  animation: bar-in 0.38s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
 }
+/* Slides up from below the window's bottom edge, with a soft settle; back down when closed. */
+@keyframes bar-in { from { opacity: 0; transform: translateY(calc(100% + 32px)); } }
+#bulk.leaving { pointer-events: none; animation: bar-out 0.22s cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes bar-out { to { opacity: 0; transform: translateY(calc(100% + 32px)); } }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 #bulk .count { font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; margin-right: 4px; }
 #bulk .sep { width: 1px; height: 22px; background: var(--line); margin: 0 6px 0 2px; }

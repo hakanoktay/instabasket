@@ -255,10 +255,31 @@
     return keys.map((k) => byKey.get(k)).filter(Boolean);
   }
 
+  // The bar slides up from the bottom edge when something is selected and
+  // slides back down when the selection ends (then it's hidden for real).
+  let barTimer;
+  function showBar(show) {
+    clearTimeout(barTimer);
+    if (show) {
+      if (bar.hidden || bar.classList.contains('leaving')) {
+        bar.classList.remove('leaving');
+        bar.hidden = false;
+      }
+      return;
+    }
+    if (bar.hidden) return;
+    picker.hidden = true;
+    bar.classList.add('leaving');
+    barTimer = setTimeout(() => {
+      bar.hidden = true;
+      bar.classList.remove('leaving');
+    }, BAR_OUT_MS);
+  }
+
+  const BAR_OUT_MS = 220;
   function updateBar() {
     const n = saved.selected.size;
-    bar.hidden = !n || !current;
-    if (bar.hidden) picker.hidden = true;
+    showBar(!!n && !!current);
     count.textContent = `${n} selected`;
     outBtn.hidden = !saved.filters.list;
     dlBtn.hidden = current?.kind !== 'media';

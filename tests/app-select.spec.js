@@ -167,3 +167,24 @@ test('a small window: the bulk bar in a list fits on screen', async ({ context, 
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(560);
 });
+
+test('the bulk bar slides up when selecting and back down when cleared', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, DATA);
+  await page.click('.card[data-key="m:A"] .select');
+  await expect(page.locator('#bulk')).toBeVisible();
+  expect(await page.locator('#bulk').evaluate((b) => getComputedStyle(b).animationName)).toBe('bar-in');
+  await page.click('#bulk .clear');
+  await expect(page.locator('#bulk')).toHaveClass(/leaving/);
+  await expect(page.locator('#bulk')).toBeHidden();
+  // Selecting again right away brings it back up.
+  await page.click('.card[data-key="m:B"] .select');
+  await expect(page.locator('#bulk')).toBeVisible();
+  await expect(page.locator('#bulk')).not.toHaveClass(/leaving/);
+});
+
+test('filter selects keep room for their arrow', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, DATA);
+  const s = await page.locator('#f-type').evaluate((e) => ({ a: getComputedStyle(e).appearance, pr: parseFloat(getComputedStyle(e).paddingRight) }));
+  expect(s.a).toBe('none');
+  expect(s.pr).toBeGreaterThanOrEqual(32);
+});
