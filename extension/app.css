@@ -65,3 +65,52 @@ body.narrow main { padding: 28px 20px; }
 body.full { grid-template-columns: minmax(0, 1fr); }
 body.full .sidebar { display: none; }
 .nav.bottom:empty { display: none; }
+
+/* Saved views: toolbar, cards, grids */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: -4px 0 22px; }
+.toolbar .search { position: relative; flex: 1 1 240px; max-width: 360px; display: flex; align-items: center; }
+.toolbar .search .i { position: absolute; left: 12px; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+.toolbar input, .toolbar select {
+  height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--elevated); color: var(--text);
+  font: inherit; font-size: 14px; padding: 0 12px;
+}
+.toolbar input { width: 100%; padding-left: 38px; }
+.toolbar select { cursor: pointer; max-width: 180px; }
+.toolbar input:hover, .toolbar select:hover { border-color: var(--brand); }
+.grid .card {
+  background: var(--elevated); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column; transition: box-shadow 0.15s, transform 0.15s;
+}
+.grid .card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.card .thumb { position: relative; aspect-ratio: 1; background: var(--brand-tint); }
+.card .preview { position: absolute; inset: 0; display: block; }
+.card .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .placeholder {
+  width: 100%; height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 13px;
+  background: linear-gradient(135deg, var(--brand-tint), var(--brand-tint-strong));
+}
+.card .type {
+  position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 6px;
+  border-radius: 999px; background: rgba(22, 16, 27, 0.62); color: #fff; font-size: 12px; font-weight: 600; backdrop-filter: blur(6px);
+}
+.card .type .i { width: 13px; height: 13px; }
+.card .meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card .row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.card .owner { font-weight: 600; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .owner.unknown { color: var(--muted); font-weight: 500; font-style: italic; }
+.card .date, .card .media-count { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.card .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.card .chips:empty { display: none; }
+.card .chip { font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--brand-tint-strong); color: var(--brand); }
+.card.profile .who { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 22px 12px 4px; color: inherit; text-decoration: none; min-width: 0; }
+.card.profile .pic {
+  width: 84px; height: 84px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; margin-bottom: 8px;
+  background: var(--brand-gradient); color: var(--on-brand); font-size: 32px; font-weight: 700;
+}
+.card.profile .who > .owner { max-width: 100%; }
+.card.profile .name { font-size: 13px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 20px; }
+.empty { color: var(--muted); text-align: center; padding: 60px 0; }
+.sentinel { height: 1px; }
+.card .preview { text-decoration: none; color: inherit; }
+.card .row { flex-wrap: wrap; row-gap: 0; }
+.card .owner.unknown { flex: none; }
