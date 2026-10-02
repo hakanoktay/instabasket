@@ -130,6 +130,37 @@ var KeepKeep = (() => {
     };
   }
 
+  // Saves a backup straight to Downloads/KeepKeep (no dialog, no extra window)
+  // and returns the file's name. Used by the popup and the app page.
+  async function downloadBackup() {
+    const bytes = new TextEncoder().encode(JSON.stringify(await exportData()));
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    const d = new Date();
+    const date = [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+    const name = `KeepKeep-backup-${date}.json`;
+    await chrome.downloads.download({
+      url: 'data:application/json;base64,' + btoa(binary), filename: `KeepKeep/${name}`, conflictAction: 'uniquify', saveAs: false,
+    });
+    return name;
+  }
+
+  // The words for an import's outcome: pass the counts importData() returned,
+  // or the error it threw. Returns { ok, title, text }.
+  function describeImport(result) {
+    const plural = (n, one) => `${n} ${n === 1 ? one : one + 's'}`;
+    if (result instanceof Error) {
+      if (result.code === 'newer') return { ok: false, title: 'This backup was made by a newer KeepKeep.', text: 'Update KeepKeep, then import it again. Nothing was changed.' };
+      if (result.code === 'not-backup') return { ok: false, title: "This file isn't a KeepKeep backup.", text: 'Choose a KeepKeep-backup-….json file made with Export. Nothing was changed.' };
+      return { ok: false, title: 'The import failed.', text: 'Please try again. Nothing was changed.' };
+    }
+    const added = [result.profiles && plural(result.profiles, 'profile'), result.media && plural(result.media, 'post'), result.lists && plural(result.lists, 'list')].filter(Boolean);
+    const already = result.existing ? `${plural(result.existing, 'item')} ${result.existing === 1 ? 'was' : 'were'} already here; their lists were combined.` : '';
+    if (!added.length) return { ok: true, title: 'Everything in this backup was already here.', text: already };
+    const list = added.length > 1 ? added.slice(0, -1).join(', ') + ' and ' + added.at(-1) : added[0];
+    return { ok: true, title: `Added ${list}.`, text: already || 'Open KeepKeep from the toolbar to see them.' };
+  }
+
   // Adds a backup to what is stored here; nothing is ever deleted or replaced.
   // Lists are matched by kind and name, so importing twice adds nothing twice.
   // A profile or post that is already here keeps its data and gets the
@@ -272,6 +303,8 @@ var KeepKeep = (() => {
     getLists,
     exportData,
     importData,
+    downloadBackup,
+    describeImport,
     createList,
     reorderLists,
     renameList,

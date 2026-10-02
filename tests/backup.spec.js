@@ -1,5 +1,5 @@
 // Export & import (basket.js exportData / importData, the popup's Backup
-// section and the import tab). Importing only ever adds.
+// section; the import page is in app-settings.spec.js). Importing only ever adds.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -126,24 +126,4 @@ test('popup Export saves a backup file to Downloads/KeepKeep', async ({ context,
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
   expect(backup.format).toBe('keepkeep-backup');
   expect(backup.items['m:AAA']).toEqual(DATA['m:AAA']);
-});
-
-test('the import tab adds a chosen file and says what it added', async ({ context, extensionId }) => {
-  const page = await extensionPage(context, extensionId);
-  const backup = await exported(page);
-  await page.evaluate(() => chrome.storage.local.clear());
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'keepkeep-'));
-  const good = path.join(dir, 'KeepKeep-backup.json');
-  const bad = path.join(dir, 'notes.json');
-  fs.writeFileSync(good, JSON.stringify(backup));
-  fs.writeFileSync(bad, 'not json');
-
-  await page.goto(`chrome-extension://${extensionId}/import.html`);
-  await page.setInputFiles('#file', good);
-  await expect(page.locator('#result')).toHaveText(/Added 1 profile, 2 posts and 3 lists\./);
-  await page.setInputFiles('#file', good);
-  await expect(page.locator('#result')).toHaveText(/Everything in this backup was already here\.3 items were already here/);
-  await page.setInputFiles('#file', bad);
-  await expect(page.locator('#result')).toHaveText(/This file isn't a KeepKeep backup\./);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
