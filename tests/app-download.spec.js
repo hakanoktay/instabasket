@@ -25,10 +25,10 @@ test('with an Instagram tab, the keys are sent to it', async ({ context, extensi
   const page = await open(context, extensionId, DATA);
   await page.click('.card[data-key="m:A"] .select'); await page.click('.card[data-key="m:B"] .select');
   await page.click('#bulk-download');
-  await expect(page.locator('#notice')).toContainText('Downloading 2 posts in your Instagram tab');
+  await expect(page.locator('#notice')).toContainText('Downloading 2 items in your Instagram tab');
   await page.click('.card[data-key="m:A"] .select'); await page.click('.card[data-key="m:B"] .select');
   await page.click('.card[data-key="m:A"] .select'); await page.click('#bulk-download');
-  await expect(page.locator('#notice')).toContainText('Downloading 1 post in your Instagram tab');
+  await expect(page.locator('#notice')).toContainText('Downloading 1 item in your Instagram tab');
 });
 test('content script acknowledges at once; two requests are both accepted and run one after another', async ({ context, extensionId }) => {
   const ig = await context.newPage(); await ig.goto('https://www.instagram.com/?page=blank');
@@ -51,4 +51,25 @@ test('a tab the content script is not in: reload message', async ({ context, ext
   await page.evaluate(() => { const real = chrome.tabs.sendMessage; chrome.tabs.sendMessage = () => Promise.reject(new Error('Could not establish connection')); window.__real = real; });
   await page.click('.card[data-key="m:A"] .select'); await page.click('#bulk-download');
   await expect(page.locator('#notice')).toContainText('Reload your Instagram tab, then try again');
+});
+
+test('saved stories: one story key per owner (a story key downloads the whole reel)', async ({ context, extensionId }) => {
+  const ig = await context.newPage(); await ig.goto('https://www.instagram.com/?page=blank');
+  const data = {
+    ...DATA,
+    'm:story:1': { key: 'story:1', type: 'story', username: 'carol', lists: [], addedAt: Date.now() - 3000 },
+    'm:story:2': { key: 'story:2', type: 'story', username: 'carol', lists: [], addedAt: Date.now() - 4000 },
+  };
+  const page = await open(context, extensionId, data);
+  await page.evaluate(() => {
+    const real = chrome.tabs.sendMessage.bind(chrome.tabs);
+    chrome.tabs.sendMessage = (id, msg) => { window.__sent = msg.keys; return real(id, msg); };
+  });
+  for (const k of ['m:story:1', 'm:story:2', 'm:A']) await page.click(`.card[data-key="${k}"] .select`);
+  await page.click('#bulk-download');
+  await expect(page.locator('#notice')).toContainText('Downloading 2 items in your Instagram tab');
+  const sent = await page.evaluate(() => window.__sent);
+  expect(sent).toHaveLength(2);
+  expect(sent).toContain('m:A');
+  expect(sent.filter((k) => k.startsWith('m:story:'))).toHaveLength(1);
 });

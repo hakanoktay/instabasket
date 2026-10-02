@@ -2,7 +2,7 @@
 // the work runs in the content script of an open instagram.com tab; this page
 // only picks the tab, sends the keys and says what happened.
 (() => {
-  const { el, icon } = KeepKeepApp;
+  const { el, icon, state } = KeepKeepApp;
   const URLS = ['https://www.instagram.com/*', 'https://instagram.com/*'];
   let notice, timer;
 
@@ -24,8 +24,22 @@
       || [...tabs].sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
   }
 
+  // A story key downloads all of its account's current stories, so one story
+  // key per owner is enough; stories with no known owner stay as they are.
+  function oneStoryPerOwner(keys) {
+    const owners = new Map(state.media.map((m) => ['m:' + m.key, m.username]));
+    const seen = new Set();
+    return keys.filter((k) => {
+      const owner = k.startsWith('m:story:') && owners.get(k);
+      if (!owner) return true;
+      if (seen.has(owner)) return false;
+      seen.add(owner);
+      return true;
+    });
+  }
+
   async function bulkDownload(keys) {
-    const media = keys.filter((k) => k.startsWith('m:'));
+    const media = oneStoryPerOwner(keys.filter((k) => k.startsWith('m:')));
     if (!media.length) return;
     const tab = await pickTab();
     if (!tab) {
@@ -36,7 +50,7 @@
     try {
       const res = await chrome.tabs.sendMessage(tab.id, { type: 'download-keys', keys: media });
       if (!res?.ok) throw new Error('no answer');
-      showNotice(`Downloading ${res.started} ${res.started === 1 ? 'post' : 'posts'} in your Instagram tab`, true);
+      showNotice(`Downloading ${res.started} ${res.started === 1 ? 'item' : 'items'} in your Instagram tab`, true);
     } catch {
       showNotice('Reload your Instagram tab, then try again');
     }

@@ -284,6 +284,36 @@ var KeepKeep = (() => {
     await chrome.storage.local.set({ [recordKey]: { ...record, lists } });
   }
 
+  // ---- Many records at once (the app page's selection): one read, one write ----
+
+  // setInList() for every key; keys that are no longer stored are skipped.
+  async function setInListMany(recordKeys, listId, inList) {
+    if (!recordKeys.length) return;
+    const got = await chrome.storage.local.get(recordKeys);
+    const update = {};
+    for (const k of recordKeys) {
+      if (!got[k]) continue;
+      const lists = (got[k].lists || []).filter((x) => x !== listId);
+      if (inList) lists.push(listId);
+      update[k] = { ...got[k], lists };
+    }
+    if (Object.keys(update).length) await chrome.storage.local.set(update);
+  }
+
+  // Removes the records and returns what was removed as [[key, record], ...]
+  // (keys that were not stored are left out), for restoreMany().
+  async function removeMany(recordKeys) {
+    if (!recordKeys.length) return [];
+    const got = await chrome.storage.local.get(recordKeys);
+    const pairs = recordKeys.filter((k) => got[k]).map((k) => [k, got[k]]);
+    if (pairs.length) await chrome.storage.local.remove(pairs.map(([k]) => k));
+    return pairs;
+  }
+
+  async function restoreMany(pairs) {
+    if (pairs.length) await chrome.storage.local.set(Object.fromEntries(pairs));
+  }
+
   return {
     parse,
     profileUrl,
@@ -310,6 +340,9 @@ var KeepKeep = (() => {
     renameList,
     deleteList,
     setInList,
+    setInListMany,
+    removeMany,
+    restoreMany,
     get,
     // Removes a saved profile or media item by storage key ("p:alice", "m:CODE")
     // and returns it so the removal can be undone with restore().

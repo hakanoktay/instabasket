@@ -6,7 +6,7 @@ test('the popup button opens the app in a new tab', async ({ context, extensionI
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   const [app] = await Promise.all([
-    context.waitForEvent('page', { predicate: (p) => p.url().includes('/app.html') }),
+    context.waitForEvent('page', { predicate: (p) => /app\.html#media$/.test(p.url()) }),
     popup.click('#open-app'),
   ]);
   await expect(app).toHaveURL(`chrome-extension://${extensionId}/app.html#media`);

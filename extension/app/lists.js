@@ -6,7 +6,7 @@
   const saved = KeepKeepApp.saved;
   const DRAG_FROM = 5; // px of movement before a press becomes a drag
   const MAX = 40; // same as the popup
-  let kind = null, editing = null, drag = null, pending = false; // editing: list id or 'new'
+  let kind = null, editing = null, drag = null; // editing: list id or 'new'
 
   // 'p' / 'm' for the two list views, null for any other view (settings...).
   const kindNow = () => {
@@ -91,8 +91,7 @@
   function render() {
     const box = container();
     if (!box) return;
-    if (drag && !drag.ended) { pending = true; return; } // rows are in the user's hand
-    pending = false;
+    if (drag && !drag.ended) return; // rows are in the user's hand; the drag's end renders
     const wasKind = kind;
     kind = kindNow();
     // The selected list belongs to the other kind: back to All. This runs on
@@ -179,6 +178,7 @@
   }
 
   KeepKeepApp.lists = {
+    select, // filter the grid by a list id (null = All); the narrow toolbar's list menu uses it too
     // The list id under an element (a sidebar list row), or null.
     dropTarget: (node) => node?.closest?.('.lists .list[data-id]')?.dataset.id ?? null,
   };

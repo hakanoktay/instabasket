@@ -107,6 +107,8 @@ body.full .sidebar { display: none; }
 }
 .toolbar input { width: 100%; padding-left: 38px; }
 .toolbar select { cursor: pointer; max-width: 180px; }
+.toolbar .list-filter { display: none; }
+body.narrow .toolbar .list-filter { display: block; }
 .toolbar input:hover, .toolbar select:hover { border-color: var(--brand); }
 .grid .card {
   background: var(--elevated); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
@@ -188,6 +190,14 @@ body.full #bulk-dock { left: 0; }
 #bulk button:not(.item):hover { background: var(--brand-tint-strong); color: var(--brand); }
 #bulk button.danger:hover { background: rgba(237, 73, 86, 0.14); color: var(--red); }
 #bulk button.clear { width: 36px; padding: 0; justify-content: center; color: var(--muted); }
+#bulk.busy { cursor: progress; }
+#bulk.busy > * { opacity: 0.55; pointer-events: none; }
+/* The full bar is ~680px wide: smaller windows get icon-only buttons (their titles name them). */
+@media (max-width: 760px) {
+  #bulk { padding-left: 14px; gap: 2px; }
+  #bulk button:not(.item) { width: 36px; padding: 0; justify-content: center; }
+  #bulk button:not(.item) .label { display: none; }
+}
 .picker-wrap { position: relative; display: inline-flex; }
 .picker {
   position: absolute; bottom: calc(100% + 14px); left: 0; min-width: 220px; max-height: 280px; overflow-y: auto; padding: 6px;
