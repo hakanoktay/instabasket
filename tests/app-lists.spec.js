@@ -49,11 +49,43 @@ test('drag a list to reorder', async ({ context, extensionId }) => {
   await page.mouse.move(b.x + 20, b.y + 4, { steps: 10 }); await page.mouse.up();
   await expect.poll(async () => (await page.evaluate(() => KeepKeep.getLists('m'))).map((l) => l.id)).toEqual(['l2', 'l1']);
 });
-test('profiles view shows profile lists; switching clears the list filter', async ({ context, extensionId }) => {
-  const data = { ...DATA, lists: [...DATA.lists, { id: 'p1', name: 'Friends', kind: 'p' }], 'p:alice': { username: 'alice', lists: ['p1'], addedAt: 1 } };
-  const page = await open(context, extensionId, data);
+const PDATA = { ...DATA, lists: [...DATA.lists, { id: 'p1', name: 'Friends', kind: 'p' }], 'p:alice': { username: 'alice', lists: ['p1'], addedAt: 1 }, 'p:bob': { username: 'bob', lists: [], addedAt: 2 } };
+test('profiles view shows profile lists; switching clears the list filter and the grid', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, PDATA);
   await page.click('.lists .list[data-id="l1"]');
   await page.click('#nav-main [data-view="profiles"]');
   await expect(page.locator('.lists .list .name')).toHaveText(['Friends']);
   await expect(page.locator('.lists .list.all')).toHaveClass(/on/);
+  await expect(page.locator('.grid .card')).toHaveCount(2);
+});
+test('a visit to a non-list view in between still clears the other kind\'s list', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, PDATA);
+  await page.evaluate(() => KeepKeepApp.view({ id: 'other', title: 'Other', nav: 'bottom', render() {} }));
+  await page.click('.lists .list[data-id="l1"]');
+  await page.evaluate(() => { location.hash = '#other'; });
+  await expect(page.locator('main')).toHaveAttribute('data-view', 'other');
+  await expect(page.locator('.lists .list')).toHaveCount(0);
+  await page.evaluate(() => { location.hash = '#profiles'; });
+  await expect(page.locator('.lists .list.all')).toHaveClass(/on/);
+  await expect(page.locator('.grid .card')).toHaveCount(2);
+});
+test('storage changes during a drag wait until it ends; no duplicates, no stale ids', async ({ context, extensionId }) => {
+  const lists = [...DATA.lists, { id: 'l2', name: 'Travel', kind: 'm' }, { id: 'l3', name: 'Home', kind: 'm' }];
+  const page = await open(context, extensionId, { ...DATA, lists });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  const a = await page.locator('.lists .list[data-id="l3"]').boundingBox();
+  const b = await page.locator('.lists .list[data-id="l1"]').boundingBox();
+  await page.mouse.move(a.x + 20, a.y + a.height / 2); await page.mouse.down();
+  await page.mouse.move(b.x + 20, b.y + 4, { steps: 10 });
+  await page.evaluate(async () => { await KeepKeep.deleteList('l2'); await KeepKeep.createList('New', 'm'); });
+  await page.waitForTimeout(400);
+  await page.mouse.up();
+  await expect.poll(async () => (await page.evaluate(() => KeepKeep.getLists('m'))).length).toBe(3);
+  const stored = (await page.evaluate(() => KeepKeep.getLists('m'))).map((l) => l.id);
+  expect(stored.slice(0, 2)).toEqual(['l3', 'l1']);
+  const rows = await page.locator('.lists .list[data-id]').evaluateAll((r) => r.map((x) => x.dataset.id));
+  expect(new Set(rows).size).toBe(rows.length);
+  await expect(page.locator('.lists .list[data-id] .name')).toHaveText(['Home', 'Recipes', 'New']);
+  expect(await page.evaluate(() => KeepKeepApp.state.lists.every(Boolean))).toBe(true);
+  expect(errors).toEqual([]);
 });

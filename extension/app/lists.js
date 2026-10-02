@@ -6,12 +6,15 @@
   const saved = KeepKeepApp.saved;
   const DRAG_FROM = 5; // px of movement before a press becomes a drag
   const MAX = 40; // same as the popup
-  let kind = null, editing = null, drag = null; // editing: list id or 'new'
+  let kind = null, editing = null, drag = null, pending = false; // editing: list id or 'new'
 
+  // 'p' / 'm' for the two list views, null for any other view (settings...).
   const kindNow = () => {
     let id;
     try { id = decodeURIComponent(location.hash.slice(1).split('/')[0]); } catch { id = 'media'; }
-    return id === 'profiles' ? 'p' : id === 'media' || id === '' ? 'm' : null;
+    if (id === 'profiles') return 'p';
+    if (id === 'media') return 'm';
+    return document.querySelector(`.nav [data-view="${CSS.escape(id)}"]`) ? null : 'm'; // unknown ids fall back to Media
   };
   const records = () => (kind === 'p' ? state.profiles : state.media);
   const container = () => document.getElementById('lists');
@@ -88,11 +91,14 @@
   function render() {
     const box = container();
     if (!box) return;
+    if (drag && !drag.ended) { pending = true; return; } // rows are in the user's hand
+    pending = false;
     const wasKind = kind;
     kind = kindNow();
-    if (kind !== wasKind && wasKind !== null && kind !== null) {
-      saved.filters.list = null; saved.selected.clear();
-    }
+    // The selected list belongs to the other kind: back to All. This runs on
+    // hashchange before the router paints, so the new view starts unfiltered.
+    const sel = saved.filters.list && state.lists.find((l) => l.id === saved.filters.list);
+    if (kind && sel && sel.kind !== kind) { saved.filters.list = null; saved.selected.clear(); }
     if (!kind) { box.replaceChildren(); return; }
     if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT' && kind === wasKind && editing) return; // don't pull the input away
     const lists = state.lists.filter((l) => l.kind === kind);
@@ -149,27 +155,23 @@
       window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', end);
       if (!s.moved) return;
-      setTimeout(() => { drag = null; }, 0); // swallows the click that follows a drag
-      const box = container();
-      const order = rows.map((r) => r.dataset.id);
-      if (e.type === 'pointerup' && s.to !== s.from) {
-        order.splice(s.to, 0, order.splice(s.from, 1)[0]);
-        // Put the rows in their new places without a flash; storage catches up.
-        const anchor = rows[rows.length - 1].nextSibling;
-        const byId = new Map(rows.map((r) => [r.dataset.id, r]));
-        for (const r of rows) { r.style.transition = 'none'; r.style.transform = ''; }
-        for (const id of order) box.insertBefore(byId.get(id), anchor);
-        void box.offsetHeight;
-        for (const r of rows) r.style.transition = '';
-        const moved = state.lists.filter((l) => l.kind === kind);
-        const queue = order.map((id) => moved.find((l) => l.id === id));
-        state.lists = state.lists.map((l) => (l.kind === kind ? queue.shift() : l));
-        await KeepKeep.reorderLists(kind, order);
-      } else {
-        for (const r of rows) r.style.transform = '';
-      }
-      box.classList.remove('sorting');
+      s.ended = true;
+      setTimeout(() => { if (drag === s) drag = null; }, 0); // swallows the click that follows a drag
+      container().classList.remove('sorting');
       node.classList.remove('dragging');
+      let order = null;
+      if (e.type === 'pointerup' && s.to !== s.from) {
+        order = rows.map((r) => r.dataset.id);
+        order.splice(s.to, 0, order.splice(s.from, 1)[0]);
+        // Lists may have changed during the drag: keep only those that still exist.
+        const mine = state.lists.filter((l) => l.kind === kind);
+        order = order.filter((id) => mine.some((l) => l.id === id));
+        order.push(...mine.map((l) => l.id).filter((id) => !order.includes(id)));
+        const queue = order.map((id) => mine.find((l) => l.id === id));
+        state.lists = state.lists.map((l) => (l.kind === kind ? queue.shift() : l));
+      }
+      render(); // new order in place at once; storage catches up
+      if (order) await KeepKeep.reorderLists(kind, order);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', end);
