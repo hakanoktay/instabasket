@@ -8,6 +8,7 @@
 
   const saved = KeepKeepApp.saved = {
     selected: new Set(),
+    bulkDownload: null, // Task 5 sets this: called with the selected media keys
     filters: { q: '', type: 'all', owner: '', since: 'any', sort: 'new', list: null },
     // rerender() = data changed: keep chunks and scroll. rerender(true) = filters
     // changed (search, type, list...): back to the first chunk and the top.
@@ -59,6 +60,8 @@
   const chips = (item) => el('div', { class: 'chips' },
     (item.lists || []).map(listName).filter(Boolean).map((name) => el('span', { class: 'chip', text: name })));
 
+  const checkbox = () => el('button', { class: 'select', type: 'button', role: 'checkbox', 'aria-checked': 'false', 'aria-label': 'Select', title: 'Select' }, icon('check'));
+
   function mediaCard(m) {
     const thumb = m.thumb
       ? el('img', { src: m.thumb, alt: '', loading: 'lazy', draggable: 'false' })
@@ -69,6 +72,7 @@
       ? el('a', { class: 'preview', href: m.url, target: '_blank', rel: 'noopener', draggable: 'false', title: 'Open on Instagram' }, thumb)
       : el('div', { class: 'preview' }, thumb);
     return el('div', { class: 'card', 'data-key': 'm:' + m.key },
+      checkbox(),
       el('div', { class: 'thumb' }, preview, type),
       el('div', { class: 'meta' },
         el('div', { class: 'row' },
@@ -85,6 +89,7 @@
       ? el('img', { class: 'pic', src: user.pic, alt: '', draggable: 'false' })
       : el('span', { class: 'pic', text: (p.username || '?')[0].toUpperCase() });
     return el('div', { class: 'card profile', 'data-key': 'p:' + p.username },
+      checkbox(),
       el('a', { class: 'who', href: `https://www.instagram.com/${encodeURIComponent(p.username)}/`, target: '_blank', rel: 'noopener', draggable: 'false', title: 'Open on Instagram' },
         pic,
         el('span', { class: 'owner', text: '@' + p.username }),
@@ -108,7 +113,8 @@
       id: kind, title, nav: 'main', icon: kind, full: false,
       render(main) {
         const f = saved.filters;
-        let shown = CHUNK, observer;
+        saved.selected.clear(); // a different view or list is a different selection
+        let shown = CHUNK, observer, lastKey = null;
         const grid = el('div', { class: 'grid' });
         const empty = el('p', { class: 'empty' });
         const sentinel = el('div', { class: 'sentinel' });
@@ -138,6 +144,7 @@
           const y = window.scrollY;
           if (full) { grid.replaceChildren(); painted = 0; }
           grid.append(...items.slice(painted, shown).map(makeCard));
+          paintSelection();
           painted = Math.min(shown, items.length);
           empty.hidden = items.length > 0;
           empty.textContent = (kind === 'media' ? state.media : state.profiles).length
@@ -148,6 +155,41 @@
           if (!sentinel.hidden) observer.observe(sentinel);
           if (window.scrollY !== y) window.scrollTo(0, y);
         }
+
+        const keyOf = (i) => (kind === 'media' ? 'm:' + i.key : 'p:' + i.username);
+        const cards = () => [...grid.querySelectorAll('.card[data-key]')];
+
+        function paintSelection() {
+          for (const c of cards()) {
+            const on = saved.selected.has(c.dataset.key);
+            c.classList.toggle('selected', on);
+            c.querySelector('.select').setAttribute('aria-checked', String(on));
+          }
+          grid.classList.toggle('selecting', saved.selected.size > 0);
+          updateBar();
+        }
+
+        function toggle(card, shift) {
+          const k = card.dataset.key, all = cards().map((c) => c.dataset.key);
+          if (shift && lastKey && all.includes(lastKey)) {
+            const a = all.indexOf(lastKey), b = all.indexOf(k);
+            for (const x of all.slice(Math.min(a, b), Math.max(a, b) + 1)) saved.selected.add(x);
+          } else if (saved.selected.has(k)) saved.selected.delete(k);
+          else saved.selected.add(k);
+          lastKey = k;
+          paintSelection();
+        }
+
+        grid.addEventListener('click', (e) => {
+          const box = e.target.closest('.select');
+          if (!box) return;
+          e.preventDefault(); e.stopPropagation();
+          toggle(box.closest('.card'), e.shiftKey);
+        });
+        grid.addEventListener('pointerdown', (e) => {
+          const card = e.target.closest('.card[data-key]');
+          if (card && !e.target.closest('.select')) startCardDrag(e, card);
+        });
 
         observer = new IntersectionObserver((entries) => {
           if (entries.some((e) => e.isIntersecting) && shown < items.length) { shown += CHUNK; paint(false); }
@@ -166,6 +208,8 @@
             items = filterItems(kind);
             paint(true);
           },
+          keys: () => filterItems(kind).map(keyOf),
+          paintSelection,
         };
 
         main.append(el('h1', { text: title }), toolbar, grid, sentinel, empty);
@@ -173,6 +217,153 @@
       },
     });
   }
+
+  // ---- Selection: bulk bar, picker, Undo toast, card drag, keyboard ----
+  const bulkKind = () => (current?.kind === 'profiles' ? 'p' : 'm');
+  const dock = el('div', { id: 'bulk-dock' });
+  const toast = el('div', { id: 'toast', role: 'status', hidden: true });
+  const count = el('span', { class: 'count' });
+  const picker = el('div', { class: 'picker', hidden: true });
+  const addBtn = el('button', { id: 'bulk-add', type: 'button', onclick: (e) => { e.stopPropagation(); picker.hidden = !picker.hidden; fillPicker(); } }, icon('plus'), el('span', { text: 'Add to list' }));
+  const outBtn = el('button', { id: 'bulk-out', type: 'button', onclick: () => bulkOut() }, el('span', { text: 'Remove from list' }));
+  const dlBtn = el('button', { id: 'bulk-download', type: 'button', onclick: () => saved.bulkDownload?.([...saved.selected]) }, icon('download'), el('span', { text: 'Download' }));
+  const rmBtn = el('button', { id: 'bulk-remove', type: 'button', class: 'danger', onclick: () => bulkRemove() }, icon('trash'), el('span', { text: 'Remove' }));
+  const bar = el('div', { id: 'bulk', hidden: true },
+    count, el('span', { class: 'sep' }), el('span', { class: 'picker-wrap' }, addBtn, picker), outBtn, dlBtn, rmBtn,
+    el('button', { id: 'bulk-clear', type: 'button', class: 'clear', title: 'Clear selection', 'aria-label': 'Clear selection', onclick: () => clearSelection() }, icon('close')));
+  dock.append(toast, bar);
+  document.body.append(dock);
+
+  const recordsOf = (keys) => keys.map((k) => (k.startsWith('m:') ? state.media.find((m) => 'm:' + m.key === k) : state.profiles.find((p) => 'p:' + p.username === k))).filter(Boolean);
+
+  function updateBar() {
+    const n = saved.selected.size;
+    bar.hidden = !n || !current;
+    if (bar.hidden) picker.hidden = true;
+    count.textContent = `${n} selected`;
+    outBtn.hidden = !saved.filters.list;
+    dlBtn.hidden = current?.kind !== 'media';
+    if (!picker.hidden) fillPicker();
+  }
+
+  function clearSelection() { saved.selected.clear(); current?.paintSelection(); }
+
+  function fillPicker() {
+    const lists = state.lists.filter((l) => l.kind === bulkKind());
+    const recs = recordsOf([...saved.selected]);
+    picker.replaceChildren(...(lists.length ? lists.map((l) => {
+      const all = recs.length > 0 && recs.every((r) => (r.lists || []).includes(l.id));
+      return el('button', { class: 'item' + (all ? ' on' : ''), type: 'button', 'data-id': l.id, onclick: () => bulkList(l.id, !all) },
+        el('span', { class: 'tick' }, all ? icon('check') : null), el('span', { class: 'name', text: l.name }));
+    }) : [el('div', { class: 'none', text: 'No lists yet. Create one in the sidebar.' })]));
+  }
+
+  async function bulkList(id, on) {
+    for (const k of [...saved.selected]) await KeepKeep.setInList(k, id, on);
+  }
+  async function bulkOut() {
+    const id = saved.filters.list;
+    if (id) await bulkList(id, false);
+  }
+
+  let removed = [], toastTimer;
+  function showToast() {
+    clearTimeout(toastTimer);
+    toast.replaceChildren(el('span', { text: `Removed ${removed.length}` }), el('span', { class: 'dot', text: '·' }),
+      el('button', { type: 'button', text: 'Undo', onclick: undo }));
+    toast.hidden = false;
+    toastTimer = setTimeout(() => { toast.hidden = true; removed = []; }, 6000);
+  }
+  async function bulkRemove() {
+    const keys = [...saved.selected];
+    if (!keys.length) return;
+    saved.selected.clear();
+    current?.paintSelection();
+    for (const k of keys) {
+      const record = await KeepKeep.remove(k);
+      if (record) removed.push({ key: k, record });
+    }
+    if (removed.length) showToast();
+  }
+  async function undo() {
+    const back = removed; removed = [];
+    clearTimeout(toastTimer); toast.hidden = true;
+    for (const { key, record } of back) await KeepKeep.restore(key, record);
+  }
+
+  // Items removed or deleted elsewhere leave the selection.
+  on('change', () => {
+    const have = new Set([...state.media.map((m) => 'm:' + m.key), ...state.profiles.map((p) => 'p:' + p.username)]);
+    for (const k of [...saved.selected]) if (!have.has(k)) saved.selected.delete(k);
+  });
+
+  document.addEventListener('click', (e) => { if (!picker.hidden && !e.target.closest('.picker-wrap')) picker.hidden = true; });
+  document.addEventListener('keydown', (e) => {
+    if (!current || document.querySelector('main')?.dataset.view !== current.kind) return;
+    const typing = e.target.closest?.('input, textarea, select, [contenteditable]');
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'a' && !typing) {
+      e.preventDefault();
+      for (const k of current.keys()) saved.selected.add(k);
+      current.paintSelection();
+    } else if (e.key === 'Escape' && !typing) {
+      if (cardDrag) cancelDrag();
+      else if (!picker.hidden) picker.hidden = true;
+      else if (saved.selected.size) clearSelection();
+    }
+  });
+
+  // Pointer-based drag of cards onto a sidebar list (never HTML drag and drop).
+  const DRAG_FROM = 6;
+  let cardDrag = null, hot = null;
+  function cancelDrag() { if (cardDrag) cardDrag.finish(false); }
+  function startCardDrag(e, card) {
+    if (e.button !== 0 || e.pointerType === 'touch' || cardDrag) return;
+    const s = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, card, ghost: null, drop: null };
+    const lit = (id) => {
+      const node = id && document.querySelector(`.lists .list[data-id="${CSS.escape(id)}"]`);
+      if (hot && hot !== node) hot.classList.remove('drop');
+      hot = node || null;
+      if (hot) hot.classList.add('drop');
+    };
+    const move = (e) => {
+      if (e.pointerId !== s.id) return;
+      if (!s.moved) {
+        if (Math.hypot(e.clientX - s.x0, e.clientY - s.y0) < DRAG_FROM) return;
+        s.moved = true; cardDrag = s;
+        const keys = saved.selected.has(card.dataset.key) ? [...saved.selected] : [card.dataset.key];
+        s.keys = keys;
+        s.ghost = el('div', { class: 'drag-ghost', text: keys.length === 1 ? '1 item' : `${keys.length} items` });
+        document.body.append(s.ghost);
+        document.body.classList.add('dragging-card');
+        for (const c of cards()) if (keys.includes(c.dataset.key)) c.classList.add('dragging');
+        picker.hidden = true;
+      }
+      s.ghost.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+      s.drop = KeepKeepApp.lists?.dropTarget(document.elementFromPoint(e.clientX, e.clientY));
+      lit(s.drop);
+    };
+    const swallow = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
+    s.finish = (drop) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      cardDrag = null;
+      if (!s.moved) return;
+      lit(null);
+      s.ghost.remove();
+      document.body.classList.remove('dragging-card');
+      for (const c of document.querySelectorAll('.card.dragging')) c.classList.remove('dragging');
+      window.addEventListener('click', swallow, true); // the click that ends a drag must not open the link
+      setTimeout(() => window.removeEventListener('click', swallow, true), 0);
+      if (drop && s.drop) (async () => { for (const k of s.keys) await KeepKeep.setInList(k, s.drop, true); })();
+    };
+    const up = (e) => { if (e.pointerId === s.id) s.finish(true); };
+    const cancel = (e) => { if (e.pointerId === s.id) s.finish(false); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+  }
+  const cards = () => [...document.querySelectorAll('.grid .card[data-key]')];
 
   register('media', 'Media');
   register('profiles', 'Profiles');
