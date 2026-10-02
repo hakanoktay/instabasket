@@ -357,11 +357,14 @@
     return owners.get(item.code);
   }
 
-  // Thumbnails on profile grids and explore: links to posts that wrap an image.
+  // Thumbnails on profile grids and explore: links to posts that wrap a cover.
   function addOverlayButtons() {
     for (const link of document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]')) {
       if (link.dataset.keepkeepDone) continue;
-      if (!link.querySelector('img') || link.querySelector('time')) continue;
+      // A tile shows a picture, an autoplaying video (Explore) or a background
+      // image (a profile's Reels tab). Feed posts carry a <time> and get the
+      // action-bar buttons instead.
+      if (!link.querySelector('img, video, [style*="background-image"]') || link.querySelector('time')) continue;
       const rect = link.getBoundingClientRect();
       if (rect.width && rect.width < 100) continue;
       link.dataset.keepkeepDone = '1';
