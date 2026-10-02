@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Instagram</title>
+<style>
+  body { margin: 0; font-family: sans-serif; }
+  .ic { width: 24px; height: 24px; display: block; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #c7c7c7; display: inline-block; }
+  .dot.on { background: #0095f6; }
+</style></head><body>
+<article id="post" style="width:470px;margin:20px auto">
+  <header style="height:40px;display:flex;align-items:center;gap:8px">
+    <a href="/alice/">alice</a> · <a href="/p/ALB1/"><time datetime="2024-06-25T13:43:22.000Z">2h</time></a>
+  </header>
+  <div id="frame" style="width:470px;height:470px;overflow:hidden;position:relative">
+    <div id="strip" style="display:flex;width:1410px;transform:translateX(-470px)">
+      <img alt="" src="https://scontent.cdninstagram.com/v/t51/B1.jpg?stp=dst-jpg_e35_p640x640" style="width:470px;height:470px;flex:none">
+      <img alt="" src="https://scontent.cdninstagram.com/v/t51/B2.jpg?stp=dst-jpg_e35_p640x640" style="width:470px;height:470px;flex:none">
+      <video playsinline muted style="width:470px;height:470px;flex:none;background:#222"></video>
+    </div>
+  </div>
+  <div id="dots" style="display:flex;gap:4px;justify-content:center;padding:6px"><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div>
+  <section style="display:flex;justify-content:space-between;width:470px">
+    <span style="display:flex;gap:16px">
+      <span><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span>
+      <span><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span>
+      <span><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span>
+    </span>
+    <span><svg class="ic" viewBox="0 0 24 24"><rect width="20" height="20"/></svg></span>
+  </section>
+</article>
+<script>
+  // Shows album item i (0-based), as Instagram's arrows would.
+  window.showItem = (i) => {
+    document.getElementById('strip').style.transform = `translateX(${-470 * i}px)`;
+    document.querySelectorAll('.dot').forEach((d, n) => d.classList.toggle('on', n === i));
+  };
+</script>
+</body></html>

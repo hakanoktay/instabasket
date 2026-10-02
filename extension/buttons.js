@@ -178,7 +178,7 @@
       if (button.classList.contains('busy')) return;
       button.classList.add('busy');
       try {
-        await run();
+        await run(e);
       } finally {
         button.classList.remove('busy');
       }
@@ -323,13 +323,95 @@
     group.append(
       makeButton('action', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark }),
       makeButton('action', mediaTarget, { icon: 'media', label: 'Media', title: 'Save this post to KeepKeep', dark }),
-      makeCommandButton('action', () => KeepKeepDrop.download(item.code), {
-        icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality)', dark,
+      makeCommandButton('action', (e) => (e?.shiftKey ? downloadOnScreen(item.code, container) : KeepKeepDrop.download(item.code)), {
+        icon: 'download', label: 'Download', title: 'Download all photos and videos of this post (best quality) · Shift-click or D: only the one on screen', dark,
       }),
     );
+    postOfGroup.set(group, { code: item.code, container });
     saveItem.appendChild(group);
     return group;
   }
+
+  // ---- One item of an album: the photo or video on screen ----
+  //
+  // An album shows one item at a time; the others sit beside it, clipped.
+  // A photo is matched by its file name (the same across sizes); a video
+  // (often a blob: address) by the album's dots under the picture: one dot
+  // per item, the current one drawn differently from the rest.
+
+  const postOfGroup = new WeakMap(); // action group → { code, container }
+
+  function visibleRatio(el) {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return 0;
+    let clip = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX === 'visible' && cs.overflow === 'visible') continue;
+      const pr = p.getBoundingClientRect();
+      clip = { left: Math.max(clip.left, pr.left), top: Math.max(clip.top, pr.top), right: Math.min(clip.right, pr.right), bottom: Math.min(clip.bottom, pr.bottom) };
+    }
+    const w = Math.max(0, Math.min(r.right, clip.right) - Math.max(r.left, clip.left));
+    const h = Math.max(0, Math.min(r.bottom, clip.bottom) - Math.max(r.top, clip.top));
+    return (w * h) / (r.width * r.height);
+  }
+
+  // The album's dots: small round boxes in one row; returns the index of the
+  // one that looks different (the current item) and how many there are.
+  function albumDots(container) {
+    const dots = [...container.querySelectorAll('div, span')].filter((d) => {
+      const r = d.getBoundingClientRect();
+      return r.width >= 3 && r.width <= 10 && Math.abs(r.width - r.height) < 1 && !d.children.length && parseFloat(getComputedStyle(d).borderTopLeftRadius) >= r.width * 0.4;
+    });
+    const rows = new Map();
+    for (const d of dots) {
+      const k = Math.round(d.getBoundingClientRect().top);
+      rows.set(k, [...(rows.get(k) || []), d]);
+    }
+    const row = [...rows.values()].sort((a, b) => b.length - a.length)[0];
+    if (!row || row.length < 2) return null;
+    const look = (d) => { const cs = getComputedStyle(d); return `${cs.backgroundColor}|${cs.opacity}`; };
+    const counts = new Map();
+    for (const d of row) counts.set(look(d), (counts.get(look(d)) || 0) + 1);
+    const odd = row.filter((d) => counts.get(look(d)) === 1);
+    return odd.length === 1 ? { index: row.indexOf(odd[0]), count: row.length } : null;
+  }
+
+  // What's on screen in a post: { fileKey } for a photo, { index } from the dots, or null.
+  function itemOnScreen(container) {
+    const media = [...container.querySelectorAll('img, video')].filter((m) => m.getBoundingClientRect().width >= 150);
+    const best = media.map((m) => [m, visibleRatio(m)]).sort((a, b) => b[1] - a[1])[0];
+    if (!best || best[1] < 0.5) return null;
+    const el = best[0];
+    const src = el.tagName === 'IMG' ? el.currentSrc || el.src : el.getAttribute('poster') || '';
+    if (el.tagName === 'IMG' && /^https?:/.test(src)) return { fileKey: InstaApi.fileKey(src) };
+    const dots = albumDots(container);
+    if (dots) return { index: dots.index };
+    return media.length === 1 ? { index: 0 } : null; // a single video: the only item
+  }
+
+  async function downloadOnScreen(code, container) {
+    const only = itemOnScreen(container);
+    if (only) await KeepKeepDrop.download(code, only);
+    else KeepKeepPanel.showError("Couldn't tell which one is on screen");
+  }
+
+  // D over a post downloads the photo or video on screen.
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'd' && e.key !== 'D') return;
+    if (e.metaKey || e.ctrlKey || e.altKey || location.pathname.startsWith('/stories/')) return;
+    if (e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
+    const under = document.elementFromPoint(pointer.x, pointer.y);
+    if (!under) return;
+    for (const group of document.querySelectorAll('[data-keepkeep="action-group"]')) {
+      const post = postOfGroup.get(group);
+      if (!post?.container.contains(under)) continue;
+      e.preventDefault();
+      e.stopPropagation();
+      downloadOnScreen(post.code, post.container);
+      return;
+    }
+  }, true);
 
   // The post's owner: the first profile link in the post above its action bar
   // (the header, or the caption), else looked up from the post.

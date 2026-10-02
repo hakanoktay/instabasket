@@ -212,7 +212,10 @@ var KeepKeepDrop = (() => {
   // <username>_<YYMMDDHHmm of publishing>[_<n>].<ext>, into Downloads/KeepKeep,
   // each as its own file.
   // Progress is shown as balloons on the right.
-  async function download(code) {
+  // `only` picks one item of an album – the one on screen: { fileKey } (a
+  // photo, matched by file name across sizes) or { index }. Its file keeps
+  // the name it gets when the whole album is downloaded.
+  async function download(code, only) {
     const job = Math.random().toString(36).slice(2);
     const ui = KeepKeepPanel.downloads;
     ui.start(job);
@@ -223,10 +226,16 @@ var KeepKeepDrop = (() => {
       const stamp = compactTime(post.takenAt ? post.takenAt * 1000 : Date.now());
       const base = `${post.username || 'instagram'}_${stamp}`;
       const many = post.files.length > 1;
-      const files = post.files.map((f, i) => ({
+      let files = post.files.map((f, i) => ({
         url: f.url, fallback: f.fallback, kind: f.kind, thumb: f.thumb,
         filename: `${base}${many ? `_${i + 1}` : ''}.${extension(f)}`,
       }));
+      if (only) {
+        const k = only.fileKey;
+        files = k ? files.filter((f) => InstaApi.fileKey(f.url) === k || InstaApi.fileKey(f.fallback) === k)
+          : files.filter((_, i) => i === only.index);
+        if (files.length !== 1) throw new Error('item not found');
+      }
       ui.items(job, { username: post.username, files });
       const res = await chrome.runtime.sendMessage({
         type: 'download', job,

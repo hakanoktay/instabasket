@@ -217,5 +217,5 @@ var InstaApi = (() => {
     };
   }
 
-  return { profile, media, mediaFiles, story, storyReel, highlight, thumbnail, codeToId };
+  return { profile, media, mediaFiles, story, storyReel, highlight, thumbnail, codeToId, fileKey };
 })();

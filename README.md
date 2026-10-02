@@ -37,7 +37,7 @@ Like a private window, Instagram "wears the veil" while it's on (`extension/veil
 
 ### Downloading
 
-**Download** saves every photo and video of a post in the highest resolution Instagram offers. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
+**Download** saves every photo and video of a post in the highest resolution Instagram offers. **Shift-click** it, or press **D** with the pointer over the post, to save only the photo or video on screen of an album. Files are named after the owner and the time the post was published, e.g. `telma_2507271432.jpg` (YYMMDDHHmm); album items get a number: `telma_2507271432_1.jpg`, `telma_2507271432_2.mp4`.
 
 Files go straight to `Downloads/KeepKeep/`, each photo and video as its own file – no ZIP, no questions, no windows.
 
