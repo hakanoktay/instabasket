@@ -70,3 +70,23 @@ test('profiles: select and remove without touching media; Escape clears; Cmd-A i
   await expect(page.locator('.card[data-key="p:alice"]')).toHaveCount(0);
   expect(await page.evaluate(async () => !!(await chrome.storage.local.get('m:A'))['m:A'])).toBe(true);
 });
+
+test('items that leave the view leave the selection (Remove from list)', async ({ context, extensionId }) => {
+  const data = { ...DATA, 'm:B': { ...DATA['m:B'], lists: ['l1'] } };
+  const page = await open(context, extensionId, data);
+  await page.click('.lists .list[data-id="l1"]');
+  await page.click('.card[data-key="m:A"] .select'); await page.click('.card[data-key="m:B"] .select');
+  await expect(page.locator('#bulk .count')).toHaveText('2 selected');
+  await page.click('#bulk-out');
+  await expect(page.locator('.grid .card')).toHaveCount(0);
+  await expect(page.locator('#bulk')).toBeHidden();
+  expect(await page.evaluate(() => KeepKeepApp.saved.selected.size)).toBe(0);
+});
+test('a filter that hides selected items deselects them; Remove only acts on shown ones', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, DATA);
+  await page.click('.card[data-key="m:A"] .select'); await page.click('.card[data-key="m:B"] .select');
+  await page.fill('#search', 'alice');
+  await expect(page.locator('#bulk .count')).toHaveText('1 selected');
+  await page.click('#bulk-remove');
+  await expect.poll(() => page.evaluate(async () => Object.keys(await chrome.storage.local.get(['m:A', 'm:B'])))).toEqual(['m:B']);
+});

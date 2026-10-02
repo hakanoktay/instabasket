@@ -206,6 +206,9 @@
               for (const m of state.media) mediaCounts.set(m.username, (mediaCounts.get(m.username) || 0) + 1);
             }
             items = filterItems(kind);
+            // Items no longer shown (filtered out, left the list) leave the selection.
+            const shownKeys = new Set(items.map(keyOf));
+            for (const k of [...saved.selected]) if (!shownKeys.has(k)) saved.selected.delete(k);
             paint(true);
           },
           keys: () => filterItems(kind).map(keyOf),
