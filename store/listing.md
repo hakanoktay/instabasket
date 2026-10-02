@@ -91,10 +91,13 @@ choose **Social networking**.
 | --- | --- | --- |
 | Store icon | `extension/icons/icon128.png` | 128 × 128 |
 | Screenshot 1 | `assets/screenshot-1-keep.png` | 1280 × 800 |
-| Screenshot 2 | `assets/screenshot-2-lists.png` | 1280 × 800 |
-| Screenshot 3 | `assets/screenshot-3-download.png` | 1280 × 800 |
-| Screenshot 4 | `assets/screenshot-4-anonymous.png` | 1280 × 800 |
-| Screenshot 5 | `assets/screenshot-5-video.png` | 1280 × 800 |
+| Screenshot 2 | `assets/screenshot-private.png` ("Private by design"; made by `scripts/store-private.mjs`) | 1280 × 800 |
+| Screenshot 3 | `assets/screenshot-2-lists.png` | 1280 × 800 |
+| Screenshot 4 | `assets/screenshot-3-download.png` | 1280 × 800 |
+| Screenshot 5 | `assets/screenshot-4-anonymous.png` | 1280 × 800 |
+| Screenshot 6 | `assets/screenshot-5-video.png` | 1280 × 800 |
+
+The store takes at most 5 screenshots: one of these six stays out (owner's choice, still open).
 | Small promo tile (required) | `assets/promo-small-440x280.png` | 440 × 280 |
 | Marquee promo tile (optional) | `assets/promo-marquee-1400x560.png` | 1400 × 560 |
 
