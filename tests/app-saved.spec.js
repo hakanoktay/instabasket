@@ -79,3 +79,39 @@ test('saving elsewhere shows up at once, keeping the filters', async ({ context,
   await expect(page.locator('#f-sort')).toHaveValue('old');
   await expect(page.locator('#f-owner option')).toContainText(['zed']);
 });
+
+const bigData = () => {
+  const big = { lists: [] };
+  for (let i = 0; i < 1000; i++) big['m:K' + i] = { key: 'K' + i, username: 'u' + (i % 50), lists: [], addedAt: i, thumb: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' };
+  return big;
+};
+const loadMore = async (page, n) => {
+  while ((await page.locator('.grid .card').count()) < n) {
+    await page.locator('.grid .card').last().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
+  }
+};
+
+test('a storage change keeps the rendered chunks and the scroll position', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, bigData());
+  await expect(page.locator('.grid .card').first()).toBeVisible();
+  await page.evaluate(() => { window.__first = document.querySelector('.grid .card'); });
+  await loadMore(page, 120);
+  expect(await page.evaluate(() => document.querySelector('.grid .card') === window.__first)).toBe(true);
+  const before = await page.locator('.grid .card').count();
+  await page.evaluate(() => window.scrollTo(0, 1500));
+  const y = await page.evaluate(() => window.scrollY);
+  await page.evaluate(() => chrome.storage.local.set({ 'm:NEW': { key: 'NEW', username: 'zed', lists: [], addedAt: 5000 } }));
+  await expect(page.locator('.card[data-key="m:NEW"]')).toHaveCount(1);
+  expect(await page.locator('.grid .card').count()).toBeGreaterThanOrEqual(before);
+  expect(Math.abs((await page.evaluate(() => window.scrollY)) - y)).toBeLessThanOrEqual(2);
+});
+
+test('a filter change goes back to the first chunk and the top', async ({ context, extensionId }) => {
+  const page = await open(context, extensionId, bigData());
+  await expect(page.locator('.grid .card').first()).toBeVisible();
+  await loadMore(page, 120);
+  await page.selectOption('#f-sort', 'old');
+  await expect.poll(() => page.locator('.grid .card').count()).toBeLessThanOrEqual(60);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});

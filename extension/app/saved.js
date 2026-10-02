@@ -9,7 +9,9 @@
   const saved = KeepKeepApp.saved = {
     selected: new Set(),
     filters: { q: '', type: 'all', owner: '', since: 'any', sort: 'new', list: null },
-    rerender() { current?.update(); },
+    // rerender() = data changed: keep chunks and scroll. rerender(true) = filters
+    // changed (search, type, list...): back to the first chunk and the top.
+    rerender(reset) { current?.update(reset === true); },
   };
   let current = null; // { kind, update } of the view on screen
 
@@ -75,9 +77,10 @@
         chips(m)));
   }
 
+  let mediaCounts = new Map();
   function profileCard(p) {
     const user = state.users[p.username] || {};
-    const count = state.media.filter((m) => m.username === p.username).length;
+    const count = mediaCounts.get(p.username) || 0;
     const pic = user.pic
       ? el('img', { class: 'pic', src: user.pic, alt: '', draggable: 'false' })
       : el('span', { class: 'pic', text: (p.username || '?')[0].toUpperCase() });
@@ -130,10 +133,12 @@
           ownerSel.value = f.owner;
         }
 
-        let items = [];
-        function paint() {
+        let items = [], painted = 0;
+        function paint(full) {
           const y = window.scrollY;
-          grid.replaceChildren(...items.slice(0, shown).map(makeCard));
+          if (full) { grid.replaceChildren(); painted = 0; }
+          grid.append(...items.slice(painted, shown).map(makeCard));
+          painted = Math.min(shown, items.length);
           empty.hidden = items.length > 0;
           empty.textContent = (kind === 'media' ? state.media : state.profiles).length
             ? 'Nothing matches these filters.'
@@ -145,17 +150,21 @@
         }
 
         observer = new IntersectionObserver((entries) => {
-          if (entries.some((e) => e.isIntersecting) && shown < items.length) { shown += CHUNK; paint(); }
+          if (entries.some((e) => e.isIntersecting) && shown < items.length) { shown += CHUNK; paint(false); }
         }, { rootMargin: '800px' });
 
         current = {
           kind,
           update(filtersChanged) {
             if (!main.isConnected || main.dataset.view !== kind) return;
-            if (filtersChanged === true) shown = CHUNK;
+            if (filtersChanged === true) { shown = CHUNK; window.scrollTo(0, 0); }
             fillOwners();
+            if (kind === 'profiles') {
+              mediaCounts = new Map();
+              for (const m of state.media) mediaCounts.set(m.username, (mediaCounts.get(m.username) || 0) + 1);
+            }
             items = filterItems(kind);
-            paint();
+            paint(true);
           },
         };
 
