@@ -514,3 +514,9 @@ $('#export').addEventListener('click', async () => {
 });
 
 $('#import').addEventListener('click', () => chrome.tabs.create({ url: 'import.html' }));
+
+// ---- The full-tab app ----
+$('#open-app').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'app.html#media' });
+  window.close();
+});
