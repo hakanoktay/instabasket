@@ -102,6 +102,10 @@ KeepKeep stays simple and focused – "keep what you see, organise it, use it" �
 
 **Partly done in `v1.1.0`** (`extension/app.html`, `app/*.js`; design and plan in `specs/`): KeepKeep in a full browser tab, opened from the popup's "Open KeepKeep" button: saved profiles and media in a large grid with search, filters, multi-select, bulk actions, drag items onto lists, a lists sidebar, download through an Instagram tab, Settings / Backup / About, a Welcome view on install and What's new after updates. Still to come: caption search, moodboard, influencer shortlist, learning mode (items 2–5 below). Everything below lives here.
 
+Later for the app page itself (in the design spec, left out of 1.1.0):
+- Per-card hover actions: lists, download and remove right on a card, without selecting it first.
+- An "Open in a tab" row in the popup's empty states, leading to the app page.
+
 #### 2. Caption search – for everyone (recipes, travel, shopping…)
 
 Keep each saved post's caption (and its hashtags) and make it searchable in the app page and the popup: type "lentil", "Rome" or "jacket" and find the post. Instagram's own Saved has no search, a common complaint. New saves store the caption; captions of items saved before are fetched quietly later (a few at a time, rate-limit safe) without touching other stored data.

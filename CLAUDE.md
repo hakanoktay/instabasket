@@ -144,16 +144,12 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   (`scripts/store-badges.mjs`). Left for the release: the dedicated 2nd "Private
   by design" screenshot must be regenerated with v1.1.0. Never claim "collects
   no data" (the store panel lists Website content).
-- Also next version: drag-and-drop reordering of lists in the "Add to a list"
-  card, no order numbers in the list boxes, Export & import, and removing
-  every user-visible "basket" wording, e.g. the profile page's "Add to
-  basket" button, and a quiet "Made by Zetasis · ☕ Buy me a coffee" line in the popup
-  (see `ROADMAP.md`; coffee link: https://buymeacoffee.com/zetasis; Zetasis
-  website: https://zetasis.net).
-- Also next version: fix the "Add to a list" card blinking (picker animates
-  closed and open again) when adding while the previous card is still shown
-  (cause and fix in `ROADMAP.md`). The owner wants even small visual glitches
-  fixed: quality first.
+- Done in v1.1.0 (see the bullet above): list reordering, no order numbers,
+  Export & import, no user-visible "basket" wording, the quiet "Made by
+  Zetasis · ☕ Buy me a coffee" line (coffee link:
+  https://buymeacoffee.com/zetasis; Zetasis website: https://zetasis.net), and
+  the "Add to a list" card blink (cause and fix in `ROADMAP.md`). The owner
+  wants even small visual glitches fixed: quality first.
 - Store name decided and applied (v1.1.0): "KeepKeep – Downloader & Anonymous Story Viewer for Instagram"
   in `manifest.json` (the store takes it from there), `short_name`
   "KeepKeep"; inside the extension it is just "KeepKeep".
