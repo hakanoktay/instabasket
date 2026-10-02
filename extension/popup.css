@@ -303,6 +303,12 @@ body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2
 #credit a, .about-links a { color: inherit; text-decoration: none; }
 #credit a:hover, .about-links a:hover { color: var(--brand); text-decoration: underline; }
 
+/* Settings → Backup */
+.backup-actions { display: flex; gap: 8px; }
+.backup-actions .btn { flex: 1; }
+.backup-status { min-height: 16px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.backup-status.bad { color: var(--red); }
+
 /* Settings → About: version, the trust badges (small; the store images' look) and links. */
 .about { padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); margin-bottom: 4px; }
 .about-head { display: flex; align-items: center; gap: 8px; }

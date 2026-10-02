@@ -34,6 +34,8 @@ The "Add to a list" card that appears after saving (`extension/panel.js`):
 
 ### Next version: Export & import (owner's request)
 
+**Done** in the `v1.1.0` branch: Settings → Backup (Export straight to Downloads/KeepKeep; Import opens `import.html`, since a file picker can close the popup). Format `keepkeep-backup` version 1 (`basket.js` exportData / importData); import only adds, matches lists by kind and name, keeps this computer's settings. Tests in `tests/backup.spec.js`.
+
 Users change computers or want their lists on a second one. Everything is stored only in the browser, so:
 
 - **Export** in the settings: one `.json` file with all profiles, media, lists (with their order), settings and the preview images, saved to `Downloads/KeepKeep`.

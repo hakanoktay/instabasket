@@ -486,3 +486,31 @@ loadPage();
 chrome.storage.onChanged.addListener(render);
 selectTab('profiles');
 render();
+
+// ---- Backup ----
+// Export saves one file straight to Downloads/KeepKeep, like every download
+// (no dialog, no extra window). Import needs a file picker, which can close
+// the popup, so it opens its own small tab.
+
+$('#export').addEventListener('click', async () => {
+  const status = $('#backup-status');
+  status.classList.remove('bad');
+  status.textContent = 'Exporting…';
+  try {
+    const bytes = new TextEncoder().encode(JSON.stringify(await KeepKeep.exportData()));
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    const d = new Date();
+    const date = [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+    await chrome.downloads.download({
+      url: 'data:application/json;base64,' + btoa(binary),
+      filename: `KeepKeep/KeepKeep-backup-${date}.json`, conflictAction: 'uniquify', saveAs: false,
+    });
+    status.textContent = `Saved to Downloads/KeepKeep as KeepKeep-backup-${date}.json`;
+  } catch {
+    status.classList.add('bad');
+    status.textContent = 'Export failed. Please try again.';
+  }
+});
+
+$('#import').addEventListener('click', () => chrome.tabs.create({ url: 'import.html' }));
