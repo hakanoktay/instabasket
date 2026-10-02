@@ -152,7 +152,27 @@ var KeepKeepDrop = (() => {
       pageAction(msg).then(() => sendResponse({ ok: true }), (e) => sendResponse({ error: String(e?.message || e) }));
       return true;
     }
+    // The app page asks for saved posts to be downloaded here (this tab has
+    // the user's Instagram session). Answer at once; the work runs in the queue.
+    if (msg?.type === 'download-keys') {
+      const keys = (msg.keys || []).filter((k) => typeof k === 'string' && k.startsWith('m:')).map((k) => k.slice(2));
+      sendResponse({ ok: true, started: keys.length });
+      queue = queue.then(() => downloadKeys(keys));
+    }
   });
+
+  // Requests run strictly one after another, with a pause between posts.
+  let queue = Promise.resolve();
+  const POST_GAP = 800;
+  async function downloadKeys(keys) {
+    for (let i = 0; i < keys.length; i++) {
+      if (i) await new Promise((r) => setTimeout(r, POST_GAP));
+      const key = keys[i];
+      try {
+        if (key.startsWith('story:')) await downloadStory(key.slice(6)); else await download(key);
+      } catch { /* the balloon already says it failed */ }
+    }
+  }
 
   // The profile and/or post open in this tab: { profile, media: { key, code, url } }.
   async function pageInfo() {
