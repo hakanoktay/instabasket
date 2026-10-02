@@ -48,7 +48,38 @@ body {
 .nav .item.active .i { color: var(--brand); }
 .nav .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav .count { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-.lists { flex: 1; min-height: 0; margin-top: 12px; }
+/* Sidebar lists */
+.lists { flex: 1; min-height: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 2px; }
+.lists:empty { display: none; }
+.lists-title { padding: 0 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lists .list {
+  position: relative; display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 10px; border-radius: 10px;
+  font-weight: 500; cursor: pointer; user-select: none; touch-action: none; flex: none;
+}
+.lists .list:hover { background: var(--hover); }
+.lists .list.on { background: var(--brand-tint-strong); color: var(--brand); font-weight: 600; }
+.lists .list .name, .lists .list .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lists .list .count { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lists .list.on .count { color: var(--brand); }
+.lists .list button {
+  display: none; width: 26px; height: 26px; padding: 0; border: none; border-radius: 7px; background: none; color: var(--muted);
+  cursor: pointer; place-items: center;
+}
+.lists .list button .i { width: 16px; height: 16px; }
+.lists .list button:hover { background: var(--secondary-hover); color: var(--text); }
+.lists .list button.delete:hover { color: var(--red); }
+.lists .list:hover button, .lists .list:focus-within button { display: grid; }
+.lists .list:hover .count, .lists .list:focus-within:not(.all) .count { display: none; }
+.lists .list.editing, .lists .list:has(input) { cursor: default; background: var(--brand-tint); }
+.lists .list input { flex: 1; min-width: 0; height: 28px; border: none; outline: none; background: none; font: inherit; font-weight: 600; color: var(--text); }
+.lists .list.dragging { z-index: 2; cursor: grabbing; background: var(--elevated); box-shadow: var(--shadow); transition: none; }
+.lists.sorting .list:not(.dragging) { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.lists .new {
+  display: flex; align-items: center; gap: 8px; height: 36px; margin-top: 4px; padding: 0 10px; border: 1px dashed var(--line); border-radius: 10px;
+  background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer;
+}
+.lists .new .i { width: 16px; height: 16px; }
+.lists .new:hover { color: var(--brand); border-color: var(--brand); background: var(--brand-tint); }
 .nav.bottom { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 
 main { min-width: 0; padding: 36px 40px; animation: in 0.3s ease-out; }
