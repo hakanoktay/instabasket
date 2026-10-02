@@ -298,7 +298,7 @@ body.dragging-card .lists .list:hover .count { display: inline; }
 .about-links.more a:hover { color: var(--brand); }
 
 /* ---- Welcome view: full width, centred, the look of the first-run tab ---- */
-main[data-view=welcome] { display: grid; place-items: center; min-height: 100vh; padding: 56px 24px; }
+main[data-view=welcome], main[data-view=whats-new] { display: grid; place-items: center; min-height: 100vh; padding: 56px 24px; }
 .welcome { width: 100%; max-width: 560px; font-size: 16px; line-height: 1.55; }
 .welcome .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 0; font-weight: 700; font-size: 20px; letter-spacing: 0; }
 .welcome .brand img { border-radius: 10px; }
@@ -332,3 +332,11 @@ main[data-view=welcome] { display: grid; place-items: center; min-height: 100vh;
 .welcome footer a:hover { color: var(--brand); }
 .welcome .go { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--brand); text-decoration: none; }
 .welcome .go:hover { text-decoration: underline; }
+
+/* What's new: the welcome family, a plain list of notes */
+.whats-new h1 { font-size: 44px; }
+.whats-new .notes { margin: 0 0 8px; padding: 0; list-style: none; }
+.whats-new .notes li { position: relative; padding: 14px 0 14px 30px; border-top: 1px solid var(--line); font-size: 17px; }
+.whats-new .notes li:last-child { border-bottom: 1px solid var(--line); }
+.whats-new .notes li::before { content: ''; position: absolute; left: 4px; top: 22px; width: 9px; height: 9px; border-radius: 50%; background: var(--brand); }
+.whats-new .go { margin-top: 24px; font-size: 15px; }
