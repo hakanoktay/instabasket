@@ -26,8 +26,9 @@
 
   // A story key downloads all of its account's current stories, so one story
   // key per owner is enough; stories with no known owner stay as they are.
+  // A story from a highlight downloads just itself, so each one is kept.
   function oneStoryPerOwner(keys) {
-    const owners = new Map(state.media.map((m) => ['m:' + m.key, m.username]));
+    const owners = new Map(state.media.filter((m) => m.type !== 'highlight').map((m) => ['m:' + m.key, m.username]));
     const seen = new Set();
     return keys.filter((k) => {
       const owner = k.startsWith('m:story:') && owners.get(k);

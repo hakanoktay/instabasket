@@ -4,7 +4,15 @@
   const { el, icon, view, state, on } = KeepKeepApp;
   const DAY = 86400000;
   const CHUNK = 60;
-  const TYPE_LABELS = { post: 'Post', reel: 'Reel', album: 'Album', video: 'Video', story: 'Story' };
+  const TYPE_LABELS = { post: 'Post', reel: 'Reel', album: 'Album', video: 'Video', story: 'Story', highlight: 'Highlight' };
+
+  // What filters and badges go by. Saved stories keep the type Instagram gave
+  // them ('story-video', 'story-photo'); stories from highlights are 'highlight'.
+  function mediaKind(m) {
+    if (m.type === 'highlight') return 'highlight';
+    if (m.type === 'story' || String(m.type).startsWith('story-') || String(m.key).startsWith('story:')) return 'story';
+    return m.type;
+  }
 
   const saved = KeepKeepApp.saved = {
     selected: new Set(),
@@ -26,7 +34,8 @@
       if (!hay.includes(lc(f.q).trim())) return false;
     }
     if (kind === 'media') {
-      const isReel = item.type === 'reel', isStory = item.type === 'story';
+      const k = mediaKind(item);
+      const isReel = k === 'reel', isStory = k === 'story' || k === 'highlight';
       if (f.type === 'posts' && (isReel || isStory)) return false;
       if (f.type === 'reels' && !isReel) return false;
       if (f.type === 'stories' && !isStory) return false;
@@ -66,8 +75,9 @@
     const thumb = m.thumb
       ? el('img', { src: m.thumb, alt: '', loading: 'lazy', draggable: 'false' })
       : el('div', { class: 'placeholder', text: 'No preview' });
-    const type = TYPE_LABELS[m.type]
-      ? el('span', { class: 'type' }, icon(m.type), TYPE_LABELS[m.type]) : null;
+    const kind = mediaKind(m);
+    const type = TYPE_LABELS[kind]
+      ? el('span', { class: 'type' }, icon(kind === 'highlight' ? 'story' : kind), TYPE_LABELS[kind]) : null;
     const preview = m.url
       ? el('a', { class: 'preview', href: m.url, target: '_blank', rel: 'noopener', draggable: 'false', title: 'Open on Instagram' }, thumb)
       : el('div', { class: 'preview' }, thumb);

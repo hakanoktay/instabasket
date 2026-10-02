@@ -70,6 +70,19 @@ There is no build step; `extension/` is loaded unpacked as is.
   `reels_media?reel_ids=<user.pk>` for all current stories of the account.
   Avoid `web_profile_info` (429 rate limits). The story id can be read from
   `ig_cache_key` (base64) in the story image URL when the URL has no id.
+- **Highlights:** `/stories/highlights/<id>/`; the address never changes
+  while stepping through and names neither owner nor item. Owner: the
+  story header's profile link (`/<username>/`). Whole highlight:
+  `/api/v1/feed/reels_media/?reel_ids=highlight:<id>` (user, title, items in
+  the viewer's order); one item: `/api/v1/media/<pk>/info/` works too (its
+  `expiring_at` is the original story's, in the past — don't treat as expired).
+  Video stories play from `blob:` with no poster, so no `ig_cache_key`: the
+  item on screen is the progress bar's segment holding the fill (one segment
+  per item, count = items) indexed into that list. Opened from a link,
+  Instagram shows the "View as …?" gate first. Saved highlight stories:
+  `m:story:<pk>` with `type: 'highlight'`, `highlightId`.
+- **Saved stories' type** is what Instagram reports (`story-video`,
+  `story-photo`); classify stories by the `story:` key, not by type.
 - **Theme:** CSS variables (`--accent`, `--blue-5`, `--ig-primary-button`, …)
   and `__fb-light-mode` / `__fb-dark-mode` classes.
 - **Videos:** a single progressive file only up to ~720p; 1080p is DASH
@@ -103,7 +116,8 @@ Real Instagram: `./scripts/dev-chrome.sh` opens a separate Chrome profile
 (`~/.keepkeep-dev-chrome`, the owner signed in there) with only the unpacked
 extension and port 9222, so scripts can look at real pages with
 `chromium.connectOverCDP('http://127.0.0.1:9222')`. Read only: never like,
-follow, comment or post from it. Chrome refuses this port on the everyday
+follow, comment or post from it. Never delete `~/.keepkeep-dev-chrome`: it keeps the
+owner's Instagram login and the unpacked extension between sessions. Chrome refuses this port on the everyday
 profile, where the store version is also installed (buttons would show twice,
 and the unpacked copy has its own, empty storage).
 

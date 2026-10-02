@@ -19,7 +19,7 @@ A tester's feedback: the biggest worry with extensions like this is that they as
 3. **Screenshots:** screenshot 1 stays the main feature, **screenshot 2 is a dedicated "Private by design" slide** (a lock / shield visual, the headline, three short lines: works in the tab where you're signed in · everything stays on your computer · no account, no ads, no tracking). In addition, every image carries the same trust badges – **done**: "No password" (solid purple) · "No tracking" · "No ads" pills with "Never asks for your password. Nothing leaves your computer." under them, bottom-left on all five screenshots and on both promo tiles (`store/assets/`, `docs/images/`; uploaded-ready). Badge-free originals are in `store/source/`; regenerate with `node scripts/store-badges.mjs store/assets`.
 4. **Description:** already updated in `store/listing.md` (privacy opens the text and "Private by design" is the first section) – can be pasted into the dashboard now, no new package needed.
 5. **First run (done in `v1.1.0`, `extension/app/welcome.js`):** a welcome tab after installing (`chrome.runtime.onInstalled`, only on install), in the look of the store images: the app's own headline "Keep what you find on Instagram" first, then three steps and Open Instagram; the trust badges and line come after, as the supporting key (owner: the headline sells the lock, the badges are the key), then Zetasis and ☕ Buy me a coffee.
-6. **Keyword line** (owner's request): "Reels, Stories, Photos, Videos and Posts" in the store description and the welcome tab – done. Add **Highlights** to it ("Reels, Stories, Photos, Videos, Highlights and Posts") only once highlights work; until then the store must not promise them.
+6. **Keyword line** (owner's request): "Reels, Stories, Photos, Videos and Posts" in the store description and the welcome tab – done. **Highlights** added now that they work (v1.1.0).
 7. **Later – Settings on the welcome tab** (owner's idea): a Settings button next to Open Instagram that walks through the settings step by step (photo quality, anonymous stories…), showing what KeepKeep can do along the way.
 8. **Popup (done: Settings → About) and website:** the badge line in the popup's empty state / settings "About", and on the GitHub page hero.
 
@@ -90,7 +90,7 @@ Final wording is the owner's choice. Keep it safe: "Instagram" only as "for Inst
 ### Already under way
 
 - **Video "Original" quality** – Instagram serves videos as a single file only up to ~720p; the 1080p version comes as separate video and audio streams (DASH). Download both and join them into one standard MP4 inside the extension; fall back to the single file if anything fails.
-- **Highlights** – the story buttons (Profile / Media / Download) on highlights too, with "download the whole highlight".
+- ~~**Highlights**~~ – **done in v1.1.0**: the story pill on highlights (Profile, Media saves the story as a "Highlight", Download / D saves the whole highlight), the anonymous gate answered there too.
 - **Kept story copies** – stories disappear after 24 hours, so a story added to Media keeps its own copy in the extension (only on this computer). Media shows "Story · 18h left", later "Kept copy"; an expired story opens in KeepKeep's own viewer with a Download button. Settings show how much space the copies use, with "Delete copies".
 - **One Quality setting** – Original / Standard for photos, videos and stories alike.
 

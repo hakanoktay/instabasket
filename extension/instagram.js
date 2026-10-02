@@ -181,6 +181,21 @@ var InstaApi = (() => {
     };
   }
 
+  // A highlight (the id in /stories/highlights/<id>/): its owner, title and
+  // every story in it, in the highlight's order.
+  async function highlight(id) {
+    const reelId = 'highlight:' + id;
+    const j = await json(`/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(reelId)}`);
+    const reel = j.reels?.[reelId] || j.reels_media?.[0];
+    if (!reel) throw new Error('highlight not found');
+    return {
+      username: reel.user?.username?.toLowerCase() || null,
+      title: reel.title || null,
+      pks: (reel.items || []).map((it) => String(it.pk)), // every story, in the viewer's order
+      items: (reel.items || []).map((it) => ({ takenAt: it.taken_at || null, files: filesOf(it) })).filter((it) => it.files.length),
+    };
+  }
+
   async function mediaFiles(code, { originals: wantOriginals = true } = {}) {
     const { items } = await json(`/api/v1/media/${codeToId(code)}/info/`);
     const item = items[0];
@@ -202,5 +217,5 @@ var InstaApi = (() => {
     };
   }
 
-  return { profile, media, mediaFiles, story, storyReel, thumbnail, codeToId };
+  return { profile, media, mediaFiles, story, storyReel, highlight, thumbnail, codeToId };
 })();

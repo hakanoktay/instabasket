@@ -154,7 +154,7 @@
       const t = await target(true);
       if (!t) await KeepKeepDrop.run(null); // shows "not an Instagram profile or post"
       else if (button.classList.contains('saved')) await KeepKeepDrop.remove(t.key);
-      else await KeepKeepDrop.run(t.url);
+      else await KeepKeepDrop.run(t.item || t.url);
       button.classList.remove('busy');
       refresh(entry);
     });
@@ -533,8 +533,10 @@
   // story. The story is found by its shape (a tall card in the middle of the
   // window). The story item comes from the address bar, or – when Instagram
   // hasn't put its id there yet (the first story opened) – from the picture on
-  // screen, whose CDN address carries the id in ig_cache_key. Highlights have
-  // no owner in the address, so they get no pill.
+  // screen, whose CDN address carries the id in ig_cache_key. Highlights
+  // (/stories/highlights/<id>/) name neither the owner nor the item: the item
+  // comes from the picture, the owner from the story's header link (or, until
+  // that's on screen, from Instagram's highlight data, asked once).
 
   let storyBar = null;
   let storyCardRect = null;
@@ -566,7 +568,80 @@
     }
   }
 
+  // Instagram's data for a highlight, asked once per highlight: its owner and
+  // the ids of its stories in the viewer's order. null while asking or if it
+  // couldn't be read.
+  const highlights = new Map(); // highlight id → { username, pks } | null
+  function highlightData(id) {
+    if (!highlights.has(id)) {
+      highlights.set(id, null);
+      InstaApi.highlight(id).then((h) => highlights.set(id, { username: h.username, pks: h.pks }), () => {});
+    }
+    return highlights.get(id);
+  }
+
+  // The owner of the highlight on screen: the header's profile link (picture
+  // and title link to /<username>/), else Instagram's highlight data.
+  function highlightOwner(id) {
+    const card = storyCardRect;
+    if (card) {
+      for (const a of document.querySelectorAll('a[href]')) {
+        const m = a.getAttribute('href').match(/^\/([A-Za-z0-9._]{1,30})\/$/);
+        if (!m) continue;
+        const r = a.getBoundingClientRect();
+        if (!r.width || r.left < card.left || r.right > card.right || r.top < card.top || r.bottom > card.top + card.height * 0.2) continue;
+        return m[1].toLowerCase();
+      }
+    }
+    return highlightData(id)?.username || null;
+  }
+
+  // Which story of the highlight is on screen, from the progress bar at the
+  // top of the story: one thin segment per story, and only the one playing
+  // holds a fill. Videos play from blob: addresses with no id in them, so this
+  // is how a video story is found. Returns { index, count } or null.
+  function progressPosition() {
+    const card = storyCardRect;
+    if (!card) return null;
+    const rows = new Map();
+    for (const d of document.querySelectorAll('div')) {
+      const r = d.getBoundingClientRect();
+      if (!r.height || r.height > 4 || r.width < 1 || r.top < card.top || r.top > card.top + 60 || r.left < card.left - 1 || r.right > card.right + 1) continue;
+      const k = Math.round(r.top);
+      rows.set(k, [...(rows.get(k) || []), d]);
+    }
+    const row = [...rows.values()].sort((a, b) => b.length - a.length)[0];
+    if (!row || row.length < 2) return null;
+    const set = new Set(row);
+    const width = (d) => d.getBoundingClientRect().width;
+    const box = row.reduce((w, d) => (width(d) > width(w) ? d : w));
+    const fills = row.filter((d) => d !== box && set.has(d.parentElement) && d.parentElement !== box);
+    const segments = row.filter((d) => d !== box && !fills.includes(d));
+    const index = segments.findIndex((s) => fills.some((f) => s.contains(f)));
+    return index < 0 ? null : { index, count: segments.length };
+  }
+
+  // The story of a highlight on screen: its picture's id, or (a video) the
+  // progress bar's position in Instagram's list – only if the counts agree.
+  function highlightStoryId(id) {
+    const fromPicture = storyIdOnScreen();
+    if (fromPicture) return fromPicture;
+    const pks = highlightData(id)?.pks;
+    const pos = pks && progressPosition();
+    return pos && pos.count === pks.length ? pks[pos.index] : null;
+  }
+
   const currentStory = () => {
+    const hl = location.pathname.match(/^\/stories\/highlights\/(\d+)\/?$/);
+    if (hl) {
+      const username = highlightOwner(hl[1]);
+      if (!username) return null;
+      const id = highlightStoryId(hl[1]);
+      const url = `https://www.instagram.com/stories/highlights/${hl[1]}/`;
+      return id
+        ? { kind: 'media', key: 'story:' + id, code: null, type: 'highlight', highlightId: hl[1], username, url }
+        : { kind: 'media', key: null, highlightId: hl[1], username, url };
+    }
     const item = KeepKeep.parse(location.href);
     if (item?.key?.startsWith('story:')) return item;
     const m = location.pathname.match(/^\/stories\/([A-Za-z0-9._]{1,30})\/?$/);
@@ -644,7 +719,7 @@
       };
       const mediaTarget = async () => {
         const s = currentStory();
-        return s?.key && { url: s.url, key: storageKey(s) };
+        return s?.key && { url: s.url, key: storageKey(s), item: s };
       };
       storyBar.append(
         makeButton('story', profileTarget, { icon: 'profile', label: 'Profile', title: 'Save this profile to KeepKeep', dark: true }),
@@ -658,7 +733,8 @@
 
   async function downloadCurrentStory() {
     const s = currentStory();
-    if (s?.key) await KeepKeepDrop.downloadStory(s.key.slice(6));
+    if (s?.highlightId) await KeepKeepDrop.downloadHighlight(s.highlightId);
+    else if (s?.key) await KeepKeepDrop.downloadStory(s.key.slice(6));
     else KeepKeepPanel.showError("Couldn't tell which story this is");
   }
 
@@ -667,7 +743,8 @@
     if (e.key !== 'd' && e.key !== 'D') return;
     if (e.metaKey || e.ctrlKey || e.altKey || !location.pathname.startsWith('/stories/')) return;
     if (e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
-    if (!currentStory()?.key) return;
+    const s = currentStory();
+    if (!s?.key && !s?.highlightId) return;
     e.preventDefault();
     e.stopPropagation();
     downloadCurrentStory();

@@ -25,7 +25,7 @@
     main.append(el('div', { class: 'welcome' },
       el('div', { class: 'brand' }, el('img', { src: 'icons/logo.svg', alt: '', width: 40, height: 40 }), el('span', { text: 'KeepKeep' })),
       el('h1', {}, 'Keep what you ', el('em', { text: 'find' }), ' on Instagram'),
-      el('p', { class: 'lead', text: 'Reels, Stories, Photos, Videos and Posts: save them to your own lists, download them in full quality, and watch stories anonymously – right inside Instagram.' }),
+      el('p', { class: 'lead', text: 'Reels, Stories, Photos, Videos, Highlights and Posts: save them to your own lists, download them in full quality, and watch stories anonymously – right inside Instagram.' }),
       el('ol', { class: 'steps' },
         step(1, 'Open Instagram', 'on instagram.com, in this browser.'),
         step(2, 'Use the purple buttons', 'next to posts, reels, stories and profiles to save or download.'),

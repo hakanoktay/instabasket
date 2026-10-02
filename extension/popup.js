@@ -1,7 +1,8 @@
 const TYPE_LABELS = {
   photo: 'Photo', album: 'Album', video: 'Video', reel: 'Reel', story: 'Story', post: 'Post',
+  'story-video': 'Story', 'story-photo': 'Story', highlight: 'Highlight',
 };
-const TYPE_ICONS = { reel: 'reel', album: 'album', video: 'video', story: 'video' };
+const TYPE_ICONS = { reel: 'reel', album: 'album', video: 'video', story: 'video', 'story-video': 'video', 'story-photo': 'video', highlight: 'video' };
 
 const ICONS = {
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',

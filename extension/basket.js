@@ -4,7 +4,8 @@
 // additions never overwrite each other:
 //   p:<username>   → a saved profile          { username, addedAt, lists }
 //   m:<shortcode>  → a saved photo/video/reel { key, code, url, type, username, thumb, addedAt, lists }
-//                    (stories use m:story:<id>)
+//                    (stories use m:story:<id>; a story inside a highlight too, with
+//                    type 'highlight' and highlightId)
 //   u:<username>   → cached account details   { username, fullName, pic }, used by
 //                    both saved profiles and the owners of saved media
 //   lists          → the user's lists [{ id, name, kind }]; kind is 'p' (profile lists) or
@@ -43,6 +44,9 @@ var KeepKeep = (() => {
     if (parts.length >= 3 && USERNAME.test(parts[0]) && MEDIA_PATHS[parts[1]]) {
       return media(parts[2], MEDIA_PATHS[parts[1]], parts[0].toLowerCase());
     }
+    // /stories/highlights/ID/ is a highlight: its address names neither the
+    // owner nor the item on screen (buttons.js reads both from the page).
+    if (parts[0] === 'stories' && parts[1] === 'highlights') return null;
     // /stories/username/ID/
     if (parts[0] === 'stories' && USERNAME.test(parts[1] || '') && /^\d+$/.test(parts[2] || '')) {
       const username = parts[1].toLowerCase();
