@@ -44,11 +44,11 @@ There is no build step; `extension/` is loaded unpacked as is.
 | `extension/video.js` | Scrubber and play/pause for every video |
 | `extension/background.js` | Service worker: downloads, anonymous toolbar icon (`icons/anon*.png`) |
 | `extension/offscreen.js` | Fetches files (rejects non image/video responses, fallback URL), progress, one blob per file |
-| `extension/app.html`, `app.css` | KeepKeep's own full tab (opened by the popup's "Open KeepKeep" button). Shell with sidebar (Profiles, Media, lists, Download, Settings); the CSS is the same family as the store images (Inter in `fonts/`, lilac) |
+| `extension/app.html`, `app.css` | KeepKeep's own full tab (opened by the popup's "Open KeepKeep" button). Shell with sidebar (Profiles and Media, the lists section under them, Settings and About at the bottom); the CSS is the same family as the store images (Inter in `fonts/`, lilac) |
 | `extension/app/core.js` | App shell and router: `KeepKeepApp.view(name, fn)` registers a view, `go(hash)` navigates, `state`, `on` / `emit` (events), `el` (DOM helper), `icon` |
 | `extension/app/saved.js` | Profiles / Media grids: search, filters, live updates from storage, chunked rendering, selection, bulk actions (remove, add to list, download), undo. `KeepKeepApp.saved` = `{selected, filters, rerender(reset)}`: `rerender()` when data changed, `rerender(true)` when filters changed |
 | `extension/app/lists.js` | Lists in the sidebar: create, rename, delete, reorder; `KeepKeepApp.lists.dropTarget` makes an element accept dragged items |
-| `extension/app/download.js` | Download view: asks an open Instagram tab to fetch the files via the `download-keys` message (no Instagram tab: it says so and offers to open one) |
+| `extension/app/download.js` | Registers no view: sets `KeepKeepApp.saved.bulkDownload` (the bulk bar's Download button for selected media), which sends the `download-keys` message to an open Instagram tab; with none open it shows a notice with an "Open Instagram" link |
 | `extension/app/settings.js` | Settings, Backup (export / import) and About views; import was folded in here (old `import.html` is gone). The backup format and merge rules are in `basket.js` (`exportData`, `importData`): import only adds, never deletes; bump `BACKUP_VERSION` and keep reading old versions if the format changes |
 | `extension/app/welcome.js` | First-run welcome view `app.html#welcome` (opened by `background.js` only on install), styled like the store images: the app headline first, steps, then the trust badges as the supporting line. The privacy message is never the headline |
 | `extension/app/whats-new.js` | `WHATS_NEW` notes per version, `shouldShowWhatsNew(previous, current)`, `pagesToOpen(details, version)`; also loaded by `background.js` via `importScripts` (no DOM in the decision code), the view is registered only in the app page. Add notes for each minor release |
@@ -126,8 +126,9 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   each with tests: the list card blink (also after the card closed by
   itself; closing now folds the list picker first), the "basket" wording,
   drag-to-reorder lists with no order numbers, the popup's aria-hidden
-  warning. Still to do: the password / privacy message, "Made by Zetasis"
-  and About, Export & import, the store name.
+  warning, the password / privacy message (popup, welcome, About), "Made by
+  Zetasis" and About, Export & import, the store name. What is left is the
+  release itself (see the next bullet).
 - **The app page is built in v1.1.0** (`app.html` + `app/*.js`, design and plan
   in `specs/`): Profiles / Media grids with search, filters, selection, bulk
   actions and drag to lists; lists sidebar; download via an Instagram tab;
@@ -135,13 +136,14 @@ earlier test scripts lived in a session scratchpad and are not in the repo.
   release still waits for the owner's go: version bump, update test from the
   1.0.0 data, regenerate the "Private by design" screenshot with v1.1.0, the
   owner chooses which of the 6 screenshots to leave out, then the ZIP.
-- **Top priority for the next version:** "Never asks for your password. Your
-  data never leaves your computer." in the summary (manifest `description`), a
-  dedicated 2nd "Private by design" screenshot, a first-run welcome tab and the
-  popup (exact wording and placement in `ROADMAP.md`). Already done: the store
-  description in `store/listing.md` opens with it, and every store image has
-  the "No password · No tracking · No ads" badges (`scripts/store-badges.mjs`).
-  Never claim "collects no data" (the store panel lists Website content).
+- **The privacy message (done in v1.1.0, keep it exact):** "Never asks for your
+  password. Your data never leaves your computer." in the summary (manifest
+  `description`), the welcome view and the popup / About (wording and placement
+  in `ROADMAP.md`). The store description in `store/listing.md` opens with it,
+  and every store image has the "No password · No tracking · No ads" badges
+  (`scripts/store-badges.mjs`). Left for the release: the dedicated 2nd "Private
+  by design" screenshot must be regenerated with v1.1.0. Never claim "collects
+  no data" (the store panel lists Website content).
 - Also next version: drag-and-drop reordering of lists in the "Add to a list"
   card, no order numbers in the list boxes, Export & import, and removing
   every user-visible "basket" wording, e.g. the profile page's "Add to
