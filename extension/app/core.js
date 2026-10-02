@@ -43,7 +43,7 @@ const KeepKeepApp = (() => {
   function view(def) { views.set(def.id, def); if (loaded) renderNav(); }
 
   function go(id, params) {
-    const hash = '#' + [id, ...(params === undefined ? [] : [].concat(params))].join('/');
+    const hash = '#' + [id, ...(params === undefined ? [] : [].concat(params)).map((x) => encodeURIComponent(x))].join('/');
     if (location.hash === hash) route(); else location.hash = hash;
   }
 
@@ -63,7 +63,10 @@ const KeepKeepApp = (() => {
   }
 
   function route() {
-    const [id, ...params] = location.hash.slice(1).split('/').map(decodeURIComponent);
+    let id, params;
+    try {
+      [id, ...params] = location.hash.slice(1).split('/').map(decodeURIComponent);
+    } catch { id = DEFAULT_VIEW; params = []; } // a hand-edited hash like "#100%"
     const v = views.get(id) || views.get(DEFAULT_VIEW);
     if (!v) return;
     main.dataset.view = v.id;
@@ -88,7 +91,9 @@ const KeepKeepApp = (() => {
     chrome.storage.onChanged.addListener(() => { clearTimeout(timer); timer = setTimeout(refresh, 100); });
     on('change', renderNav);
     window.addEventListener('hashchange', route);
-    refresh().then(() => { loaded = true; route(); });
+    refresh()
+      .catch((err) => console.error('KeepKeep: could not load your data', err))
+      .finally(() => { loaded = true; route(); });
   }
 
   return { view, go, state, on, emit, el, icon, start, route };

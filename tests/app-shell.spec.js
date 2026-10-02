@@ -40,3 +40,28 @@ test('the popup header stays on one line with the Open KeepKeep button', async (
   expect(await popup.evaluate(() => { const h = document.querySelector('#main-view > header'); return h.scrollWidth - h.clientWidth; })).toBeLessThanOrEqual(0);
   expect(await popup.locator('#main-view > header').evaluate((h) => h.getBoundingClientRect().height)).toBeLessThanOrEqual(56);
 });
+
+test('the header fits with the page buttons shown (a post tab is open)', async ({ context, extensionId }) => {
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  const r = await popup.evaluate(() => {
+    document.querySelector('.page-actions').hidden = false;
+    document.querySelectorAll('.page-btn').forEach((b) => { b.hidden = false; });
+    const h = document.querySelector('#main-view > header');
+    const hr = h.getBoundingClientRect();
+    const kids = [...document.querySelectorAll('#main-view > header h1, #main-view > header button')].map((e) => e.getBoundingClientRect());
+    return { over: Math.max(...kids.map((k) => k.right)) - hr.right, spread: Math.max(...kids.map((k) => k.top + k.height / 2)) - Math.min(...kids.map((k) => k.top + k.height / 2)), scroll: h.scrollWidth - h.clientWidth };
+  });
+  expect(r.over).toBeLessThanOrEqual(0);
+  expect(r.scroll).toBeLessThanOrEqual(0);
+  expect(r.spread).toBeLessThanOrEqual(3); // one row, nothing wrapped
+});
+
+test('a broken hash shows the media view without a page error', async ({ context, extensionId }) => {
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`chrome-extension://${extensionId}/app.html#100%`);
+  await expect(page.locator('main')).toHaveAttribute('data-view', 'media');
+  expect(errors).toEqual([]);
+});

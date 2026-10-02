@@ -327,3 +327,6 @@ body.settings-closing #main-view { animation: pane-in-left 0.3s cubic-bezier(0.2
 .about .tag.strong { color: #fff; background: var(--brand-gradient); border-color: transparent; }
 .about-line { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
 .about-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-weight: 600; color: var(--brand); }
+/* With a post or profile open, the page buttons need the room: the pill keeps only its icon (the title says the rest). */
+.header-actions:has(.page-actions:not([hidden])) .open-label { display: none; }
+.header-actions:has(.page-actions:not([hidden])) .open-app { width: 30px; padding: 0; justify-content: center; }
